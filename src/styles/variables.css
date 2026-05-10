@@ -1,0 +1,50 @@
+:root {
+  --t:#E07840; --td:#B85A26; --tl:#F2A07A;
+  --cream:#FAF8F5; --card:#FFFFFF; --warm:#F5F0E8;
+  --border:#EDE8E1; --border2:#E5DDD4;
+  --sg:#5A9E6E; --sgl:#E3F5EA; --sgm:#6AAB7C;
+  --lv:#8B7EC8; --lvl:#EDE9F8; --lvm:#9B8EC4;
+  --rd:#D0524A; --rdl:#FDEEEC; --rdm:#E05A52;
+  --gd:#C87C30; --gdl:#FEF2E0; --gdm:#D4883A;
+  --bl:#3A78C4; --bll:#E4EFF9; --blm:#4A88D4;
+  --dp:#1C0F00; --md:#5C3D2E; --mt:#A08878;
+
+  --fs-2xs: clamp(8px,1.8vw,10px);
+  --fs-xs:  clamp(10px,2.2vw,11px);
+  --fs-sm:  clamp(11px,2.6vw,13px);
+  --fs-base:clamp(12px,2.8vw,14px);
+  --fs-md:  clamp(13px,3.0vw,15px);
+  --fs-lg:  clamp(14px,3.4vw,17px);
+  --fs-xl:  clamp(16px,3.8vw,20px);
+  --fs-2xl: clamp(20px,4.8vw,26px);
+  --fs-3xl: clamp(26px,6.0vw,36px);
+  --fs-hero:clamp(36px,9vw,52px);
+
+  --sp-1: clamp(4px,1.0vw,6px);
+  --sp-2: clamp(6px,1.4vw,9px);
+  --sp-3: clamp(9px,2.0vw,13px);
+  --sp-4: clamp(12px,2.8vw,17px);
+  --sp-5: clamp(16px,3.8vw,22px);
+  --sp-6: clamp(20px,4.8vw,30px);
+
+  --pad-x:   clamp(14px,4vw,24px);
+  --pad-y:   clamp(16px,3.5vw,22px);
+  --card-p:  clamp(13px,3.2vw,18px);
+  --gap-sm:  clamp(6px,1.4vw,10px);
+  --gap-md:  clamp(9px,2.2vw,14px);
+  --gap-lg:  clamp(12px,3.0vw,18px);
+
+  --r:  clamp(10px,2.5vw,14px);
+  --r2: clamp(14px,3.5vw,20px);
+  --r3: clamp(20px,5.0vw,28px);
+
+  --nav-h:    clamp(64px,11vw,82px);
+  --icon-sm:  clamp(32px,7.5vw,42px);
+  --icon-md:  clamp(40px,9.5vw,52px);
+  --icon-lg:  clamp(48px,11vw,62px);
+  --avatar:   clamp(38px,9vw,48px);
+  --touch:    clamp(40px,9vw,48px);
+
+  --sh:  0 2px 20px rgba(100,60,30,0.08);
+  --sh2: 0 6px 36px rgba(100,60,30,0.14);
+}

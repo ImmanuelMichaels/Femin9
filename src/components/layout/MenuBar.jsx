@@ -1,31 +1,40 @@
-// ============================================================
-// MamaBloom — Sidebar Menu
-// src/components/layout/MenuBar.jsx
-// ============================================================
-
 import { useState } from "react";
+import { Home, Zap, MessageSquare, Heart, Stethoscope, Brain, Footprints, Milk, Apple, Users, AlertTriangle, FileText, Bell, LogOut } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+
+const ICON_MAP = {
+  home: Home,
+  assistant: Zap,
+  chat: MessageSquare,
+  vitals: Heart,
+  health: Stethoscope,
+  mental: Brain,
+  kicks: Footprints,
+  baby: Milk,
+  nutrition: Apple,
+  partner: Users,
+};
 
 const MENU_ITEMS = [
   { section: "Main",    items: [
-    { id: "home",       icon: "🏠", label: "Home",              tab: "home"      },
-    { id: "assistant",  icon: "🤖", label: "AI Daily Briefing", tab: "assistant" },
-    { id: "chat",       icon: "🌿", label: "Bloom AI Chat",     tab: "chat"      },
+    { id: "home",       label: "Home",              tab: "home"      },
+    { id: "assistant",  label: "AI Daily Briefing", tab: "assistant" },
+    { id: "chat",       label: "Bloom AI Chat",     tab: "chat"      },
   ]},
   { section: "Health",  items: [
-    { id: "vitals",     icon: "❤️", label: "Vital Signs",       tab: "vitals"    },
-    { id: "health",     icon: "🩺", label: "Health Tools & QR", tab: "health"    },
-    { id: "mental",     icon: "💚", label: "Mental Health",     tab: "mental"    },
+    { id: "vitals",     label: "Vital Signs",       tab: "vitals"    },
+    { id: "health",     label: "Health Tools & QR", tab: "health"    },
+    { id: "mental",     label: "Mental Health",     tab: "mental"    },
   ]},
   { section: "Baby",    items: [
-    { id: "kicks",      icon: "👶", label: "Kick Counter",      tab: "kicks"     },
-    { id: "baby",       icon: "🍼", label: "Baby Tracker",      tab: "baby"      },
+    { id: "kicks",      label: "Kick Counter",      tab: "kicks"     },
+    { id: "baby",       label: "Baby Tracker",      tab: "baby"      },
   ]},
   { section: "Nutrition", items: [
-    { id: "nutrition",  icon: "🥗", label: "Nigerian Nutrition",tab: "nutrition" },
+    { id: "nutrition",  label: "Nigerian Nutrition",tab: "nutrition" },
   ]},
   { section: "Support", items: [
-    { id: "partner",    icon: "👨‍👩‍👧", label: "Partner Mode",   tab: "partner"   },
+    { id: "partner",    label: "Partner Mode",      tab: "partner"   },
   ]},
 ];
 
@@ -94,7 +103,7 @@ export default function MenuBar({ active, setActive, onClose, onSOS }) {
         {/* SOS Button */}
         <button onClick={() => { onClose(); onSOS(); }}
           style={{ margin: "16px 16px 4px", padding: "11px", background: "#FDECEA", border: "1.5px solid #E74C3C", borderRadius: 12, fontSize: 13, fontWeight: 700, color: "#C0392B", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, animation: "pu 2s infinite" }}>
-          🚨 Emergency / SOS
+          <AlertTriangle size={18} /> Emergency / SOS
         </button>
 
         {/* Navigation sections */}
@@ -106,13 +115,14 @@ export default function MenuBar({ active, setActive, onClose, onSOS }) {
               </p>
               {section.items.map((item) => {
                 const isActive = active === item.tab;
+                const Icon = ICON_MAP[item.id];
                 return (
                   <button
                     key={item.id}
                     onClick={() => handleNav(item.tab)}
                     style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 11, border: "none", background: isActive ? "#FDF6EE" : "none", cursor: "pointer", textAlign: "left", transition: "background 0.15s", marginBottom: 2 }}
                   >
-                    <span style={{ fontSize: 19, width: 28, textAlign: "center", flexShrink: 0 }}>{item.icon}</span>
+                    {Icon && <Icon size={20} strokeWidth={2} style={{ flexShrink: 0, color: isActive ? "#C4603A" : "#8B6F63" }} />}
                     <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? "#C4603A" : "#1A0A00" }}>{item.label}</span>
                     {isActive && <div style={{ marginLeft: "auto", width: 6, height: 6, borderRadius: "50%", background: "#C4603A" }} />}
                   </button>
@@ -125,15 +135,15 @@ export default function MenuBar({ active, setActive, onClose, onSOS }) {
         {/* Footer actions */}
         <div style={{ padding: "12px 16px 32px", borderTop: "1px solid #EAD5C0" }}>
           <button style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 11, border: "none", background: "none", cursor: "pointer", marginBottom: 4, textAlign: "left" }}>
-            <span style={{ fontSize: 19, width: 28, textAlign: "center" }}>⚙️</span>
+            <AlertTriangle size={20} strokeWidth={2} style={{ color: "#8B6F63" }} />
             <span style={{ fontSize: 13, fontWeight: 500, color: "#1A0A00" }}>Settings</span>
           </button>
           <button style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 11, border: "none", background: "none", cursor: "pointer", marginBottom: 4, textAlign: "left" }}>
-            <span style={{ fontSize: 19, width: 28, textAlign: "center" }}>📁</span>
+            <FileText size={20} strokeWidth={2} style={{ color: "#8B6F63" }} />
             <span style={{ fontSize: 13, fontWeight: 500, color: "#1A0A00" }}>Health Records</span>
           </button>
           <button style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 11, border: "none", background: "none", cursor: "pointer", marginBottom: 4, textAlign: "left" }}>
-            <span style={{ fontSize: 19, width: 28, textAlign: "center" }}>🔔</span>
+            <Bell size={20} strokeWidth={2} style={{ color: "#8B6F63" }} />
             <span style={{ fontSize: 13, fontWeight: 500, color: "#1A0A00" }}>Notifications</span>
           </button>
 
@@ -141,7 +151,7 @@ export default function MenuBar({ active, setActive, onClose, onSOS }) {
             onClick={handleLogout}
             disabled={loggingOut}
             style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 11, border: "1.5px solid #EAD5C0", background: loggingOut ? "#f5f5f5" : "#fff", cursor: loggingOut ? "not-allowed" : "pointer", marginTop: 8 }}>
-            <span style={{ fontSize: 19, width: 28, textAlign: "center" }}>🚪</span>
+            <LogOut size={20} strokeWidth={2} style={{ color: "#C0392B" }} />
             <span style={{ fontSize: 13, fontWeight: 600, color: "#C0392B" }}>{loggingOut ? "Signing out..." : "Sign Out"}</span>
           </button>
 
