@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Flower2, Baby, Moon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function Login() {
@@ -13,11 +12,15 @@ export default function Login() {
   const [animOut, setAnimOut] = useState(false);
 
   const meta = {
-    pregnant:  { label: "Pregnant Mama",       Icon: Flower2, color: "var(--t)" },
-    conceive:  { label: "Trying to Conceive",  Icon: Flower2, color: "var(--sg)" },
-    mom:       { label: "Mama",                Icon: Baby, color: "var(--rd)" },
-    menopause: { label: "Cycle & Menopause",   Icon: Moon, color: "var(--lv)" },
-  }[journeyType] || { label: "Mama", Icon: Flower2, color: "var(--t)" };
+  pregnant:  { label: "Pregnant Mama",       image: "/icons/belle.png", color: "var(--t)" },
+  conceive:  { label: "Trying to Conceive",  image: "/icons/woman.png", color: "var(--sg)" },
+  mom:       { label: "Mama",                image: "/icons/mother.png", color: "var(--rd)" },
+  menopause: { label: "Cycle & Menopause",   image: "/icons/menopause.png", color: "var(--lv)" },
+  }[journeyType] || {
+    label: "Mama",
+    image: "/icons/mother.png",
+    color: "var(--t)"
+  };
 
   const handleLogin = () => {
     if (!email || !password) return;
@@ -30,7 +33,7 @@ export default function Login() {
 
   return (
     <div style={{
-      position: "fixed", inset: 0, background: "var(--cream)",
+      position: "fixed", inset: 0, background: "var(--white)",
       display: "flex", flexDirection: "column", alignItems: "center",
       zIndex: 900, maxWidth: 480, margin: "0 auto", overflowY: "auto",
       opacity: animOut ? 0 : 1,
@@ -38,7 +41,7 @@ export default function Login() {
       transition: "opacity 0.4s, transform 0.4s"
     }}>
       <div style={{
-        width: "100%", background: "#2A1200",
+        width: "100%", background: "#BF184E",
         padding: "clamp(40px,10vw,60px) var(--pad-x) clamp(48px,12vw,70px)",
         borderRadius: "0 0 var(--r3) var(--r3)",
         position: "relative", overflow: "hidden"
@@ -66,14 +69,22 @@ export default function Login() {
           display: "flex", alignItems: "center", gap: "var(--gap-md)",
           border: `2px solid ${meta.color}44`
         }}>
-          <meta.Icon size={28} strokeWidth={2} style={{ color: meta.color }} />
+          <img
+            src={meta.image}
+            alt={meta.label}
+            style={{
+              width: "32px",
+              height: "32px",
+              objectFit: "contain"
+            }}
+          />
           <span style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--dp)" }}>{meta.label}</span>
         </div>
       </div>
 
       <div style={{ width: "100%", padding: "0 var(--pad-x)" }}>
-        <h2 className="serif" style={{ fontSize: "var(--fs-2xl)", fontWeight: 600, color: "var(--dp)", marginBottom: "var(--sp-1)", textAlign: "center", fontStyle: "italic" }}>Welcome back</h2>
-        <p style={{ fontSize: "var(--fs-sm)", color: "var(--mt)", textAlign: "center", marginBottom: "var(--sp-5)", fontWeight: 500 }}>Sign in to continue your journey</p>
+        <h2 className="serif" style={{ fontSize: "var(--fs-2xl)", fontWeight: 600, color: "var(--dp)", marginBottom: "var(--sp-1)", textAlign: "center", fontFamily: "inter" }}>Welcome back</h2>
+        <p style={{ fontSize: "var(--fs-sm)", color: "var(--mt)", textAlign: "center", marginBottom: "var(--sp-5)", fontWeight: 500 }}>Sign in</p>
 
         <div style={{ marginBottom: "var(--sp-4)" }}>
           <label style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: "var(--md)", display: "block", marginBottom: "var(--sp-2)", letterSpacing: 0.3 }}>Email Address</label>
@@ -95,13 +106,13 @@ export default function Login() {
             <button onClick={() => setShowPass(v => !v)} style={{
               position: "absolute", right: "clamp(12px,3vw,16px)", top: "50%",
               transform: "translateY(-50%)", background: "none", border: "none",
-              cursor: "pointer", fontSize: "var(--fs-lg)", color: "var(--mt)",
+              cursor: "pointer", fontSize: "var(--fs-lg)", color: "var(--dp)",
               padding: 0, minWidth: "var(--touch)", minHeight: "var(--touch)",
               display: "flex", alignItems: "center", justifyContent: "center"
             }}>{showPass ? "🙈" : "👁️"}</button>
           </div>
           <div style={{ textAlign: "right", marginTop: "var(--sp-2)" }}>
-            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--t)", fontWeight: 700, minHeight: "var(--touch)" }}>Forgot password?</button>
+            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--dp)", fontWeight: 700, minHeight: "var(--touch)" }}>Forgot password?</button>
           </div>
         </div>
 

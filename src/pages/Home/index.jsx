@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import {
-  Bell, Smile, Laugh, Frown, Meh, AlertCircle,
+  Bell, Smile,  AlertCircle,
   CheckCircle2, Circle, TrendingUp, Zap, Hospital,
-  Phone, Star, AlertTriangle, ChevronUp, ChevronDown
+  Phone, Star, AlertTriangle, ChevronUp, 
 } from 'lucide-react';
 import CalendarStrip from '../../components/ui/CalendarStrip';
 import { WCard, SectionTitle, ProgBar, IconBox, Tag } from '../../components/ui';
@@ -17,11 +17,11 @@ export default function Home({ setTab }) {
   const [tasks, setTasks] = useState({ iron: false, water: false, vitals: false, kicks: false, meal: false, walk: false });
 
   const moods = [
-    { Icon: Laugh,      l: "Happy",    v: 5, color: "#F59E0B" },
-    { Icon: Smile,      l: "Calm",     v: 4, color: "#10B981" },
-    { Icon: Frown,      l: "Low",      v: 2, color: "#6366F1" },
-    { Icon: AlertCircle,l: "Anxious",  v: 1, color: "#F97316" },
-    { Icon: Meh,        l: "Overwhelm",v: 0, color: "#EF4444" },
+    { image: "/icons/happy.png",     l: "Happy",     v: 5 },
+    { image: "/icons/calm.png",      l: "Calm",      v: 4 },
+    { image: "/icons/low.png",       l: "Low",       v: 2 },
+    { image: "/icons/anxious.png",   l: "Anxious",   v: 1 },
+    { image: "/icons/overwhelm.png", l: "Overwhelm", v: 0 },
   ];
 
   const briefingItems = [
@@ -44,9 +44,8 @@ export default function Home({ setTab }) {
       <div style={{
         background: "linear-gradient(135deg,#FEF0DA,#FDE8D0)",
         borderRadius: "var(--r2)", padding: "var(--card-p)",
-        marginBottom: "var(--gap-md)",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
-        border: "1px solid #F2D4A8", gap: "var(--gap-md)"
+        marginBottom: "var(--gap-md)", boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
+        display: "flex", justifyContent: "space-between", alignItems: "center"
       }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--gd)", marginBottom: "var(--sp-1)", display: "flex", alignItems: "center", gap: 6 }}>
@@ -85,12 +84,24 @@ export default function Home({ setTab }) {
       {!mood ? (
         <WCard style={{ background: "linear-gradient(135deg,var(--cream),var(--warm))", border: "1px solid var(--border2)" }}>
           <p style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--dp)", marginBottom: "var(--sp-3)", display: "flex", alignItems: "center", gap: 6 }}>
-            <Smile size={18} color="var(--dp)" /> How are you feeling today?
+            How are you feeling today?
           </p>
           <div className="mood-row">
             {moods.map(m => (
-              <button key={m.v} className="mood-btn" onClick={() => setMood(m)}>
-                <m.Icon size={28} color={m.color} strokeWidth={1.8} />
+              <button
+                key={m.v}
+                className="mood-btn"
+                onClick={() => setMood(m)}
+              >
+                <img
+                  src={m.image}
+                  alt={m.l}
+                  style={{
+                    width: "28px",
+                    height: "28px",
+                    objectFit: "contain"
+                  }}
+                />
                 <small>{m.l}</small>
               </button>
             ))}
@@ -151,10 +162,25 @@ export default function Home({ setTab }) {
       <SectionTitle title="Quick Actions" />
       <div className="quick-grid">
         {cfg.quickActions.map(([ic, lb, tb, bg, tc], i) => (
-          <button key={i} className="quick-btn"
+          <button
+            key={i}
+            className="quick-btn"
             onClick={tb ? () => setTab(tb) : () => setShowSOS(true)}
-            style={{ background: bg, border: `1.5px solid ${tc}33` }}>
-            <span>{ic}</span>
+            style={{
+              background: bg,
+              border: `1.5px solid ${tc}33`
+            }}
+          >
+            <img
+              src={ic}
+              alt={lb}
+              style={{
+                width: "40px",
+                height: "40px",
+                objectFit: "contain"
+              }}
+            />
+
             <small style={{ color: tc }}>{lb}</small>
           </button>
         ))}

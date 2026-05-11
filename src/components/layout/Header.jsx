@@ -1,8 +1,3 @@
-// ============================================================
-// MamaBloom — App Header (with menu button)
-// src/components/layout/Header.jsx
-// ============================================================
-
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 
