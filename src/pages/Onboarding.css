@@ -1,0 +1,29 @@
+.container {
+    position: fixed;
+    inset: 0;
+    background: var(--cream);
+    display: flex;
+    flex-direction: column;
+    max-height: 600px; 
+    z-index: 900;
+    max-width: 600px; 
+    height: 500px; 
+    margin: auto auto;
+    overflow-y: auto;
+    justify-content: center;
+    align-items: center;
+    
+    /* Transitions */
+    transition: opacity 0.45s, transform 0.45s;
+}
+
+.container.anim-out {
+    opacity: 0;
+    transform: translateY(-20px);
+}
+
+.container:not(.anim-out) {
+    opacity: 1;
+    transform: translateY(0);
+}
+
