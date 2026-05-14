@@ -10,7 +10,7 @@ html { font-size: 16px; }
 
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  background: var(--cream);
+  /* background: var(--cream); */
   color: var(--dp);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -62,7 +62,7 @@ input[type=range]::-webkit-slider-thumb {
 }
 @media (min-width: 640px) {
   .app-page {
-    background: linear-gradient(140deg,#F0E6D8 0%,#DDF0E4 55%,#E6E0F5 100%);
+    background: var(--white);
   }
   .app-frame {
     width: clamp(400px,62vw,600px);
