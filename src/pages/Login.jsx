@@ -1,26 +1,81 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
+import './Login.css';
 
+/* ── Logo mark SVG ── */
+const LogoMark = () => (
+  <svg width="46" height="46" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="23" cy="23" r="22" fill="#fff" stroke="#f9c0d8" strokeWidth="1.5"/>
+    {/* Person silhouette */}
+    <circle cx="23" cy="16" r="5.5" fill="#e84393"/>
+    <path d="M13 33c0-5.5 4.5-10 10-10s10 4.5 10 10" stroke="#e84393" strokeWidth="2" strokeLinecap="round" fill="none"/>
+    {/* Heart */}
+    <path d="M20 30c0-1.5 1.2-2.5 2.5-2 .5.2.5.2 .5.2s0 0 .5-.2C24.8 27.5 26 28.5 26 30c0 2-3 4-3 4s-3-2-3-4z" fill="#f06292"/>
+  </svg>
+);
+
+/* ── Mother + baby illustration SVG ── */
+const HeroIllo = () => (
+  <img src="/hdrimage.png" alt="login header image" className='hdrimg'/>
+);
+
+/* ── Google G icon ── */
+const GoogleG = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66 2.84-.81-.62-.38-.13z"/>
+    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+  </svg>
+);
+
+/* ── Icon SVGs for input fields ── */
+const MailIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e84393" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="4" width="20" height="16" rx="3"/>
+    <polyline points="2,4 12,13 22,4"/>
+  </svg>
+);
+const LockIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e84393" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5" y="11" width="14" height="10" rx="2"/>
+    <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
+  </svg>
+);
+const EyeIcon = ({ open }) => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e84393" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    {open ? (
+      <>
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </>
+    ) : (
+      <>
+        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+        <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+        <line x1="1" y1="1" x2="23" y2="23"/>
+      </>
+    )}
+  </svg>
+);
+const PhoneIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7b2ff7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5" y="2" width="14" height="20" rx="3"/>
+    <line x1="12" y1="18" x2="12" y2="18"/>
+  </svg>
+);
+
+/* ── Component ── */
 export default function Login() {
   const { journeyType } = useApp();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [email,    setEmail]    = useState('');
+  const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [animOut, setAnimOut] = useState(false);
-
-  const meta = {
-  pregnant:  { label: "Pregnant Mama",       image: "/icons/belle.png", color: "var(--t)" },
-  conceive:  { label: "Trying to Conceive",  image: "/icons/woman.png", color: "var(--sg)" },
-  mom:       { label: "Mama",                image: "/icons/mother.png", color: "var(--rd)" },
-  menopause: { label: "Cycle & Menopause",   image: "/icons/menopause.png", color: "var(--lv)" },
-  }[journeyType] || {
-    label: "Mama",
-    image: "/icons/mother.png",
-    color: "var(--t)"
-  };
+  const [loading,  setLoading]  = useState(false);
+  const [animOut,  setAnimOut]  = useState(false);
+  const [focused,  setFocused]  = useState(null);
 
   const handleLogin = () => {
     if (!email || !password) return;
@@ -31,135 +86,117 @@ export default function Login() {
     }, 1000);
   };
 
+  const ready = email && password;
+
   return (
-    <div style={{
-      position: "fixed", inset: 0, background: "var(--white)",
-      display: "flex", flexDirection: "column", alignItems: "center",
-      zIndex: 900, maxWidth: 480, margin: "0 auto", overflowY: "auto",
-      opacity: animOut ? 0 : 1,
-      transform: animOut ? "translateY(20px)" : "translateY(0)",
-      transition: "opacity 0.4s, transform 0.4s"
-    }}>
-      <div style={{
-        width: "100%", background: "#BF184E",
-        padding: "clamp(40px,10vw,60px) var(--pad-x) clamp(48px,12vw,70px)",
-        borderRadius: "0 0 var(--r3) var(--r3)",
-        position: "relative", overflow: "hidden"
-      }}>
-        <button onClick={() => navigate('/onboarding')} style={{
-          background: "rgba(255,255,255,0.14)", border: "none", borderRadius: 20,
-          padding: "clamp(6px,1.5vw,9px) clamp(12px,3vw,16px)",
-          color: "#fff", fontSize: "var(--fs-sm)", fontWeight: 700,
-          cursor: "pointer", marginBottom: "var(--sp-5)", display: "block",
-          minHeight: "var(--touch)"
-        }}>← Back</button>
-        <div className="serif" style={{ fontSize: "var(--fs-3xl)", color: "#fff", fontStyle: "italic", marginBottom: "var(--sp-2)" }}>
-          Mama<b style={{ fontStyle: "normal", color: "#F2A07A" }}>Bloom</b>
-        </div>
-        <p style={{ color: "rgba(255,255,255,0.6)", fontSize: "var(--fs-xs)", letterSpacing: 2.5, textTransform: "uppercase" }}>
-          Maternal AI · Nigeria-First
-        </p>
-      </div>
-
-      <div style={{ marginTop: "clamp(-18px,-4.5vw,-22px)", marginBottom: "var(--sp-5)", zIndex: 2 }}>
-        <div style={{
-          background: "var(--card)", borderRadius: 30,
-          padding: "clamp(8px,2vw,12px) clamp(16px,4vw,22px)",
-          boxShadow: "var(--sh2)",
-          display: "flex", alignItems: "center", gap: "var(--gap-md)",
-          border: `2px solid ${meta.color}44`
-        }}>
-          <img
-            src={meta.image}
-            alt={meta.label}
-            style={{
-              width: "32px",
-              height: "32px",
-              objectFit: "contain"
-            }}
-          />
-          <span style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--dp)" }}>{meta.label}</span>
-        </div>
-      </div>
-
-      <div style={{ width: "100%", padding: "0 var(--pad-x)" }}>
-        <h2 className="serif" style={{ fontSize: "var(--fs-2xl)", fontWeight: 600, color: "var(--dp)", marginBottom: "var(--sp-1)", textAlign: "center", fontFamily: "inter" }}>Welcome back</h2>
-        <p style={{ fontSize: "var(--fs-sm)", color: "var(--mt)", textAlign: "center", marginBottom: "var(--sp-5)", fontWeight: 500 }}>Sign in</p>
-
-        <div style={{ marginBottom: "var(--sp-4)" }}>
-          <label style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: "var(--md)", display: "block", marginBottom: "var(--sp-2)", letterSpacing: 0.3 }}>Email Address</label>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)}
-            placeholder="mama@example.com" className="form-input"
-            onFocus={e => e.target.style.borderColor = "var(--t)"}
-            onBlur={e => e.target.style.borderColor = "var(--border)"} />
-        </div>
-
-        <div style={{ marginBottom: "var(--sp-5)" }}>
-          <label style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: "var(--md)", display: "block", marginBottom: "var(--sp-2)", letterSpacing: 0.3 }}>Password</label>
-          <div style={{ position: "relative" }}>
-            <input type={showPass ? "text" : "password"} value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••" className="form-input"
-              style={{ paddingRight: "clamp(42px,10vw,54px)" }}
-              onFocus={e => e.target.style.borderColor = "var(--t)"}
-              onBlur={e => e.target.style.borderColor = "var(--border)"} />
-            <button onClick={() => setShowPass(v => !v)} style={{
-              position: "absolute", right: "clamp(12px,3vw,16px)", top: "50%",
-              transform: "translateY(-50%)", background: "none", border: "none",
-              cursor: "pointer", fontSize: "var(--fs-lg)", color: "var(--dp)",
-              padding: 0, minWidth: "var(--touch)", minHeight: "var(--touch)",
-              display: "flex", alignItems: "center", justifyContent: "center"
-            }}>{showPass ? "🙈" : "👁️"}</button>
-          </div>
-          <div style={{ textAlign: "right", marginTop: "var(--sp-2)" }}>
-            <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--fs-sm)", color: "var(--dp)", fontWeight: 700, minHeight: "var(--touch)" }}>Forgot password?</button>
-          </div>
-        </div>
-
-        <button onClick={handleLogin} className="btn-primary" style={{
-          background: (!email || !password) ? "var(--border)" : "var(--dp)",
-          color: (!email || !password) ? "var(--mt)" : "#fff",
-          cursor: (!email || !password) ? "not-allowed" : "pointer",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          gap: "var(--gap-md)", marginBottom: "var(--sp-5)"
-        }}>
-          {loading ? (
-            <>
-              <div style={{ width: "clamp(14px,3.5vw,18px)", height: "clamp(14px,3.5vw,18px)", border: "2.5px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "sp 0.7s linear infinite" }} />
-              Signing in…
-            </>
-          ) : "Sign In →"}
+    <div
+      className="lg-root"
+      style={{ opacity: animOut ? 0 : 1, transform: animOut ? 'translateY(20px)' : 'none' }}
+    >
+      {/* ── Hero area ── */}
+      <div className="lg-hero">
+        {/* Back */}
+        <button className="lg-back" onClick={() => navigate('/onboarding')}>
+          ← Back
         </button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)", marginBottom: "var(--sp-5)" }}>
-          <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-          <span style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", fontWeight: 700, letterSpacing: 0.5 }}>OR</span>
-          <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+        {/* Illustration */}
+        <div className="lg-illo">
+          <HeroIllo />
         </div>
 
-        {[["G","#4285F4","Continue with Google"],["📱","var(--dp)","Continue with Phone"]].map(([ic,col,label],i) => (
-          <button key={i} onClick={handleLogin} style={{
-            width: "100%", padding: "clamp(12px,3vw,15px)",
-            borderRadius: "var(--r)", marginBottom: "var(--gap-md)",
-            border: "1.5px solid var(--border)", background: "var(--card)",
-            cursor: "pointer", fontSize: "var(--fs-sm)", fontWeight: 700,
-            color: "var(--dp)", display: "flex", alignItems: "center",
-            justifyContent: "center", gap: "var(--gap-md)",
-            boxShadow: "var(--sh)", minHeight: "var(--touch)"
-          }}>
-            <span style={{ fontSize: "var(--fs-lg)", fontWeight: 900, color: col, lineHeight: 1 }}>{ic}</span>
-            {label}
-          </button>
-        ))}
+        {/* Logo */}
+        <div className="lg-brand">
+          <LogoMark />
+          <div>
+            <p className="lg-brand-name">MamaBloom</p>
+            <p className="lg-brand-tag">Your journey, our care</p>
+          </div>
+        </div>
+      </div>
 
-        <p style={{ textAlign: "center", fontSize: "var(--fs-sm)", color: "var(--mt)", marginTop: "var(--sp-5)" }}>
-          New here?{" "}
-          <button onClick={handleLogin} style={{
-            background: "none", border: "none", cursor: "pointer",
-            color: "var(--t)", fontWeight: 800, fontSize: "var(--fs-sm)", minHeight: "var(--touch)"
-          }}>Create your free account</button>
+      {/* ── Form card ── */}
+      <div className="lg-card">
+        <h1 className="lg-title">Welcome back 💕</h1>
+        <p className="lg-sub">Sign in to continue your journey</p>
+
+        {/* Email */}
+        <div className="lg-field">
+          <label className="lg-label">Email Address</label>
+          <div className={`lg-input-wrap${focused === 'email' ? ' lg-input-wrap--focus' : ''}`}>
+            <div className="lg-icon-box"><MailIcon /></div>
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="mama@example.com"
+              className="lg-input"
+              onFocus={() => setFocused('email')}
+              onBlur={() => setFocused(null)}
+            />
+          </div>
+        </div>
+
+        {/* Password */}
+        <div className="lg-field">
+          <label className="lg-label">Password</label>
+          <div className={`lg-input-wrap${focused === 'pass' ? ' lg-input-wrap--focus' : ''}`}>
+            <div className="lg-icon-box"><LockIcon /></div>
+            <input
+              type={showPass ? 'text' : 'password'}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="lg-input"
+              onFocus={() => setFocused('pass')}
+              onBlur={() => setFocused(null)}
+            />
+            <button className="lg-eye" onClick={() => setShowPass(v => !v)} tabIndex={-1}>
+              <EyeIcon open={showPass} />
+            </button>
+          </div>
+          <div style={{ textAlign: 'right', marginTop: 8 }}>
+            <button className="lg-forgot">Forgot password?</button>
+          </div>
+        </div>
+
+        {/* Sign In */}
+        <button
+          className={`lg-signin${ready ? '' : ' lg-signin--dim'}`}
+          onClick={handleLogin}
+          disabled={!ready}
+        >
+          {loading ? (
+            <span className="lg-spinner" />
+          ) : (
+            <>Sign In &nbsp;→</>
+          )}
+        </button>
+
+        {/* OR divider */}
+        <div className="lg-or">
+          <div className="lg-or-line" />
+          <span className="lg-or-text">OR</span>
+          <div className="lg-or-line" />
+        </div>
+
+        {/* Social buttons */}
+        <button className="lg-social" onClick={handleLogin}>
+          <GoogleG />
+          <span>Continue with Google</span>
+        </button>
+        <button className="lg-social" onClick={handleLogin}>
+          <PhoneIcon />
+          <span>Continue with Phone</span>
+        </button>
+
+        {/* Footer */}
+        <p className="lg-footer">
+          New here?{' '}
+          <button className="lg-signup-link" onClick={() => navigate('/signup')}>
+            Create your free account
+          </button>
         </p>
-        <div style={{ height: "var(--sp-6)" }} />
       </div>
     </div>
   );

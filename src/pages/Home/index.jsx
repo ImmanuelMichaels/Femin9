@@ -61,7 +61,7 @@ export default function Home({ setTab }) {
       <div className="h-pills">
         <span className="h-pill h-pill--pu">🤰 Week 26</span>
         <span className="h-pill h-pill--or">🔥 Iron Low</span>
-        <span className="h-pill h-pill--ol">📍 Lagos</span>
+        <span className="h-pill h-pill--ol">📍 London</span>
       </div>
 
       {/* ── Calendar ── */}

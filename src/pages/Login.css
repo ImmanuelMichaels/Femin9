@@ -1,0 +1,279 @@
+/* ── Login.css ── */
+
+.lg-root {
+  position: fixed;
+  inset: 0;
+  max-width: 480px;
+  margin: 0 auto;
+  background: #fef0f8;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  font-family: 'Nunito', 'Poppins', 'Inter', sans-serif;
+  transition: opacity 0.4s, transform 0.4s;
+}
+
+/* ── Hero area ── */
+.lg-hero {
+  position: relative;
+  min-height: 270px;
+  padding: 22px 20px 0;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* Back button */
+.lg-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  border: none;
+  border-radius: 22px;
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #e84393;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(232, 67, 147, 0.12);
+  position: relative;
+  z-index: 2;
+  transition: transform 0.15s;
+}
+.lg-back:active { transform: scale(0.94); }
+
+/* Illustration */
+.lg-illo {
+  position: absolute;
+  right: -10px;
+  top: 0;
+  width: 300px;
+  height: 260px;
+  pointer-events: none;
+}
+
+/* Brand / logo */
+.lg-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  position: relative;
+  z-index: 2;
+}
+.lg-brand-name {
+  font-size: 22px;
+  font-weight: 900;
+  color: #e84393;
+  margin: 0 0 2px;
+  line-height: 1;
+}
+.lg-brand-tag {
+  font-size: 12px;
+  color: #c070a0;
+  margin: 0;
+  font-weight: 500;
+}
+.hdrimg {
+  width: 300px;
+  height: 260px;
+  pointer-events: none;
+}
+
+/* ── Form card ── */
+.lg-card {
+  background: #fff;
+  border-radius: 30px 30px 0 0;
+  padding: 30px 24px 16px;
+  flex: 1;
+  box-shadow: 0 -4px 30px rgba(200, 80, 150, 0.1);
+  margin-top: 20px;
+}
+
+/* Heading */
+.lg-title {
+  font-size: 26px;
+  font-weight: 900;
+  color: #1a0533;
+  text-align: center;
+  margin: 0 0 8px;
+  line-height: 1.2;
+}
+.lg-sub {
+  font-size: 14px;
+  color: #aaa;
+  text-align: center;
+  margin: 0 0 28px;
+  font-weight: 500;
+}
+
+/* Fields */
+.lg-field {
+  margin-bottom: 18px;
+}
+.lg-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+}
+.lg-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 1.8px solid #f9c0d8;
+  border-radius: 14px;
+  background: #fff;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.lg-input-wrap--focus {
+  border-color: #e84393;
+  box-shadow: 0 0 0 3px rgba(232, 67, 147, 0.1);
+}
+.lg-icon-box {
+  width: 52px;
+  height: 52px;
+  background: #fde8ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lg-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 14px 12px;
+  font-size: 15px;
+  color: #333;
+  background: transparent;
+  font-family: inherit;
+  min-width: 0;
+}
+.lg-input::placeholder { color: #ccc; }
+.lg-eye {
+  width: 48px;
+  height: 52px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+/* Forgot password */
+.lg-forgot {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: #e84393;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Sign In button */
+.lg-signin {
+  width: 100%;
+  padding: 17px;
+  border-radius: 30px;
+  border: none;
+  background: linear-gradient(135deg, #f06292 0%, #e91e8c 100%);
+  color: #fff;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 6px 22px rgba(233, 30, 140, 0.35);
+  transition: opacity 0.2s, transform 0.15s;
+  font-family: inherit;
+}
+.lg-signin:active  { transform: scale(0.97); }
+.lg-signin--dim {
+  background: #eee;
+  color: #bbb;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Spinner */
+.lg-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2.5px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: lg-spin 0.7s linear infinite;
+  display: inline-block;
+}
+@keyframes lg-spin { to { transform: rotate(360deg); } }
+
+/* OR divider */
+.lg-or {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.lg-or-line {
+  flex: 1;
+  height: 1px;
+  background: #f0e0ea;
+}
+.lg-or-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ccc;
+  letter-spacing: 1px;
+}
+
+/* Social buttons */
+.lg-social {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1.5px solid #f0e0ea;
+  background: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  color: #333;
+  cursor: pointer;
+  margin-bottom: 12px;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: transform 0.1s;
+}
+.lg-social:active { transform: scale(0.97); }
+
+/* Footer */
+.lg-footer {
+  text-align: center;
+  font-size: 14px;
+  color: #bbb;
+  margin: 16px 0 0;
+  padding-bottom: 24px;
+}
+.lg-signup-link {
+  background: none;
+  border: none;
+  font-size: 14px;
+  font-weight: 800;
+  color: #e84393;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-family: inherit;
+}
