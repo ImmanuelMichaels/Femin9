@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { JOURNEY_CONFIG } from '../../data/journey';
-import { useNotifications } from '../../pages/NotificationsContext'; // ← once you create it
+import { useNotifications } from '../../pages/NotificationsContext';
 
 export default function AppHeader() {
   const { journeyType } = useApp();
@@ -10,9 +10,15 @@ export default function AppHeader() {
   const [showNotifs, setShowNotifs] = useState(false);
 
   const today = new Date();
-  // const dateStr = today.toLocaleDateString("en-NG", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const cfg = JOURNEY_CONFIG[journeyType] || JOURNEY_CONFIG.pregnant;
-  const greetingName = journeyType === "menopause" ? "Amara" : "Hilda White";
+  const greetingName = journeyType === "menopause" ? "Amara" : "Adaeze";
+
+  const getGreeting = () => {
+    const hour = today.getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 17) return "Good afternoon";
+    return "Good evening";
+  };
 
   const handleBellClick = () => {
     setShowNotifs(p => !p);
@@ -20,134 +26,172 @@ export default function AppHeader() {
   };
 
   return (
-    <div className="app-header">
-      <div className="header-top">
-        <div style={{ flex: 1, display: "flex", flexDirection: "row", minWidth: 0, paddingRight: "var(--sp-3)", alignItems: "center" }}>
-          <div style={{
-            width: "50px", height: "50px", borderRadius: "20%",
-            background: "#E8F5EC", border: "1px solid",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            marginRight: "var(--sp-3)", flexShrink: 0, overflow: "hidden"
-          }}>
-            <img src="/images/mama.png" alt="Mama" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-          </div>
-          <div className="serif header-greeting" style={{ color: "var(--dp)", display: "flex", flexDirection: "column", minWidth: 0 }}>
-            <span style={{ color: "#000", fontSize: "var(--fs-lg)", fontWeight: 400, fontFamily: "inter" }}>{greetingName}</span>
-            <span style={{ fontSize: "var(--fs-sm)", color: "var(--mt)", marginTop: 2, fontFamily: "inter" }}>user</span>
-          </div>
-        </div>
+    <div style={{
+      background: "#fdf6ff",
+      padding: "16px 20px 0",
+      fontFamily: "'Inter', sans-serif",
+    }}>
 
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--gap-sm)", flexShrink: 0 }}>
+      {/* ── Row 1: Greeting + EN/SOS ── */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 14,
+      }}>
+        {/* Greeting */}
+        <h1 style={{
+          margin: 0,
+          fontSize: "clamp(20px, 5vw, 24px)",
+          fontWeight: 700,
+          color: "#1a1a1a",
+          letterSpacing: "-0.3px",
+          lineHeight: 1.2,
+          flex: 1,
+          paddingRight: 12,
+        }}>
+          {getGreeting()}, {greetingName}&nbsp;
+          <span role="img" aria-label="wave" style={{ fontSize: "0.95em" }}>👋</span>
+        </h1>
 
-          {/* Bell + Dropdown — needs position:relative as the anchor */}
+        {/* Right controls */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+
+          {/* Language toggle — globe + dropdown */}
           <div style={{ position: "relative" }}>
             <button
-              onClick={handleBellClick}
+              onClick={() => setShowNotifs(false)}
               style={{
-                background: showNotifs ? "var(--t)" : "#ffffff",
-                // border: `1.5px solid ${showNotifs ? "var(--t)" : unreadCount > 0 ? "#e53935" : "#b6dfc4"}`,
-                borderRadius: 20,
-                padding: "clamp(5px,1.2vw,7px) clamp(10px,2.5vw,14px)",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                background: "transparent",
+                border: "none",
                 cursor: "pointer",
-                minHeight: "var(--touch)",
-                display: "flex", alignItems: "center", gap: 5,
-                transition: "all 0.2s ease"
+                padding: "4px 2px",
               }}
             >
-              <img
-                src="/icons/bell.png"
-                alt="Notifications"
-                style={{
-                  width: 20, height: 20, objectFit: "contain",
-                  // CSS filter to tint red when unread, white when panel open
-                  filter: showNotifs
-                    ? "brightness(0) invert(1)"
-                    : unreadCount > 0
-                      ? "invert(18%) sepia(99%) saturate(7481%) hue-rotate(1deg) brightness(97%) contrast(115%)"
-                      : "none"
-                }}
-              />
-              {unreadCount > 0 && (
-                <span style={{
-                  background: "#e53935", color: "#fff",
-                  borderRadius: "50%", width: 16, height: 16,
-                  fontSize: 10, fontWeight: 800,
-                  display: "flex", alignItems: "center", justifyContent: "center"
-                }}>
-                  {unreadCount}
-                </span>
-              )}
+              {/* Globe SVG */}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6b21a8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+              </svg>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a" }}>{lang}</span>
+              {/* Chevron */}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 12 15 18 9" />
+              </svg>
             </button>
-            {/* time showing */}
-          {/* <p className="header-date">{dateStr}</p> */}
 
-
-            {showNotifs && (
-              <div style={{
-                position: "absolute", top: "calc(100% + 8px)", right: 0,
-                width: 270, background: "#fff",
-                borderRadius: 14, boxShadow: "0 8px 28px rgba(0,0,0,0.13)",
-                border: "1px solid #e8f5ec", zIndex: 100, overflow: "hidden"
-              }}>
-                <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid #f0faf3", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: 700, fontSize: 13, color: "#1a1a1a" }}>Today's Activity</span>
-                  <span style={{ fontSize: 11, color: "var(--mt)" }}>{today.toLocaleDateString("en-NG", { day: "numeric", month: "short" })}</span>
-                </div>
-
-                <div style={{ maxHeight: 260, overflowY: "auto" }}>
-                  {["done", "upcoming"].map(section => (
-                    <div key={section}>
-                      <div style={{ padding: "6px 14px 4px", fontSize: 10, fontWeight: 700, color: "var(--mt)", textTransform: "uppercase", letterSpacing: 0.8, background: "#fafafa" }}>
-                        {section === "done" ? "✔ Completed" : "⏳ Coming Up"}
-                      </div>
-                      {notifications.filter(n => n.type === section).map(n => (
-                        <div key={n.id} style={{
-                          display: "flex", alignItems: "center", gap: 10,
-                          padding: "9px 14px", borderBottom: "1px solid #f5f5f5",
-                          background: section === "done" ? "#fafff9" : "#fff"
-                        }}>
-                          <span style={{ fontSize: 18 }}>{n.icon}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 12, fontWeight: 600, color: section === "done" ? "#6ab04c" : "#1a1a1a", lineHeight: 1.3 }}>{n.label}</div>
-                            <div style={{ fontSize: 11, color: "var(--mt)", marginTop: 2 }}>{n.time}</div>
-                          </div>
-                          {section === "done" && <span style={{ fontSize: 11, color: "#6ab04c", fontWeight: 700 }}>Done</span>}
-                          {section === "upcoming" && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ffb300", flexShrink: 0, display: "inline-block" }} />}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ padding: "8px 14px", textAlign: "center", borderTop: "1px solid #f0faf3" }}>
-                  <button onClick={() => setShowNotifs(false)} style={{ background: "none", border: "none", color: "var(--t)", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                    View full schedule →
-                  </button>
-                </div>
-              </div>
-            )}
+            {/* Language dropdown (hidden by default, can be wired up) */}
+            <div style={{ display: "none" }}>
+              {["EN", "YO", "IG", "HA", "PID"].map(l => (
+                <button key={l} onClick={() => setLang(l)}>{l}</button>
+              ))}
+            </div>
           </div>
+
+          {/* SOS Button */}
+          <button
+            style={{
+              background: "#ffe4ef",
+              border: "none",
+              borderRadius: 20,
+              padding: "7px 16px",
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#e91e8c",
+              cursor: "pointer",
+              letterSpacing: "0.5px",
+              lineHeight: 1,
+            }}
+          >
+            SOS
+          </button>
         </div>
       </div>
 
-      <div className="pill-strip">
+      {/* ── Row 2: Status pills ── */}
+      <div style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 8,
+        paddingBottom: 16,
+      }}>
         {cfg.pills.map((p, i) => (
-          <div key={i} className="status-pill" style={{ background: p.bg }}>
-            <div className="status-dot" style={{ background: p.dot }} />
+          <div
+            key={i}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              background: p.bg || "#f3e8ff",
+              borderRadius: 20,
+              padding: "6px 13px",
+              fontSize: 13,
+              fontWeight: 500,
+              color: "#4a1d6e",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {p.icon && <span style={{ fontSize: 14 }}>{p.icon}</span>}
+            {p.dot && (
+              <span style={{
+                width: 7, height: 7, borderRadius: "50%",
+                background: p.dot, flexShrink: 0, display: "inline-block"
+              }} />
+            )}
             {p.label}
           </div>
         ))}
       </div>
 
-      <div className="lang-switch">
-        {["EN", "YO", "IG", "HA", "PID"].map(l => (
-          <button key={l} onClick={() => setLang(l)} className="lang-btn"
-            style={{
-              background: lang === l ? "var(--t)" : "transparent",
-              color: lang === l ? "#fff" : "var(--mt)"
-            }}>{l}</button>
-        ))}
-      </div>
+      {/* ── Notification dropdown (bell-triggered, kept from original) ── */}
+      {showNotifs && (
+        <div style={{
+          position: "absolute", top: 70, right: 20,
+          width: 270, background: "#fff",
+          borderRadius: 14, boxShadow: "0 8px 28px rgba(0,0,0,0.13)",
+          border: "1px solid #e8f5ec", zIndex: 100, overflow: "hidden"
+        }}>
+          <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid #f0faf3", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span style={{ fontWeight: 700, fontSize: 13, color: "#1a1a1a" }}>Today's Activity</span>
+            <span style={{ fontSize: 11, color: "#888" }}>{today.toLocaleDateString("en-NG", { day: "numeric", month: "short" })}</span>
+          </div>
+
+          <div style={{ maxHeight: 260, overflowY: "auto" }}>
+            {["done", "upcoming"].map(section => (
+              <div key={section}>
+                <div style={{ padding: "6px 14px 4px", fontSize: 10, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 0.8, background: "#fafafa" }}>
+                  {section === "done" ? "✔ Completed" : "⏳ Coming Up"}
+                </div>
+                {notifications.filter(n => n.type === section).map(n => (
+                  <div key={n.id} style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "9px 14px", borderBottom: "1px solid #f5f5f5",
+                    background: section === "done" ? "#fafff9" : "#fff"
+                  }}>
+                    <span style={{ fontSize: 18 }}>{n.icon}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: section === "done" ? "#6ab04c" : "#1a1a1a", lineHeight: 1.3 }}>{n.label}</div>
+                      <div style={{ fontSize: 11, color: "#888", marginTop: 2 }}>{n.time}</div>
+                    </div>
+                    {section === "done" && <span style={{ fontSize: 11, color: "#6ab04c", fontWeight: 700 }}>Done</span>}
+                    {section === "upcoming" && <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ffb300", flexShrink: 0, display: "inline-block" }} />}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ padding: "8px 14px", textAlign: "center", borderTop: "1px solid #f0faf3" }}>
+            <button onClick={() => setShowNotifs(false)} style={{ background: "none", border: "none", color: "#6b21a8", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+              View full schedule →
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,0 +1,381 @@
+/* ── Home.css ── */
+
+.h-root {
+  background: #faf5ff;
+  min-height: 100%;
+  padding: 22px 16px 80px;
+  font-family: 'Nunito', 'Poppins', 'Inter', sans-serif;
+  box-sizing: border-box;
+}
+
+/* ── Header ── */
+.h-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.h-greeting {
+  font-size: 19px;
+  font-weight: 800;
+  color: #1a0533;
+  margin: 0;
+}
+.h-header-r {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.h-lang {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+}
+.h-sos {
+  background: #fde8e8;
+  color: #c62828;
+  border: none;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  transition: transform 0.15s;
+}
+.h-sos:active { transform: scale(0.93); }
+
+/* ── Status pills ── */
+.h-pills {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.h-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.h-pill--pu { background: #f3e5f5; color: #7b1fa2; }
+.h-pill--or { background: #fff3e0; color: #e57c1a; }
+.h-pill--ol { background: transparent; color: #7b1fa2; border: 1.5px solid #c4a0e8; }
+
+/* ── Base card ── */
+.h-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 14px rgba(120, 60, 180, 0.06);
+}
+
+/* ── Section label ── */
+.h-slabel {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.9px;
+  color: #6a1fa2;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+.h-slabel--gap { margin-bottom: 8px; }
+
+/* ── Calendar card ── */
+.h-cal-card { padding: 14px; }
+
+/* ── Hero card ── */
+.h-hero-card {
+  background: linear-gradient(135deg, #f0e8fc 0%, #e6d8f8 100%);
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  overflow: hidden;
+  padding: 20px 0 0 20px;
+}
+.h-hero-l {
+  flex: 1;
+  padding-bottom: 20px;
+  min-width: 0;
+}
+.h-eyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #7b1fa2;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+}
+.h-hero-title {
+  font-size: 17px;
+  font-weight: 800;
+  font-style: italic;
+  color: #2d1b3d;
+  line-height: 1.3;
+  margin: 0 0 10px;
+}
+.h-hero-body {
+  font-size: 12px;
+  color: #6a5a7a;
+  line-height: 1.65;
+  margin: 0 0 14px;
+}
+.h-action-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.h-ap {
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #7b1fa2;
+  border: 1px solid rgba(155, 100, 220, 0.18);
+}
+.h-hero-illo {
+  width: 115px;
+  height: 158px;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+/* ── Mood ── */
+.h-mood-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.h-mood-btn {
+  flex: 1;
+  aspect-ratio: 1;
+  border-radius: 16px;
+  border: 2px solid #ede0f8;
+  background: #faf5ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.1s;
+  padding: 0;
+}
+.h-mood-btn--on {
+  border-color: #7b1fa2;
+  background: #fff;
+}
+.h-mood-btn:active { transform: scale(0.88); }
+.h-mood-em { font-size: 24px; line-height: 1; }
+.h-mood-fb {
+  font-size: 12px;
+  color: #999;
+  text-align: center;
+  margin: 0;
+}
+
+/* ── Two-column ── */
+.h-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.h-prog-card, .h-qa-card { margin-bottom: 0; }
+
+/* Progress */
+.h-prog-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.h-pct {
+  font-size: 14px;
+  font-weight: 900;
+  color: #7b1fa2;
+}
+.h-bar-bg {
+  height: 7px;
+  border-radius: 8px;
+  background: #ede0f8;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+.h-bar-fill {
+  height: 100%;
+  border-radius: 8px;
+  background: #7b1fa2;
+  transition: width 0.5s ease;
+}
+.h-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+.h-task-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+.h-chk {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 2px solid #ddd;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  font-size: 10px;
+  color: #fff;
+  font-weight: 900;
+  line-height: 1;
+  transition: all 0.2s;
+  padding: 0;
+  margin-top: 1px;
+}
+.h-chk--done {
+  background: #2e9e67;
+  border-color: #2e9e67;
+}
+.h-task-lbl {
+  font-size: 11px;
+  color: #333;
+  line-height: 1.35;
+}
+.h-task-lbl--done {
+  text-decoration: line-through;
+  color: #bbb;
+}
+.h-view-all {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7b1fa2;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: block;
+}
+.h-view-all--ctr {
+  width: 100%;
+  text-align: center;
+  font-size: 13px;
+  padding: 8px 0 2px;
+}
+
+/* Quick Actions */
+.h-qa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.h-qa-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: #faf5ff;
+  border: 1.5px solid #ede0f8;
+  border-radius: 14px;
+  padding: 10px 4px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.h-qa-btn:active { transform: scale(0.9); }
+.h-qa-em { font-size: 22px; line-height: 1; }
+.h-qa-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: #2d1b3d;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ── Alert ── */
+.h-alert {
+  background: #fff8f0;
+  border: 1.5px solid #f5c47a;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+}
+.h-alert-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: #fff0da;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.h-alert-body { flex: 1; min-width: 0; }
+.h-alert-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #e57c1a;
+  margin: 0 0 4px;
+}
+.h-alert-text {
+  font-size: 11px;
+  color: #8a5a1a;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Hospitals ── */
+.h-hosp {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.h-hosp-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fde8ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.h-hosp-body { flex: 1; min-width: 0; }
+.h-hosp-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #1a0533;
+  margin: 0 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.h-hosp-addr {
+  font-size: 10px;
+  color: #aaa;
+  margin: 0;
+}
+.h-open {
+  background: transparent;
+  border: 1.5px solid #2e9e67;
+  color: #2e9e67;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  white-space: nowrap;
+}

@@ -1,237 +1,219 @@
 import { useState } from 'react';
-import {
-  Bell, Smile,  AlertCircle,
-  CheckCircle2, Circle, TrendingUp, Zap, Hospital,
-  Phone, Star, AlertTriangle, ChevronUp, 
-} from 'lucide-react';
+import { Globe, AlertTriangle, ChevronRight, Hospital } from 'lucide-react';
 import CalendarStrip from '../../components/ui/CalendarStrip';
-import { WCard, SectionTitle, ProgBar, IconBox, Tag } from '../../components/ui';
 import { JOURNEY_CONFIG, ALL_TASKS } from '../../data/journey';
 import { useApp } from '../../context/AppContext';
+import './Home.css';
 
+/* ── Inline SVG pregnant woman illustration ── */
+const HeroIllo = () => (
+  <svg viewBox="0 0 110 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
+    {/* Leaves */}
+    <ellipse cx="80" cy="138" rx="32" ry="20" fill="#c4b0e8" opacity=".22"/>
+    <path d="M65 148 Q85 128 95 110" stroke="#c4b0e8" strokeWidth="2" strokeLinecap="round" opacity=".45"/>
+    <path d="M72 152 Q95 138 105 120" stroke="#c4b0e8" strokeWidth="1.5" strokeLinecap="round" opacity=".35"/>
+    <path d="M60 150 Q75 140 85 125" stroke="#c4b0e8" strokeWidth="1.5" strokeLinecap="round" opacity=".3"/>
+    {/* Hearts */}
+    <text x="88" y="52" fontSize="10" fill="#d97ed6" opacity=".75">♥</text>
+    <text x="80" y="70" fontSize="7"  fill="#d97ed6" opacity=".5">♥</text>
+    {/* Head */}
+    <ellipse cx="50" cy="27" rx="14" ry="15" fill="#c4956a"/>
+    {/* Hair */}
+    <path d="M35 24 Q37 10 50 10 Q63 10 65 24 Q63 14 50 14 Q37 14 35 24Z" fill="#2d1b3d"/>
+    <path d="M64 24 Q68 40 65 58 Q63 48 62 36Z" fill="#2d1b3d"/>
+    {/* Neck */}
+    <rect x="44" y="40" width="11" height="9" rx="4" fill="#c4956a"/>
+    {/* Dress body */}
+    <path d="M30 50 Q24 62 22 82 Q20 102 24 118 Q33 124 50 124 Q67 124 76 118 Q80 102 78 82 Q76 62 70 50 Q60 46 50 46 Q40 46 30 50Z" fill="#9a5bea"/>
+    {/* Baby bump */}
+    <ellipse cx="52" cy="93" rx="19" ry="21" fill="#8a4dd8"/>
+    {/* Left arm */}
+    <path d="M24 68 Q16 74 14 88 Q20 93 26 87 Q27 78 30 70Z" fill="#c4956a"/>
+    {/* Right arm */}
+    <path d="M76 68 Q84 76 81 90 Q74 94 70 87 Q72 78 72 68Z" fill="#c4956a"/>
+    {/* Legs */}
+    <path d="M34 118 Q31 134 32 150" stroke="#9a5bea" strokeWidth="13" strokeLinecap="round"/>
+    <path d="M66 118 Q69 134 68 150" stroke="#9a5bea" strokeWidth="13" strokeLinecap="round"/>
+  </svg>
+);
+
+/* ── Static data ── */
+const MOODS = [
+  { emoji: '😌', label: 'Calm',      v: 4 },
+  { emoji: '😄', label: 'Happy',     v: 5 },
+  { emoji: '😊', label: 'Content',   v: 3 },
+  { emoji: '😕', label: 'Low',       v: 2 },
+  { emoji: '😰', label: 'Anxious',   v: 1 },
+];
+
+const QUICK_ACTIONS = [
+  { emoji: '👣', label: 'Log Kick',   id: 'kicks'     },
+  { emoji: '💊', label: 'Add Vitals', id: 'vitals'    },
+  { emoji: '🍊', label: 'Meal Log',   id: 'nutrition' },
+  { emoji: '🤖', label: 'Ask AI',     id: 'chat'      },
+];
+
+const HOSPITALS = [
+  { name: 'Lagos Island General Hospital',              addr: '0.8 km · Open 24hrs · Obstetrics dept.' },
+  { name: 'LASUTH – Lagos State Univ. Teaching Hospital', addr: '2.1 km · Specialist care available'   },
+];
+
+/* ── Component ── */
 export default function Home({ setTab }) {
   const { journeyType, setShowSOS } = useApp();
   const [mood, setMood] = useState(null);
-  const [briefingOpen, setBriefingOpen] = useState(false);
   const cfg = JOURNEY_CONFIG[journeyType] || JOURNEY_CONFIG.pregnant;
-  const [tasks, setTasks] = useState({ iron: false, water: false, vitals: false, kicks: false, meal: false, walk: false });
-
-  const moods = [
-    { image: "/icons/happy.png",     l: "Happy",     v: 5 },
-    { image: "/icons/calm.png",      l: "Calm",      v: 4 },
-    { image: "/icons/low.png",       l: "Low",       v: 2 },
-    { image: "/icons/anxious.png",   l: "Anxious",   v: 1 },
-    { image: "/icons/overwhelm.png", l: "Overwhelm", v: 0 },
-  ];
-
-  const briefingItems = [
-    { icon: <TrendingUp size={14} />,    text: "Your baby is 600g and growing well. Baby's hearing is developing rapidly — talk and sing today.",           color: "var(--gd)" },
-    { icon: <AlertCircle size={14} />,   text: "You missed iron yesterday. Take it this morning with orange juice for maximum absorption.",                    color: "var(--rd)" },
-    { icon: <Zap size={14} />,           text: "Baby's predicted active window: 10 AM–12 PM. Perfect time for kick counting.",                                color: "var(--lv)" },
-    { icon: <CheckCircle2 size={14} />,  text: "Today's focus nutrient: Calcium. Eat Moi Moi + tiger nuts. Intake is 40% below target.",                      color: "var(--bl)" },
-    { icon: <AlertTriangle size={14} />, text: "Mild risk flag: BP trend slightly elevated over 3 days. Monitor and log tonight.",                             color: "var(--rd)" },
-    { icon: <Smile size={14} />,         text: "Mood tip: You logged 'anxious' twice this week. Gentle breathing exercise recommended.",                       color: "var(--sg)" },
-  ];
+  const [tasks, setTasks] = useState({
+    iron: false, water: false, vitals: false,
+    kicks: false, meal: false, walk: false,
+  });
 
   const todayTasks = ALL_TASKS.filter(t => cfg.taskIds.includes(t.id));
   const done = todayTasks.filter(t => tasks[t.id]).length;
+  const pct  = todayTasks.length > 0 ? Math.round((done / todayTasks.length) * 100) : 0;
 
   return (
-    <div className="page-pad">
-      <CalendarStrip />
+    <div className="h-root">
 
-      {/* AI Morning Briefing */}
-      <div style={{
-        background: "linear-gradient(135deg,#FEF0DA,#FDE8D0)",
-        borderRadius: "var(--r2)", padding: "var(--card-p)",
-        marginBottom: "var(--gap-md)", boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
-        display: "flex", justifyContent: "space-between", alignItems: "center"
-      }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--gd)", marginBottom: "var(--sp-1)", display: "flex", alignItems: "center", gap: 6 }}>
-            <Bell size={16} color="var(--gd)" /> AI Morning Briefing
-          </p>
-          <p style={{ fontSize: "var(--fs-sm)", color: "var(--md)", lineHeight: 1.5, marginBottom: "var(--sp-3)" }}>Your personalised Week 24 summary is ready — baby updates, nutrition flags, mood insights.</p>
-          <button onClick={() => setBriefingOpen(!briefingOpen)} style={{
-            background: "var(--dp)", color: "#fff", border: "none", borderRadius: 20,
-            padding: "clamp(6px,1.5vw,9px) clamp(14px,3.5vw,20px)",
-            fontSize: "var(--fs-sm)", fontWeight: 800, cursor: "pointer", minHeight: "var(--touch)",
-            display: "flex", alignItems: "center", gap: 6
-          }}>
-            {briefingOpen ? <><ChevronUp size={14} /> Close</> : "Read Now"}
-          </button>
+      {/* ── Header ── */}
+      <div className="h-header">
+        <h2 className="h-greeting">Good morning, Adaeze 👋</h2>
+        <div className="h-header-r">
+          <span className="h-lang"><Globe size={14} strokeWidth={1.8}/> EN</span>
+          <button className="h-sos" onClick={() => setShowSOS(true)}>SOS</button>
         </div>
-        <Bell size={48} color="var(--gd)" strokeWidth={1.5} style={{ flexShrink: 0, opacity: 0.85 }} />
       </div>
 
-      {briefingOpen && (
-        <WCard className="fu" style={{ marginBottom: "var(--gap-md)" }}>
-          {briefingItems.map((item, i) => (
-            <div key={i} style={{
-              display: "flex", gap: "var(--gap-sm)",
-              marginBottom: "var(--sp-3)", paddingBottom: "var(--sp-3)",
-              borderBottom: i < briefingItems.length - 1 ? "1px solid var(--border)" : "none"
-            }}>
-              <div style={{ width: 5, borderRadius: 3, background: item.color, flexShrink: 0 }} />
-              <span style={{ color: item.color, flexShrink: 0, marginTop: 2 }}>{item.icon}</span>
-              <p style={{ fontSize: "var(--fs-sm)", color: "var(--md)", lineHeight: 1.65 }}>{item.text}</p>
-            </div>
-          ))}
-        </WCard>
-      )}
+      {/* ── Status pills ── */}
+      <div className="h-pills">
+        <span className="h-pill h-pill--pu">🤰 Week 26</span>
+        <span className="h-pill h-pill--or">🔥 Iron Low</span>
+        <span className="h-pill h-pill--ol">📍 Lagos</span>
+      </div>
 
-      {/* Mood Check */}
-      {!mood ? (
-        <WCard style={{ background: "linear-gradient(135deg,var(--cream),var(--warm))", border: "1px solid var(--border2)" }}>
-          <p style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--dp)", marginBottom: "var(--sp-3)", display: "flex", alignItems: "center", gap: 6 }}>
-            How are you feeling today?
+      {/* ── Calendar ── */}
+      <div className="h-card h-cal-card">
+        <CalendarStrip />
+      </div>
+
+      {/* ── Morning hero card ── */}
+      <div className="h-card h-hero-card">
+        <div className="h-hero-l">
+          <p className="h-eyebrow">GOOD MORNING, ADAEZE ☀️</p>
+          <p className="h-hero-title">Your baby is the size of a scallion today</p>
+          <p className="h-hero-body">
+            Baby is practising breathing movements. Your iron levels need attention — eat more ugu soup &amp; garden egg today.
           </p>
-          <div className="mood-row">
-            {moods.map(m => (
-              <button
-                key={m.v}
-                className="mood-btn"
-                onClick={() => setMood(m)}
-              >
-                <img
-                  src={m.image}
-                  alt={m.l}
-                  style={{
-                    width: "28px",
-                    height: "28px",
-                    objectFit: "contain"
-                  }}
-                />
-                <small>{m.l}</small>
+          <div className="h-action-pills">
+            <span className="h-ap">💊 Take Iron tablet</span>
+            <span className="h-ap">💧 Drink water</span>
+            <span className="h-ap">🚶‍♀️ Walk 20min</span>
+          </div>
+        </div>
+        <div className="h-hero-illo">
+          <HeroIllo />
+        </div>
+      </div>
+
+      {/* ── Mood ── */}
+      <div className="h-card">
+        <p className="h-slabel">HOW ARE YOU FEELING?</p>
+        <div className="h-mood-row">
+          {MOODS.map(m => (
+            <button
+              key={m.v}
+              className={`h-mood-btn${mood?.v === m.v ? ' h-mood-btn--on' : ''}`}
+              onClick={() => setMood(m)}
+            >
+              <span className="h-mood-em">{m.emoji}</span>
+            </button>
+          ))}
+        </div>
+        {mood && (
+          <p className="h-mood-fb">
+            Feeling {mood.label} today · 3 day streak 🔥
+          </p>
+        )}
+      </div>
+
+      {/* ── Progress + Quick Actions (2-col) ── */}
+      <div className="h-two-col">
+
+        {/* Daily Progress */}
+        <div className="h-card h-prog-card">
+          <div className="h-prog-top">
+            <p className="h-slabel" style={{ margin: 0 }}>DAILY PROGRESS</p>
+            <span className="h-pct">{pct}%</span>
+          </div>
+          <div className="h-bar-bg">
+            <div className="h-bar-fill" style={{ width: `${pct}%` }} />
+          </div>
+          <div className="h-task-list">
+            {todayTasks.map(task => (
+              <div key={task.id} className="h-task-row">
+                <button
+                  className={`h-chk${tasks[task.id] ? ' h-chk--done' : ''}`}
+                  onClick={() => setTasks(t => ({ ...t, [task.id]: !t[task.id] }))}
+                >
+                  {tasks[task.id] && '✓'}
+                </button>
+                <span className={`h-task-lbl${tasks[task.id] ? ' h-task-lbl--done' : ''}`}>
+                  {task.title}
+                </span>
+              </div>
+            ))}
+          </div>
+          <button className="h-view-all">View all progress →</button>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="h-card h-qa-card">
+          <p className="h-slabel">QUICK ACTIONS</p>
+          <div className="h-qa-grid">
+            {QUICK_ACTIONS.map(a => (
+              <button key={a.id} className="h-qa-btn" onClick={() => setTab(a.id)}>
+                <span className="h-qa-em">{a.emoji}</span>
+                <span className="h-qa-lbl">{a.label}</span>
               </button>
             ))}
           </div>
-        </WCard>
-      ) : (
-        <WCard style={{ background: "var(--sgl)", border: "1px solid var(--sgm)" }}>
-          <p style={{ fontSize: "var(--fs-sm)", color: "var(--sg)", fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
-            <CheckCircle2 size={16} color="var(--sg)" /> Mood logged: {mood.l}
-          </p>
-          {mood.v <= 1 && <p style={{ fontSize: "var(--fs-xs)", color: "var(--sg)", marginTop: "var(--sp-2)", lineHeight: 1.5 }}>Tap <b>Mind</b> in Menu for emotional support or talk to Bloom AI.</p>}
-        </WCard>
-      )}
-
-      {/* Daily Progress */}
-      <WCard style={{ marginBottom: "var(--sp-2)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--sp-3)" }}>
-          <p style={{ fontSize: "var(--fs-lg)", fontWeight: 800, color: "var(--dp)", display: "flex", alignItems: "center", gap: 6 }}>
-            <TrendingUp size={18} color="var(--dp)" /> Daily Progress
-          </p>
-          <span style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--t)" }}>{done}/{todayTasks.length}</span>
         </div>
-        <ProgBar val={done} max={todayTasks.length} />
-        <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", marginTop: "var(--sp-2)" }}>
-          {done === 0 ? "Start your wellness journey for today!" : done === todayTasks.length ? "All done! Amazing mama!" : `${todayTasks.length - done} tasks left — you're doing great!`}
-        </p>
-      </WCard>
 
-      {/* Daily Routine */}
-      <SectionTitle title="Daily Routine" action="See all" />
-      <WCard style={{ padding: `var(--sp-2) var(--card-p)` }}>
-        {todayTasks.map(task => (
-          <div key={task.id} className="habit-row fu">
-            <button onClick={() => setTasks(t => ({ ...t, [task.id]: !t[task.id] }))} style={{
-              width: "clamp(22px,5.5vw,28px)", height: "clamp(22px,5.5vw,28px)",
-              borderRadius: "50%", flexShrink: 0,
-              border: `2px solid ${tasks[task.id] ? "var(--sg)" : "var(--border2)"}`,
-              background: tasks[task.id] ? "var(--sg)" : "transparent",
-              color: "#fff", fontSize: "var(--fs-xs)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              cursor: "pointer", transition: "all 0.2s"
-            }}>
-              {tasks[task.id] ? <CheckCircle2 size={14} color="#fff" /> : <Circle size={14} color="var(--border2)" />}
-            </button>
-            <IconBox emoji={task.icon} bg={task.bg} size="var(--icon-sm)" />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: "var(--fs-base)", fontWeight: 700, color: "var(--dp)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{task.title}</p>
-              <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>Streak {task.streak} days</p>
-            </div>
-            <div style={{ textAlign: "right", flexShrink: 0 }}>
-              <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", fontWeight: 600 }}>{task.time}</p>
-            </div>
-          </div>
-        ))}
-      </WCard>
-
-      {/* Quick Actions */}
-      <SectionTitle title="Quick Actions" />
-      <div className="quick-grid">
-        {cfg.quickActions.map(([ic, lb, tb, bg, tc], i) => (
-          <button
-            key={i}
-            className="quick-btn"
-            onClick={tb ? () => setTab(tb) : () => setShowSOS(true)}
-            style={{
-              background: bg,
-              border: `1.5px solid ${tc}33`
-            }}
-          >
-            <img
-              src={ic}
-              alt={lb}
-              style={{
-                width: "40px",
-                height: "40px",
-                objectFit: "contain"
-              }}
-            />
-
-            <small style={{ color: tc }}>{lb}</small>
-          </button>
-        ))}
       </div>
 
-      {/* Anaemia Alert */}
+      {/* ── Anaemia Alert ── */}
       {cfg.showAlert && (
-        <WCard style={{ background: "var(--rdl)", border: "1.5px solid var(--rdm)44" }}>
-          <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "flex-start" }}>
-            <div style={{ width: "var(--icon-sm)", height: "var(--icon-sm)", flexShrink: 0, borderRadius: "var(--r)", background: "var(--rd)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <AlertTriangle size={20} color="#fff" />
-            </div>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--rd)", marginBottom: "var(--sp-1)" }}>Anaemia Risk Detected</p>
-              <p style={{ fontSize: "var(--fs-sm)", color: "#8B3030", lineHeight: 1.55 }}>Iron supplement missed 2 days. 68% of Nigerian pregnant women have iron deficiency. Take iron with orange juice today.</p>
-              <button style={{ marginTop: "var(--sp-2)", background: "var(--rd)", color: "#fff", border: "none", borderRadius: 20, padding: "clamp(5px,1.2vw,8px) clamp(12px,3vw,18px)", fontSize: "var(--fs-xs)", fontWeight: 800, cursor: "pointer", minHeight: "var(--touch)", display: "flex", alignItems: "center", gap: 6 }}>
-                <CheckCircle2 size={14} color="#fff" /> Mark Iron Taken
-              </button>
-            </div>
+        <div className="h-card h-alert">
+          <div className="h-alert-icon">
+            <AlertTriangle size={20} color="#e57c1a" strokeWidth={2}/>
           </div>
-        </WCard>
+          <div className="h-alert-body">
+            <p className="h-alert-title">Anaemia Risk Alert</p>
+            <p className="h-alert-text">
+              Your last haemoglobin was 9.2 g/dL (low). Eat dark leafy greens, liver, ofe akwu, and bitterleaf soup. Next check due in 5 days.
+            </p>
+          </div>
+          <ChevronRight size={18} color="#e57c1a" strokeWidth={2} style={{ flexShrink: 0 }}/>
+        </div>
       )}
 
-      {/* Nearby Hospitals */}
-      <SectionTitle title="Nearby Hospitals" />
-      {[
-        { n: "Lagos University Teaching Hospital", a: "Idi-Araba, Lagos", p: "+234-1-774-3747", d: "2.3km", r: 4.5, s: "Full obstetrics & NICU" },
-        { n: "National Hospital Abuja", a: "CBD, Abuja", p: "+234-9-523-5050", d: "5.1km", r: 4.7, s: "High-risk pregnancy" }
-      ].map((h, i) => (
-        <WCard key={i} style={{ padding: "var(--card-p)" }}>
-          <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "center" }}>
-            <div style={{ width: "var(--icon-md)", height: "var(--icon-md)", flexShrink: 0, borderRadius: "var(--r)", background: "var(--bll)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Hospital size={24} color="var(--bl)" strokeWidth={1.8} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: "var(--fs-base)", fontWeight: 800, color: "var(--dp)", marginBottom: "var(--sp-1)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{h.n}</p>
-              <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", marginBottom: "var(--sp-2)" }}>{h.a}</p>
-              <div style={{ display: "flex", gap: "var(--gap-sm)", flexWrap: "wrap" }}>
-                <Tag label={h.s} bg="var(--sgl)" tc="var(--sg)" />
-                <Tag label={`${h.r}`} bg="var(--gdl)" tc="var(--gd)" icon={<Star size={10} color="var(--gd)" fill="var(--gd)" />} />
-              </div>
-            </div>
-            <div style={{ textAlign: "right", flexShrink: 0 }}>
-              <p style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--t)", marginBottom: "var(--sp-2)" }}>{h.d}</p>
-              <button onClick={() => window.open(`tel:${h.p}`)} style={{ background: "var(--dp)", color: "#fff", border: "none", borderRadius: 20, padding: "clamp(5px,1.2vw,7px) clamp(11px,2.8vw,15px)", fontSize: "var(--fs-xs)", fontWeight: 800, cursor: "pointer", minHeight: "var(--touch)", display: "flex", alignItems: "center", gap: 5 }}>
-                <Phone size={13} color="#fff" /> Call
-              </button>
-            </div>
+      {/* ── Nearby Hospitals ── */}
+      <p className="h-slabel h-slabel--gap">NEARBY HOSPITALS</p>
+      {HOSPITALS.map((h, i) => (
+        <div key={i} className="h-card h-hosp">
+          <div className="h-hosp-icon">
+            <Hospital size={22} color="#d63a6e" strokeWidth={1.8}/>
           </div>
-        </WCard>
+          <div className="h-hosp-body">
+            <p className="h-hosp-name">{h.name}</p>
+            <p className="h-hosp-addr">{h.addr}</p>
+          </div>
+          <span className="h-open">Open</span>
+          <ChevronRight size={16} color="#ccc" strokeWidth={2}/>
+        </div>
       ))}
+      <button className="h-view-all h-view-all--ctr">View more hospitals →</button>
+
     </div>
   );
 }
