@@ -49,13 +49,6 @@ export default function Home({ setTab }) {
     <div className="h-root">
 
       {/* ── Header ── */}
-      <div className="h-header">
-        <h2 className="h-greeting">Good morning, Adaeze 👋</h2>
-        <div className="h-header-r">
-          <span className="h-lang"><Globe size={14} strokeWidth={1.8}/> EN</span>
-          <button className="h-sos" onClick={() => setShowSOS(true)}>SOS</button>
-        </div>
-      </div>
 
       {/* ── Status pills ── */}
       <div className="h-pills">
