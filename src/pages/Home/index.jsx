@@ -7,34 +7,7 @@ import './Home.css';
 
 /* ── Inline SVG pregnant woman illustration ── */
 const HeroIllo = () => (
-  <svg viewBox="0 0 110 160" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
-    {/* Leaves */}
-    <ellipse cx="80" cy="138" rx="32" ry="20" fill="#c4b0e8" opacity=".22"/>
-    <path d="M65 148 Q85 128 95 110" stroke="#c4b0e8" strokeWidth="2" strokeLinecap="round" opacity=".45"/>
-    <path d="M72 152 Q95 138 105 120" stroke="#c4b0e8" strokeWidth="1.5" strokeLinecap="round" opacity=".35"/>
-    <path d="M60 150 Q75 140 85 125" stroke="#c4b0e8" strokeWidth="1.5" strokeLinecap="round" opacity=".3"/>
-    {/* Hearts */}
-    <text x="88" y="52" fontSize="10" fill="#d97ed6" opacity=".75">♥</text>
-    <text x="80" y="70" fontSize="7"  fill="#d97ed6" opacity=".5">♥</text>
-    {/* Head */}
-    <ellipse cx="50" cy="27" rx="14" ry="15" fill="#c4956a"/>
-    {/* Hair */}
-    <path d="M35 24 Q37 10 50 10 Q63 10 65 24 Q63 14 50 14 Q37 14 35 24Z" fill="#2d1b3d"/>
-    <path d="M64 24 Q68 40 65 58 Q63 48 62 36Z" fill="#2d1b3d"/>
-    {/* Neck */}
-    <rect x="44" y="40" width="11" height="9" rx="4" fill="#c4956a"/>
-    {/* Dress body */}
-    <path d="M30 50 Q24 62 22 82 Q20 102 24 118 Q33 124 50 124 Q67 124 76 118 Q80 102 78 82 Q76 62 70 50 Q60 46 50 46 Q40 46 30 50Z" fill="#9a5bea"/>
-    {/* Baby bump */}
-    <ellipse cx="52" cy="93" rx="19" ry="21" fill="#8a4dd8"/>
-    {/* Left arm */}
-    <path d="M24 68 Q16 74 14 88 Q20 93 26 87 Q27 78 30 70Z" fill="#c4956a"/>
-    {/* Right arm */}
-    <path d="M76 68 Q84 76 81 90 Q74 94 70 87 Q72 78 72 68Z" fill="#c4956a"/>
-    {/* Legs */}
-    <path d="M34 118 Q31 134 32 150" stroke="#9a5bea" strokeWidth="13" strokeLinecap="round"/>
-    <path d="M66 118 Q69 134 68 150" stroke="#9a5bea" strokeWidth="13" strokeLinecap="round"/>
-  </svg>
+  <img src="/pregnancy.png" alt="" />
 );
 
 /* ── Static data ── */
