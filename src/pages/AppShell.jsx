@@ -22,12 +22,21 @@ const Nursing     = lazy(() => import('./Nursing'));
 const Ivfjourney  = lazy(() => import('./IVF'));
 const AIAssistant = lazy(() => import('./Chat/AIAssistant'));
 
+/* ─── Maps onboarding card ids → initial landing tab ─── */
 const JOURNEY_TAB_MAP = {
   ivf:       'ivf',
   conceive:  'ttc',
-  mom:       'nursing',
+  mom:       'home',
   pregnant:  'home',
-  menopause: 'health',
+  menopause: 'home',
+};
+
+/* ─── Maps onboarding card ids → JOURNEY_CONFIG keys ───────────────────────
+   homeConfig.js already uses 'mom' and 'conceive' directly so raw journeyType
+   works there. Only JOURNEY_CONFIG needs this translation ('nursing', 'ttc'). */
+const JOURNEY_KEY_MAP = {
+  mom:      'nursing',
+  conceive: 'ttc',
 };
 
 const Spinner = () => (
@@ -37,7 +46,7 @@ const Spinner = () => (
       border: '3px solid var(--border)',
       borderTopColor: 'var(--t)',
       borderRadius: '50%',
-      animation: 'sp 0.8s linear infinite'
+      animation: 'sp 0.8s linear infinite',
     }} />
   </div>
 );
@@ -45,11 +54,12 @@ const Spinner = () => (
 export default function AppShell() {
   const { journeyType, showSOS, setShowSOS } = useApp();
 
-  // ✅ Single declaration — derives initial tab from journey selection
   const [tab, setTab]         = useState(JOURNEY_TAB_MAP[journeyType] || 'home');
   const [prevTab, setPrevTab] = useState(null);
 
-  const allowed = JOURNEY_CONFIG[journeyType]?.tabs || [];
+  /* journeyKey is ONLY for JOURNEY_CONFIG tab guard — not used anywhere else */
+  const journeyKey = JOURNEY_KEY_MAP[journeyType] ?? journeyType;
+  const allowed    = JOURNEY_CONFIG[journeyKey]?.tabs || [];
 
   const handleSetTab = (id) => {
     setPrevTab(tab);
@@ -62,7 +72,11 @@ export default function AppShell() {
       case 'home':      return <Home setTab={handleSetTab} />;
       case 'menu':      return <Menu setActive={handleSetTab} />;
       case 'settings':  return <Settings />;
-      case 'assistant': return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><AIAssistant /></div>;
+      case 'assistant': return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+          <AIAssistant />
+        </div>
+      );
       case 'kicks':     return <Kicks />;
       case 'nutrition': return <Nutrition />;
       case 'vitals':    return <Vitals />;
@@ -70,7 +84,11 @@ export default function AppShell() {
       case 'baby':      return <Baby />;
       case 'mental':    return <Mental />;
       case 'partner':   return <Partner />;
-      case 'chat':      return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><Chat /></div>;
+      case 'chat':      return (
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+          <Chat />
+        </div>
+      );
       case 'safety':    return <Safety />;
       case 'ttc':       return <TTC />;
       case 'nursing':   return <Nursing />;

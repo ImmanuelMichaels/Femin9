@@ -107,9 +107,11 @@ const MOODS = [
 export default function Home({ setTab }) {
   const { journeyType, userName = 'Mama' } = useApp();
 
-  /* Graceful fallback */
-  const meta = JOURNEY_META[journeyType]  || JOURNEY_META.pregnant;
-  const cfg  = HOME_CONFIG[journeyType]   || HOME_CONFIG.pregnant;
+  /* homeConfig.js keys match onboarding ids directly (mom, conceive, ivf,
+     pregnant, menopause) so we use raw journeyType here — no translation
+     needed. Fallback to pregnant if an unknown type slips through.           */
+  const meta = JOURNEY_META[journeyType] || JOURNEY_META.pregnant;
+  const cfg  = HOME_CONFIG[journeyType]  || HOME_CONFIG.pregnant;
 
   const [mood,       setMood]      = useState(null);
   const [checklist,  setChecklist] = useState(cfg.checklist);
@@ -272,8 +274,8 @@ export default function Home({ setTab }) {
       <div className="hm-card">
         <p className="hm-card-label">NEARBY HOSPITALS</p>
         {[
-          { name: "King's College Hospital NHS", addr: '0.8 km · Open 24hrs · Maternity & Women\'s Health' },
-          { name: "St Thomas' Hospital – Guy's", addr: '2.1 km · Specialist obstetrics & gynaecology'      },
+          { name: "King's College Hospital NHS", addr: "0.8 km · Open 24hrs · Maternity & Women's Health" },
+          { name: "St Thomas' Hospital – Guy's", addr: '2.1 km · Specialist obstetrics & gynaecology'     },
         ].map((h, i) => (
           <div key={i} className="hm-hosp-row">
             <div className="hm-hosp-icon" style={{ background: meta.accentSoft }}>
