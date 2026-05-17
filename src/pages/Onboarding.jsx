@@ -233,7 +233,7 @@ export default function Onboarding() {
 
   const handleSelect = (id) => {
     setJourneyType(id);
-    setTimeout(() => navigate('/login'), 400);
+    setTimeout(() => navigate('/app'), 400);
   };
 
   return (
