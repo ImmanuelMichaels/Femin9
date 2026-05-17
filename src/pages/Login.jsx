@@ -3,46 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import './Login.css';
 
-/* ── Logo mark SVG ── */
-const LogoMark = () => (
-  <svg width="46" height="46" viewBox="0 0 46 46" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="23" cy="23" r="22" fill="#fff" stroke="#f9c0d8" strokeWidth="1.5"/>
-    {/* Person silhouette */}
-    <circle cx="23" cy="16" r="5.5" fill="#e84393"/>
-    <path d="M13 33c0-5.5 4.5-10 10-10s10 4.5 10 10" stroke="#e84393" strokeWidth="2" strokeLinecap="round" fill="none"/>
-    {/* Heart */}
-    <path d="M20 30c0-1.5 1.2-2.5 2.5-2 .5.2.5.2 .5.2s0 0 .5-.2C24.8 27.5 26 28.5 26 30c0 2-3 4-3 4s-3-2-3-4z" fill="#f06292"/>
-  </svg>
-);
-
-/* ── Mother + baby illustration SVG ── */
 const HeroIllo = () => (
-  <img src="/hdrimage.png" alt="login header image" className='hdrimg'/>
+  <img src="/hdrimage.png" alt="login header image" className="hdrimg" />
 );
 
-/* ── Google G icon ── */
 const GoogleG = () => (
   <svg width="22" height="22" viewBox="0 0 24 24">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66 2.84-.81-.62-.38-.13z"/>
+    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84-.81-.62-.38-.13z"/>
     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
   </svg>
 );
 
-/* ── Icon SVGs for input fields ── */
 const MailIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e84393" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="4" width="20" height="16" rx="3"/>
     <polyline points="2,4 12,13 22,4"/>
   </svg>
 );
+
 const LockIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e84393" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <rect x="5" y="11" width="14" height="10" rx="2"/>
     <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
   </svg>
 );
+
 const EyeIcon = ({ open }) => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#e84393" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     {open ? (
@@ -59,6 +46,7 @@ const EyeIcon = ({ open }) => (
     )}
   </svg>
 );
+
 const PhoneIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7b2ff7" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <rect x="5" y="2" width="14" height="20" rx="3"/>
@@ -66,10 +54,9 @@ const PhoneIcon = () => (
   </svg>
 );
 
-/* ── Component ── */
 export default function Login() {
-  const { journeyType } = useApp();
   const navigate = useNavigate();
+
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -77,38 +64,31 @@ export default function Login() {
   const [animOut,  setAnimOut]  = useState(false);
   const [focused,  setFocused]  = useState(null);
 
+  const ready = email && password;
+
   const handleLogin = () => {
-    if (!email || !password) return;
+    if (!ready) return;
     setLoading(true);
     setTimeout(() => {
+      setLoading(false);
       setAnimOut(true);
-      setTimeout(() => navigate('/app'), 420);
+      setTimeout(() => navigate('/onboarding'), 420);
     }, 1000);
-    navigate('/app');
   };
-
-  const ready = email && password;
 
   return (
     <div
       className="lg-root"
-      style={{ opacity: animOut ? 0 : 1, transform: animOut ? 'translateY(20px)' : 'none' }}
+      style={{
+        opacity: animOut ? 0 : 1,
+        transform: animOut ? 'translateY(20px)' : 'none',
+        transition: 'opacity 0.4s, transform 0.4s'
+      }}
     >
-      {/* ── Hero area ── */}
+      {/* Hero */}
       <div className="lg-hero">
-        {/* Back */}
-        <button className="lg-back" onClick={() => navigate('/onboarding')}>
-          ← Back
-        </button>
-
-        {/* Illustration */}
-        <div className="lg-illo">
-          <HeroIllo />
-        </div>
-
-        {/* Logo */}
+        <div className="lg-illo"><HeroIllo /></div>
         <div className="lg-brand">
-          <LogoMark />
           <div>
             <p className="lg-brand-name">MamaBloom</p>
             <p className="lg-brand-tag">Your journey, our care</p>
@@ -116,7 +96,7 @@ export default function Login() {
         </div>
       </div>
 
-      {/* ── Form card ── */}
+      {/* Form card */}
       <div className="lg-card">
         <h1 className="lg-title">Welcome back 💕</h1>
         <p className="lg-sub">Sign in to continue your journey</p>
@@ -165,23 +145,19 @@ export default function Login() {
         <button
           className={`lg-signin${ready ? '' : ' lg-signin--dim'}`}
           onClick={handleLogin}
-          disabled={!ready}
+          disabled={!ready || loading}
         >
-          {loading ? (
-            <span className="lg-spinner" />
-          ) : (
-            <>Sign In &nbsp;→</>
-          )}
+          {loading ? <span className="lg-spinner" /> : <>Sign In &nbsp;→</>}
         </button>
 
-        {/* OR divider */}
+        {/* Divider */}
         <div className="lg-or">
           <div className="lg-or-line" />
           <span className="lg-or-text">OR</span>
           <div className="lg-or-line" />
         </div>
 
-        {/* Social buttons */}
+        {/* Social */}
         <button className="lg-social" onClick={handleLogin}>
           <GoogleG />
           <span>Continue with Google</span>

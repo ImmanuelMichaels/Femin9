@@ -9,7 +9,7 @@ import AppShell from './pages/AppShell';
 function SplashRoute() {
   const navigate = useNavigate();
   useEffect(() => {
-    const t = setTimeout(() => navigate('/onboarding'), 2000);
+    const t = setTimeout(() => navigate('/login'), 2000);
     return () => clearTimeout(t);
   }, [navigate]);
   return <Splash />;
@@ -24,11 +24,11 @@ function ProtectedApp() {
 export default function App() {
   return (
     <Routes>
-      <Route path="/"            element={<SplashRoute />} />
-      <Route path="/onboarding"  element={<Onboarding />} />
-      <Route path="/login"       element={<Login />} />
-      <Route path="/app"         element={<ProtectedApp />} />
-      <Route path="*"            element={<Navigate to="/" replace />} />
+      <Route path="/"           element={<SplashRoute />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/login"      element={<Login />} />
+      <Route path="/app"        element={<ProtectedApp />} />
+      <Route path="*"           element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

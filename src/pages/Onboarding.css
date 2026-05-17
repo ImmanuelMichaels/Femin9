@@ -2,7 +2,7 @@
 
 .ob-root {
   min-height: 100dvh;
-  background: #faf0eb;
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -60,8 +60,9 @@
 
 /* Card */
 .ob-card {
+  height: 60px;
   border: none;
-  border-radius: 24px;
+  border-radius: 30px;
   padding: 5px 2px 3px;
   display: flex;
   flex-direction: row;
@@ -69,6 +70,7 @@
   cursor: pointer;
   text-align: center;
   position: relative;
+  overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   box-shadow: 1px 2px 2px rgba(0, 0, 0, 0.06);
 
@@ -113,27 +115,28 @@
 
 /* Illustration area */
 .ob-illus {
-  width: 110px;
-  height: 110px;
+  width: 80px;
   margin-bottom: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .ob-illus img {
-  width: 100%;
-  height: 100%;
+  width: 50%;
   object-fit: contain;
   display: block;
+  overflow: hidden;
 }
 
 /* Card text */
 .ob-card-title {
-  width: 100%;
+  width: 70%;
   display: block;
   font-size: 13px;
   font-weight: 800;
   line-height: 1.3;
   margin-bottom: 6px;
-  text-align: left;
 }
 
 .ob-card-desc {

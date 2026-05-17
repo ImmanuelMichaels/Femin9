@@ -276,16 +276,10 @@ export default function Onboarding() {
               <Icon id={card.id} color={card.iconColor} />
             </div> */}
 
-          <div className="gcard">
-
               {/* Text */}
               <span className="ob-card-title" style={{ color: card.titleColor }}>
                 {card.label}
               </span>
-              <span className="ob-card-desc">{card.description}</span>
-
-          
-          </div>
 
               {/* Arrow */}
               <div
