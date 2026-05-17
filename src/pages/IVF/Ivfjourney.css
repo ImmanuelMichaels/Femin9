@@ -1,111 +1,4 @@
-/* ─────────────────────────────────────────────────────────
-   FONTS
-───────────────────────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-/* ─────────────────────────────────────────────────────────
-   DESIGN TOKENS
-───────────────────────────────────────────────────────── */
-:root {
-  --peach:        #F08C2E;
-  --peach-light:  #FFF3E8;
-  --peach-mid:    #FFD4BC;
-  --peach-deep:   #C96A10;
-  --cream:        #FFFAF5;
-  --cream-dark:   #FFF2E4;
-  --blush:        #FDE8F0;
-  --blush-mid:    #F5C2D8;
-  --lavender:     #F0EEFF;
-  --lavender-mid: #C9C2F0;
-  --purple:       #9B8FD8;
-  --teal:         #2E9E9B;
-  --teal-light:   #E8F7F7;
-  --rose:         #E87070;
-  --rose-light:   #FFF0F0;
-  --green:        #7DCB98;
-  --green-light:  #E8F7EE;
-
-  --text-dark:    #2D2236;
-  --text-mid:     #6B5E78;
-  --text-soft:    #9B8FAC;
-  --text-light:   #C4B8D0;
-  --white:        #FFFFFF;
-
-  --shadow-xs:    0 1px 6px rgba(180,130,100,0.07);
-  --shadow-sm:    0 2px 14px rgba(180,130,100,0.10);
-  --shadow-md:    0 4px 28px rgba(180,130,100,0.13);
-  --shadow-lg:    0 8px 48px rgba(180,130,100,0.16);
-
-  --r-sm:  10px;
-  --r-md:  16px;
-  --r-lg:  22px;
-  --r-xl:  30px;
-  --r-pill: 100px;
-
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-body:    'DM Sans', system-ui, sans-serif;
-
-  --section-gap: 28px;
-  --card-pad:    20px;
-}
-
-/* ─────────────────────────────────────────────────────────
-   RESET & BASE
-───────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  font-family: var(--font-body);
-  background: var(--cream);
-  color: var(--text-dark);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-button {
-  font-family: var(--font-body);
-  cursor: pointer;
-  border: none;
-  background: none;
-}
-
-a { text-decoration: none; color: inherit; }
-img { display: block; max-width: 100%; }
-
-/* ─────────────────────────────────────────────────────────
-   ROOT WRAPPER
-───────────────────────────────────────────────────────── */
-.ivf-root {
-  min-height: 100vh;
-  max-width: 480px;
-  margin: 0 auto;
-  background: var(--cream);
-  position: relative;
-  overflow-x: hidden;
-}
-
-/* ─────────────────────────────────────────────────────────
-   SECTION SHELL
-───────────────────────────────────────────────────────── */
-.section {
-  padding: 28px 20px;
-  animation: fadeUp 0.5s ease both;
-}
-
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(18px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* Stagger each section */
-.section:nth-child(2)  { animation-delay: 0.06s; }
-.section:nth-child(3)  { animation-delay: 0.12s; }
-.section:nth-child(4)  { animation-delay: 0.18s; }
-.section:nth-child(5)  { animation-delay: 0.24s; }
-.section:nth-child(6)  { animation-delay: 0.30s; }
-.section:nth-child(7)  { animation-delay: 0.36s; }
-.section:nth-child(8)  { animation-delay: 0.42s; }
-.section:nth-child(9)  { animation-delay: 0.48s; }
 
 /* ─────────────────────────────────────────────────────────
    SECTION HEADER
@@ -205,7 +98,7 @@ img { display: block; max-width: 100%; }
   width: 40px; height: 40px;
   border-radius: 50%;
   background: rgba(255,255,255,0.72);
-  backdrop-filter: blur(8px);
+  /* backdrop-filter: blur(8px); */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -230,7 +123,7 @@ img { display: block; max-width: 100%; }
   position: relative;
   z-index: 1;
   background: rgba(255,255,255,0.72);
-  backdrop-filter: blur(14px);
+  /* backdrop-filter: blur(14px); */
   border-radius: var(--r-xl);
   padding: 22px 20px 18px;
   box-shadow: var(--shadow-md);
@@ -281,7 +174,7 @@ img { display: block; max-width: 100%; }
   align-items: center;
   gap: 12px;
   background: rgba(255,255,255,0.82);
-  backdrop-filter: blur(10px);
+  /* backdrop-filter: blur(10px); */
   border-radius: var(--r-lg);
   padding: 14px 16px;
   box-shadow: var(--shadow-sm);

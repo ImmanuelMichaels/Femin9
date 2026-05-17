@@ -100,16 +100,7 @@ const Icon = ({ id, color }) => {
 
   if (id === 'ivf')
     return (
-      /*
-       * IVF & Fertility icon — uses the same reproductive anatomy vocabulary
-       * as the other icons in this set: stroke-only, 1.8px weight, rounded caps.
-       *
-       * Shape language:
-       *   • Two side circles  → ovaries / follicles
-       *   • Curved arcs       → fallopian tubes leading to the uterus
-       *   • Central teardrop  → uterine body
-       *   • Inner filled dot  → embryo / egg at retrieval
-       */
+
       <svg
         {...s}
         viewBox="0 0 24 24"
