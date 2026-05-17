@@ -14,7 +14,7 @@ export default function Splash() {
         marginBottom: "var(--sp-5)",
         border: "1px solid rgba(255,255,255,0.2)",
         fontSize: "clamp(34px,9vw,48px)"
-      }}>🌸</div>
+      }}></div>
       <div className="serif" style={{
         fontSize: "var(--fs-3xl)", color: "#fff",
         fontStyle: "italic", marginBottom: "var(--sp-1)", letterSpacing: -0.5
@@ -22,7 +22,7 @@ export default function Splash() {
       <p style={{
         color: "rgba(255,255,255,0.45)", fontSize: "var(--fs-xs)",
         letterSpacing: 3, textTransform: "uppercase", marginBottom: "var(--sp-6)"
-      }}>Maternal AI · UK & Nigeria-First</p>
+      }}>Maternal AI · UK First</p>
       <div style={{
         width: "clamp(30px,7vw,40px)", height: "clamp(30px,7vw,40px)",
         border: "2.5px solid rgba(255,255,255,0.15)", borderTopColor: "#F2A07A",

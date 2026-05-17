@@ -84,6 +84,7 @@ export default function Login() {
       setAnimOut(true);
       setTimeout(() => navigate('/app'), 420);
     }, 1000);
+    navigate('/app');
   };
 
   const ready = email && password;

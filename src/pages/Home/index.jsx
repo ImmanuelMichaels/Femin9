@@ -21,7 +21,7 @@ const JOURNEY_HOME_CONFIG = {
     greeting: name => `GOOD MORNING, ${name} ☀️`,
     heroTitle: 'Your baby is the size of a scallion today',
     heroBody:
-      'Baby is practising breathing movements. Your iron levels need attention — eat more ugu soup & garden egg today.',
+      'Baby is practising breathing movements. Your iron levels need attention — eat more spinach, lentils, and fortified cereals today.',
     actionChips: ['💊 Take Iron tablet', '💧 Drink water', '🚶‍♀️ Walk 20 min'],
     pills: [
       { text: '🤰 Week 26', cls: 'h-pill--pu' },
@@ -37,7 +37,7 @@ const JOURNEY_HOME_CONFIG = {
     alert: {
       title: 'Anaemia Risk Alert',
       body:
-        'Your last haemoglobin was 9.2 g/dL (low). Eat dark leafy greens, liver, ofe akwu, and bitterleaf soup. Next check due in 5 days.',
+        'Your last haemoglobin was 9.2 g/dL (low). Eat dark leafy greens, lean red meat, lentils, and fortified breakfast cereals. Your GP can prescribe iron supplements. Next check due in 5 days.',
     },
     illoSrc: '/pregnancy.png',
   },
@@ -99,7 +99,7 @@ const JOURNEY_HOME_CONFIG = {
     greeting: name => `GOOD MORNING, ${name} 🍼`,
     heroTitle: "Your baby is 8 weeks old today — you're both doing great",
     heroBody:
-      "At 8 weeks, babies begin social smiling. Keep feeding on demand; your supply is building. Don't forget to eat enough — you need 400–500 extra calories a day while breastfeeding.",
+      'At 8 weeks, babies begin social smiling. Keep feeding on demand; your supply is building. Don\'t forget to eat enough — you need 400–500 extra calories a day while breastfeeding.',
     actionChips: ['🍼 Log feed', '💧 Drink water', '😴 Rest when baby rests'],
     pills: [
       { text: '🍼 Baby: 8 weeks', cls: 'h-pill--pu' },
@@ -131,8 +131,8 @@ const MOODS = [
 ];
 
 const HOSPITALS = [
-  { name: 'Lagos Island General Hospital',                  addr: '0.8 km · Open 24hrs · Obstetrics dept.' },
-  { name: 'LASUTH – Lagos State Univ. Teaching Hospital',   addr: '2.1 km · Specialist care available'    },
+  { name: "King's College Hospital NHS Foundation Trust", addr: '0.8 km · Open 24hrs · Maternity & Women\'s Health' },
+  { name: 'St Thomas\' Hospital – Guy\'s and St Thomas\' NHS', addr: '2.1 km · Specialist obstetrics & gynaecology'   },
 ];
 
 /* ── Component ── */
