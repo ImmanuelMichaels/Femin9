@@ -3,7 +3,7 @@ import { AlertTriangle, ChevronRight, Hospital } from 'lucide-react';
 import CalendarStrip from '../../components/ui/CalendarStrip';
 import { JOURNEY_CONFIG, ALL_TASKS } from '../../data/journey';
 import { useApp } from '../../context/AppContext';
-// import './Home.css';
+import './Nursing.css';
 
 /* ── Hero illustration — swap per journey if you have separate assets ── */
 const HeroIllo = ({ src = '/pregnancy.png', alt = '' }) => (

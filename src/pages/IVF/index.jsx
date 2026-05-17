@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./IvfJourney.css";
+import "./ivfjourney.css";
 
 /* ─────────────────────────────────────────────────────────
    DATA
