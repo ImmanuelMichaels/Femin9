@@ -3,9 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import './Login.css';
 
-const HeroIllo = () => (
-  <img src="/hdrimage.png" alt="login header image" className="hdrimg" />
-);
 
 const GoogleG = () => (
   <svg width="22" height="22" viewBox="0 0 24 24">
@@ -87,10 +84,9 @@ export default function Login() {
     >
       {/* Hero */}
       <div className="lg-hero">
-        <div className="lg-illo"><HeroIllo /></div>
         <div className="lg-brand">
           <div>
-            <p className="lg-brand-name">MamaBloom</p>
+            <p className="lg-brand-name">Femin<span>9</span></p>
             <p className="lg-brand-tag">Your journey, our care</p>
           </div>
         </div>
@@ -98,7 +94,7 @@ export default function Login() {
 
       {/* Form card */}
       <div className="lg-card">
-        <h1 className="lg-title">Welcome back 💕</h1>
+        <h1 className="lg-title">Welcome back</h1>
         <p className="lg-sub">Sign in to continue your journey</p>
 
         {/* Email */}
