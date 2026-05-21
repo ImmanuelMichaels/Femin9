@@ -88,13 +88,13 @@ export default function Login() {
       {/* Hero */}
       <div className="lg-hero">
         <div className="lg-brand">
-          <div>
+          {/* <div>
             <p className="lg-brand-name">Femin<span>9</span></p>
             <p className="lg-brand-tag">Your journey, our care</p>
-          </div>
+          </div> */}
         </div>
       </div>
-        <h1 className="lg-title">Welcome back 💕</h1>
+        <h1 className="lg-title">Welcome</h1>
         <p className="lg-sub">Sign in to continue your journey</p>
 
         {/* Email */}
