@@ -1,18 +1,13 @@
 /* ── Login.css ── */
 
 .lg-root {
-  position: fixed;
-  inset: 0;
+  min-height: 100svh;
   max-width: 480px;
   margin: 0 auto;
   background: #8b5cf6;
   display: flex;
   flex-direction: column;
   font-family: 'Poppins', sans-serif;
-  
-  /* Better mobile handling */
-  height: 100dvh;           /* dynamic viewport height */
-  max-height: 100dvh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -89,11 +84,11 @@
   border-radius: 30px 30px 0 0;
   border: 1.8px solid #8b5cf6;
   padding: 30px 24px 16px;
-  flex: 1;                    /* already good */
-  min-height: 0;              /* important for flex child */
+  flex: 1;                    
+  min-height: 0;              
   box-shadow: 0 -4px 30px rgba(200, 80, 200, 0.1);
   margin-top: 20px;
-  overflow: hidden;           /* prevents internal overflow */
+  overflow-y: auto;           
 }
 
 /* Heading */
