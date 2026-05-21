@@ -114,7 +114,7 @@ input[type=range]::-webkit-slider-thumb {
 .cal-strip {
   display: grid; grid-template-columns: repeat(7,1fr);
   gap: clamp(3px,0.8vw,6px);
-  margin-bottom: var(--sp-5);
+  margin: 10px;
 }
 .cal-day {
   display: flex; flex-direction: column; align-items: center;

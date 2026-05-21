@@ -82,6 +82,9 @@ export default function Login() {
         transition: 'opacity 0.4s, transform 0.4s'
       }}
     >
+
+      {/* Form card */}
+      <div className="lg-card">
       {/* Hero */}
       <div className="lg-hero">
         <div className="lg-brand">
@@ -91,10 +94,7 @@ export default function Login() {
           </div>
         </div>
       </div>
-
-      {/* Form card */}
-      <div className="lg-card">
-        <h1 className="lg-title">Welcome back</h1>
+        <h1 className="lg-title">Welcome back 💕</h1>
         <p className="lg-sub">Sign in to continue your journey</p>
 
         {/* Email */}

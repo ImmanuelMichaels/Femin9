@@ -107,9 +107,6 @@ const MOODS = [
 export default function Home({ setTab }) {
   const { journeyType, userName = 'Mama' } = useApp();
 
-  /* homeConfig.js keys match onboarding ids directly (mom, conceive, ivf,
-     pregnant, menopause) so we use raw journeyType here — no translation
-     needed. Fallback to pregnant if an unknown type slips through.           */
   const meta = JOURNEY_META[journeyType] || JOURNEY_META.pregnant;
   const cfg  = HOME_CONFIG[journeyType]  || HOME_CONFIG.pregnant;
 
@@ -129,7 +126,6 @@ export default function Home({ setTab }) {
 
       {/* ── Journey badge ── */}
       <div className="hm-journey-badge" style={{ background: meta.accentSoft, color: meta.accent }}>
-        <span>{meta.icon}</span>
         <span>{meta.label}</span>
       </div>
 
@@ -141,9 +137,6 @@ export default function Home({ setTab }) {
       {/* ── Hero card ── */}
       <div className="hm-hero-card" style={{ background: cfg.heroBg }}>
         <div className="hm-hero-content">
-          <p className="hm-hero-eyebrow" style={{ color: meta.accent }}>
-            {cfg.greeting(userName)}
-          </p>
           <h2 className="hm-hero-title">{cfg.heroTitle}</h2>
           <p className="hm-hero-body">{cfg.heroBody}</p>
         </div>
@@ -162,7 +155,7 @@ export default function Home({ setTab }) {
       {/* ── Alert ── */}
       {cfg.alert && (
         <div className="hm-alert" style={{ background: cfg.alert.bg, borderColor: cfg.alert.color + '44' }}>
-          <AlertTriangle size={18} color={cfg.alert.color} strokeWidth={2} style={{ flexShrink: 0 }} />
+          <AlertTriangle size={10} color={cfg.alert.color} strokeWidth={4} style={{ flexShrink: 0 }} />
           <div>
             <p className="hm-alert-title" style={{ color: cfg.alert.color }}>{cfg.alert.title}</p>
             <p className="hm-alert-body">{cfg.alert.body}</p>
