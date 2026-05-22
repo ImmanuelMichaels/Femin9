@@ -1,10 +1,10 @@
 /* ── Home.css ── */
 
 .h-root {
-  background: #faf5ff;
+  background: #aeabb1;
   min-height: 100%;
   padding: 22px 16px 80px;
-  font-family: 'Nunito', 'Poppins', 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif;
   box-sizing: border-box;
 }
 
@@ -393,19 +393,19 @@
 }
 .hm-stats-row {
   display: flex;
-  flex-direction: row;
-  gap: 12px;
-  padding: 15px 15px;
+  align-items: center;
   justify-content: space-between;
+  padding: 15px 20px;
 }
 .hm-stat-card {
+  width: 300px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   max-width: 150px;
-  background: whitesmoke;
-  padding: 5px 10px;
+  background: rgb(236 227 238 / 27%);
+  padding: 20px 20px;
   border-radius: 10px;
 }
 .hm-hero-card {
@@ -432,7 +432,7 @@
   font-weight: 700;
 }
 .hm-stat-label {
-  font-size: 0.600rem;
+  font-size: 0.800rem;
   color: #555;
   font-family: 'poppins';
 }
@@ -463,9 +463,9 @@
   background: #fff;
   border-radius: 5px;
   padding: 15px;
-  border: 1px solid;
   margin: 10px;
   flex-wrap: wrap;
+  /* box-shadow: 2px 5px 5px rgb(97 77 136 / 28%); */
 }
 .hm-card-label {
   font-size: 0.600rem;
@@ -490,4 +490,45 @@
   width: 200px;
   padding: 10px;
   border-radius: 5px;
+  background: rgb(236 227 238 / 27%);
+}
+
+.hm-qa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  border-radius: 5px;
+}
+.hm-qa-btn {
+  padding: 20px 10px;
+  border-radius: 5px;
+}
+.hm-trackers-card {
+  display: flex;
+  gap: 10px;
+}
+
+.hm-two-col {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+.hm-checklist-header {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 20px;
+}
+.tracker-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.hm-tracker-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  max-width: 300px;
 }

@@ -1,5 +1,4 @@
 /* ── Onboarding.css ── */
-
 .ob-root {
   min-height: 100dvh;
   background: #ffffff;
@@ -7,7 +6,7 @@
   flex-direction: column;
   align-items: center;
   padding: 28px 16px 36px;
-  font-family: 'Nunito', 'Poppins', 'Inter', sans-serif;
+  font-family: 'Poppins', sans-serif;
   box-sizing: border-box;
 }
 
@@ -24,6 +23,7 @@
   font-weight: 800;
   color: #7a1db5;
   letter-spacing: -0.3px;
+  font-family: 'Poppins', sans-serif;
 }
 
 /* Heading */

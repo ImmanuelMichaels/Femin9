@@ -232,7 +232,7 @@ export default function Onboarding() {
       {/* Logo */}
       <div className="ob-logo">
         <Logo />
-        <span className="ob-logo-text">MamaBloom</span>
+        <span className="ob-logo-text">Femin9</span>
       </div>
 
       {/* Heading */}

@@ -96,7 +96,6 @@ function QuickAction({ emoji, label, onClick }) {
 const MOODS = [
   { emoji: '😌', label: 'Calm'    },
   { emoji: '😄', label: 'Happy'   },
-  { emoji: '😊', label: 'Content' },
   { emoji: '😕', label: 'Low'     },
   { emoji: '😰', label: 'Anxious' },
 ];
@@ -208,9 +207,11 @@ export default function Home({ setTab }) {
         {/* Trackers */}
         <div className="hm-card hm-trackers-card">
           <p className="hm-card-label">TODAY'S TRACKERS</p>
-          {cfg.trackers.map(t => (
-            <TrackerRow key={t.id} {...t} />
-          ))}
+          <div className="tracker-container">
+            {cfg.trackers.map(t => (
+              <TrackerRow key={t.id} {...t} />
+            ))}
+          </div>
         </div>
 
         {/* Daily checklist */}
