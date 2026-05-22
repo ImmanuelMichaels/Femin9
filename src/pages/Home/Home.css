@@ -1,11 +1,15 @@
 /* ── Home.css ── */
 
-.h-root {
-  background: #aeabb1;
+.hm-root {
+  background: #efe5f9;
   min-height: 100%;
-  padding: 22px 16px 80px;
+  padding: 10px 10px;
   font-family: 'Poppins', sans-serif;
   box-sizing: border-box;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* ── Header ── */
@@ -79,6 +83,10 @@
 }
 
 /* ── Section label ── */
+.hm-section {
+  background: #ffffff;
+
+}
 .h-slabel {
   font-size: 11px;
   font-weight: 800;
@@ -383,19 +391,28 @@
 
 
 /* rewritting UI */
+.journey-container {
+  box-shadow: 3px 3px 3px #dddcdcd9;
+  width: auto;
+  height: fit-content;
+  padding: 20px;
+  background: #ffffff;
+  border-radius: 20px;
+}
 .hm-journey-badge {
   align-items: center;
   gap: 6px;
   font-size: 11px;
   font-weight: 700;
-  padding: 4px 12px;
+  padding: 10px 12px;
   font-family: 'poppins';
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
 }
 .hm-stats-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 15px 20px;
+  padding: 15px 5px;
+  gap: 10px;
 }
 .hm-stat-card {
   width: 300px;
@@ -405,7 +422,7 @@
   align-items: center;
   max-width: 150px;
   background: rgb(236 227 238 / 27%);
-  padding: 20px 20px;
+  padding: 20px 5px;
   border-radius: 10px;
 }
 .hm-hero-card {
@@ -448,8 +465,8 @@
   gap: 12px;
   padding: 14px;
   background: #fff8f0;
-  border: 1.5px solid #f5c47a;
   font-family: 'poppins';
+  border-radius: 10px;
 }
 .hm-alert-title {
   font-size: .700rem;
@@ -463,12 +480,12 @@
   background: #fff;
   border-radius: 5px;
   padding: 15px;
-  margin: 10px;
+  margin: 5px;
   flex-wrap: wrap;
-  /* box-shadow: 2px 5px 5px rgb(97 77 136 / 28%); */
+  box-shadow: 2px 3px 3px rgb(97 77 136 / 28%);
 }
 .hm-card-label {
-  font-size: 0.600rem;
+  font-size: 14px;
   font-weight: 700;
   color: #6a1fa2;
   text-transform: uppercase;
@@ -492,6 +509,13 @@
   border-radius: 5px;
   background: rgb(236 227 238 / 27%);
 }
+.hm-mood-em {
+  font-size: 50px;
+}
+.hm-mood-lbl {
+  font-size: 16px;
+  font-weight: 400;
+}
 
 .hm-qa-grid {
   display: grid;
@@ -502,6 +526,11 @@
 .hm-qa-btn {
   padding: 20px 10px;
   border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+}
+.hm-qa-em {
+  font-size: 30px;
 }
 .hm-trackers-card {
   display: flex;
@@ -509,7 +538,6 @@
 }
 
 .hm-two-col {
-  display: flex;
   gap: 10px;
   justify-content: space-between;
 }
@@ -520,15 +548,21 @@
   margin-bottom: 10px;
   gap: 20px;
 }
-.tracker-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
 .hm-tracker-row {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 10px;
   max-width: 300px;
+  box-shadow: inset 1px 2px 2px 1px #0606060d;
+  border-radius: 10px;
+}
+.hm-tracker-icon {
+  font-size: 50px;
+}
+.tracker-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
 }

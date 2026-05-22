@@ -123,26 +123,29 @@ export default function Home({ setTab }) {
   return (
     <div className="hm-root">
 
-      {/* ── Journey badge ── */}
-      <div className="hm-journey-badge" style={{ background: meta.accentSoft, color: meta.accent }}>
-        <span>{meta.label}</span>
-      </div>
-
-      {/* ── Calendar ── */}
-      <div className="hm-section">
-        <CalendarStrip accent={meta.accent} />
-      </div>
-
-      {/* ── Hero card ── */}
-      <div className="hm-hero-card" style={{ background: cfg.heroBg }}>
-        <div className="hm-hero-content">
-          <h2 className="hm-hero-title">{cfg.heroTitle}</h2>
-          <p className="hm-hero-body">{cfg.heroBody}</p>
+      {/* Journey Container */}
+      <div className="journey-container">
+        {/* ── Journey badge ── */}
+        <div className="hm-journey-badge" style={{ background: meta.accentSoft, color: meta.accent }}>
+          <span>{meta.label}</span>
         </div>
-        <div className="hm-hero-illo">
-          <img src={cfg.heroIllo} alt={meta.label} />
+
+        {/* ── Calendar ── */}
+        <div className="hm-section">
+          <CalendarStrip accent={meta.accent} />
         </div>
-      </div>
+
+        {/* ── Hero card ── */}
+        <div className="hm-hero-card" style={{ background: cfg.heroBg }}>
+          <div className="hm-hero-content">
+            <h2 className="hm-hero-title">{cfg.heroTitle}</h2>
+            <p className="hm-hero-body">{cfg.heroBody}</p>
+          </div>
+          <div className="hm-hero-illo">
+            <img src={cfg.heroIllo} alt={meta.label} />
+          </div>
+        </div>
+      
 
       {/* ── Stats row ── */}
       <div className="hm-stats-row">
@@ -162,7 +165,8 @@ export default function Home({ setTab }) {
           <ChevronRight size={16} color={cfg.alert.color} strokeWidth={2} style={{ flexShrink: 0 }} />
         </div>
       )}
-
+    </div>
+    
       {/* ── Mood check ── */}
       <div className="hm-card">
         <p className="hm-card-label">HOW ARE YOU FEELING?</p>
