@@ -1,15 +1,23 @@
 import { useState } from 'react';
 import { WCard, SectionTitle, Tag } from '../../components/ui';
+import EmergencyRedFlags from '../../components/EmergencyRedFlags';
+import { useApp } from '../../context/AppContext';
 
 export default function Vitals() {
+  const { journeyType, getCurrentWeek } = useApp();
   const [bpSys, setBpSys] = useState(118);
   const [bpDia, setBpDia] = useState(76);
   const [weight, setWeight] = useState(68.4);
   const [temp, setTemp] = useState(37.1);
   const [logged, setLogged] = useState(false);
+  const [bleeding, setBleeding] = useState("none");
+  const [fetalMovement, setFetalMovement] = useState("normal");
 
   const bpStatus = bpSys > 140 || bpDia > 90 ? "HIGH" : bpSys < 90 ? "LOW" : "NORMAL";
   const tempStatus = temp > 38.5 ? "FEVER" : temp > 37.5 ? "ELEVATED" : "NORMAL";
+  
+  // Get current week for pregnancy (default to 26 if not pregnant)
+  const currentWeek = journeyType === 'pregnant' ? getCurrentWeek() : 26;
 
   const history = [
     {date:"22",sys:118},{date:"23",sys:116},{date:"24",sys:124},
@@ -18,7 +26,17 @@ export default function Vitals() {
 
   return (
     <div className="page-pad">
+      {/* EMERGENCY RED FLAGS - NEVER PAYWALLED - MUST BE VISIBLE AT ALL TIMES */}
+      <EmergencyRedFlags 
+        bpSys={bpSys}
+        bpDia={bpDia}
+        bleeding={bleeding}
+        fetalMovement={fetalMovement}
+        week={currentWeek}
+      />
+      
       <SectionTitle title="Vital Signs" />
+      
       <WCard>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"var(--sp-4)" }}>
           <p style={{ fontSize:"var(--fs-lg)", fontWeight:800, color:"var(--dp)" }}>Blood Pressure</p>
@@ -38,9 +56,11 @@ export default function Vitals() {
             <input type="range" min={mn} max={mx} value={v} onChange={e => sv(+e.target.value)} style={{ accentColor:col }} />
           </div>
         ))}
+        
+        {/* Warning message for high BP - already shown in EmergencyRedFlags but keep for context */}
         {bpStatus==="HIGH" && (
-          <div className="fu" style={{ background:"var(--rdl)", borderRadius:"var(--r)", padding:"var(--sp-3) var(--card-p)" }}>
-            <p style={{ fontSize:"var(--fs-sm)", color:"var(--rd)", fontWeight:700 }}>Above 160/110 with symptoms — go to hospital immediately.</p>
+          <div className="fu" style={{ background:"var(--rdl)", borderRadius:"var(--r)", padding:"var(--sp-3) var(--card-p)", marginTop:"var(--sp-3)" }}>
+            <p style={{ fontSize:"var(--fs-sm)", color:"var(--rd)", fontWeight:700 }}>⚠️ High blood pressure detected. Monitor closely and contact your healthcare provider if persistent.</p>
           </div>
         )}
       </WCard>
@@ -52,13 +72,80 @@ export default function Vitals() {
           <input type="range" min={40} max={120} step={0.1} value={weight} onChange={e => setWeight(+e.target.value)} style={{ accentColor:"var(--t)", marginBottom:"var(--sp-2)" }} />
           <p style={{ fontSize:"var(--fs-xs)", color:"var(--mt)" }}>+0.8kg this week</p>
         </WCard>
+        
         <WCard style={{ padding:"var(--card-p)" }}>
           <p style={{ fontSize:"var(--fs-xs)", fontWeight:800, color:"var(--mt)", marginBottom:"var(--sp-2)", textTransform:"uppercase" }}>Temperature</p>
-          <div style={{ fontSize:"var(--fs-2xl)", fontWeight:900, color:tempStatus==="NORMAL"?"var(--sg)":"var(--rd)", marginBottom:"var(--sp-2)" }}>{temp.toFixed(1)}<span style={{ fontSize:"var(--fs-sm)", fontWeight:600 }}>C</span></div>
+          <div style={{ fontSize:"var(--fs-2xl)", fontWeight:900, color:tempStatus==="NORMAL"?"var(--sg)":"var(--rd)", marginBottom:"var(--sp-2)" }}>{temp.toFixed(1)}<span style={{ fontSize:"var(--fs-sm)", fontWeight:600 }}>°C</span></div>
           <input type="range" min={35} max={42} step={0.1} value={temp} onChange={e => setTemp(+e.target.value)} style={{ accentColor:tempStatus==="NORMAL"?"var(--sg)":"var(--rd)", marginBottom:"var(--sp-2)" }} />
           <Tag label={tempStatus} bg={tempStatus==="NORMAL"?"var(--sgl)":"var(--rdl)"} tc={tempStatus==="NORMAL"?"var(--sg)":"var(--rd)"} />
         </WCard>
       </div>
+
+      {/* Pregnancy-specific bleeding and movement tracking */}
+      {journeyType === 'pregnant' && (
+        <WCard>
+          <p style={{ fontSize:"var(--fs-md)", fontWeight:800, color:"var(--dp)", marginBottom:"var(--sp-3)" }}>🤰 Pregnancy Monitoring</p>
+          
+          <div style={{ marginBottom:"var(--sp-3)" }}>
+            <p style={{ fontSize:"var(--fs-sm)", fontWeight:700, marginBottom:"var(--sp-2)" }}>Vaginal Bleeding</p>
+            <div style={{ display:"flex", gap:"var(--gap-sm)" }}>
+              {[
+                { id: "none", label: "None", color: "var(--sg)" },
+                { id: "spotting", label: "Spotting", color: "var(--gd)" },
+                { id: "light", label: "Light", color: "var(--t)" },
+                { id: "heavy", label: "Heavy", color: "var(--rd)" }
+              ].map(option => (
+                <button
+                  key={option.id}
+                  onClick={() => setBleeding(option.id)}
+                  style={{
+                    flex: 1,
+                    padding: "var(--sp-2)",
+                    borderRadius: "var(--r)",
+                    background: bleeding === option.id ? option.color : "var(--warm)",
+                    color: bleeding === option.id ? "#fff" : "var(--mt)",
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    fontSize: "var(--fs-xs)"
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <p style={{ fontSize:"var(--fs-sm)", fontWeight:700, marginBottom:"var(--sp-2)" }}>Fetal Movement</p>
+            <div style={{ display:"flex", gap:"var(--gap-sm)" }}>
+              {[
+                { id: "normal", label: "Normal", color: "var(--sg)" },
+                { id: "reduced", label: "Reduced", color: "var(--gd)" },
+                { id: "none", label: "None", color: "var(--rd)" }
+              ].map(option => (
+                <button
+                  key={option.id}
+                  onClick={() => setFetalMovement(option.id)}
+                  style={{
+                    flex: 1,
+                    padding: "var(--sp-2)",
+                    borderRadius: "var(--r)",
+                    background: fetalMovement === option.id ? option.color : "var(--warm)",
+                    color: fetalMovement === option.id ? "#fff" : "var(--mt)",
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                    fontSize: "var(--fs-xs)"
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </WCard>
+      )}
 
       <WCard>
         <p style={{ fontSize:"var(--fs-md)", fontWeight:800, color:"var(--dp)", marginBottom:"var(--sp-4)" }}>7-Day BP Trend</p>

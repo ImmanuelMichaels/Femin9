@@ -48,8 +48,7 @@ export const JOURNEY_META = {
 };
 
 /* ── Greeting helper ── */
-const greet = (name, emoji) =>
-  `Good morning, ${name} ${emoji}`;
+const greet = (name, emoji) => `Good morning, ${name} ${emoji}`;
 
 /* ─────────────────────────────────────────────────────────────────────────────
    PREGNANCY
@@ -67,20 +66,20 @@ export const PREGNANCY_CONFIG = {
     { icon: '👶', label: 'Baby Size',    value: 'Scallion',  sub: '35.6 cm' },
     { icon: '❤️', label: 'Heart Rate',   value: '148 bpm',   sub: 'Normal' },
     { icon: '⚖️', label: 'Weight Gain',  value: '+8.2 kg',   sub: 'On track' },
-    { icon: '📅', label: 'Days Left',    value: '98',         sub: 'Est. due date' },
+    { icon: '📅', label: 'Days Left',    value: '98',        sub: 'Est. due date' },
   ],
 
   trackers: [
     { id: 'kicks',       icon: '👣', label: 'Kick Counter',      value: '12 today',    target: '≥10/day',    pct: 100, color: '#d63a6e' },
-    { id: 'hydration',   icon: '💧', label: 'Hydration',          value: '5 glasses',   target: '8 glasses',  pct: 62,  color: '#3b7de9' },
-    { id: 'iron',        icon: '💊', label: 'Iron Tablet',        value: 'Not taken',   target: 'Daily',      pct: 0,   color: '#e57c1a' },
-    { id: 'sleep',       icon: '😴', label: 'Sleep',              value: '7.5 hrs',     target: '8+ hrs',     pct: 87,  color: '#9a3dde' },
+    { id: 'hydration',   icon: '💧', label: 'Hydration',         value: '5 glasses',   target: '8 glasses',  pct: 62,  color: '#3b7de9' },
+    { id: 'iron',        icon: '💊', label: 'Iron Tablet',       value: 'Not taken',   target: 'Daily',      pct: 0,   color: '#e57c1a' },
+    { id: 'sleep',       icon: '😴', label: 'Sleep',             value: '7.5 hrs',     target: '8+ hrs',     pct: 87,  color: '#9a3dde' },
   ],
 
   appointments: [
     { date: 'Mar 28', label: '28-week Glucose Tolerance Test', location: "King's College Hospital", urgent: true  },
     { date: 'Apr 10', label: 'Anomaly Scan',                    location: 'St Thomas\' Hospital',    urgent: false },
-    { date: 'Apr 24', label: 'Midwife Appointment',             location: 'Local NHS Clinic',         urgent: false },
+    { date: 'Apr 24', label: 'Midwife Appointment',             location: 'Local NHS Clinic',        urgent: false },
   ],
 
   insights: [
@@ -94,7 +93,7 @@ export const PREGNANCY_CONFIG = {
     { id: 'kicks',      label: 'Log 10 kick counts',            done: true  },
     { id: 'water',      label: 'Drink 8 glasses of water',      done: false },
     { id: 'walk',       label: '20-minute gentle walk',         done: true  },
-    { id: 'perineal',   label: 'Perineal massage (5 min)',       done: false },
+    { id: 'perineal',   label: 'Perineal massage (5 min)',      done: false },
   ],
 
   quickActions: [
@@ -113,7 +112,7 @@ export const PREGNANCY_CONFIG = {
 };
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   TRYING TO CONCEIVE
+   TRYING TO CONCEIVE (TTC)
 ───────────────────────────────────────────────────────────────────────────── */
 export const TTC_CONFIG = {
   greeting:  name => greet(name, '🌸'),
@@ -124,16 +123,16 @@ export const TTC_CONFIG = {
 
   stats: [
     { icon: '📅', label: 'Cycle Day',      value: 'Day 12',    sub: '28-day cycle' },
-    { icon: '🥚', label: 'Ovulation',       value: 'In 2 days', sub: 'Predicted' },
-    { icon: '🌡️', label: 'BBT',             value: '36.4°C',    sub: 'Pre-ovulation' },
-    { icon: '💞', label: 'Fertile Window',  value: '14–16 Mar', sub: 'Peak days' },
+    { icon: '🥚', label: 'Ovulation',      value: 'In 2 days', sub: 'Predicted' },
+    { icon: '🌡️', label: 'BBT',           value: '36.4°C',    sub: 'Pre-ovulation' },
+    { icon: '💞', label: 'Fertile Window', value: '14–16 Mar', sub: 'Peak days' },
   ],
 
   trackers: [
     { id: 'bbt',    icon: '🌡️', label: 'BBT Logged',          value: '36.4°C',    target: 'Daily',      pct: 100, color: '#3b7de9' },
-    { id: 'cm',     icon: '💧', label: 'Cervical Mucus',       value: 'Creamy',    target: 'Daily log',  pct: 100, color: '#9a3dde' },
-    { id: 'folic',  icon: '💊', label: 'Folic Acid',           value: 'Not taken', target: '400mcg/day', pct: 0,   color: '#e57c1a' },
-    { id: 'water',  icon: '💧', label: 'Hydration',            value: '4 glasses', target: '8 glasses',  pct: 50,  color: '#2e9e67' },
+    { id: 'cm',     icon: '💧', label: 'Cervical Mucus',      value: 'Creamy',    target: 'Daily log',  pct: 100, color: '#9a3dde' },
+    { id: 'folic',  icon: '💊', label: 'Folic Acid',          value: 'Not taken', target: '400mcg/day', pct: 0,   color: '#e57c1a' },
+    { id: 'water',  icon: '💧', label: 'Hydration',           value: '4 glasses', target: '8 glasses',  pct: 50,  color: '#2e9e67' },
   ],
 
   appointments: [
@@ -143,8 +142,8 @@ export const TTC_CONFIG = {
 
   insights: [
     { icon: '🌰', title: 'Fertility Superfoods',   body: 'Tiger nuts (Aya), garden eggs, avocado, oily fish. These boost progesterone, iron, and Omega-3.',  color: '#3b7de9', bg: '#e8f0fb' },
-    { icon: '🚫', title: 'Avoid This Week',         body: 'NSAIDs (ibuprofen) around ovulation can suppress the LH surge. Use paracetamol if needed.',        color: '#e57c1a', bg: '#fff3e8' },
-    { icon: '🧘', title: 'Stress & Fertility',      body: 'Chronic stress raises cortisol, suppressing LH. Try 4-7-8 breathing for 5 minutes daily.',        color: '#9a3dde', bg: '#f0e8fb' },
+    { icon: '🚫', title: 'Avoid This Week',        body: 'NSAIDs (ibuprofen) around ovulation can suppress the LH surge. Use paracetamol if needed.',        color: '#e57c1a', bg: '#fff3e8' },
+    { icon: '🧘', title: 'Stress & Fertility',     body: 'Chronic stress raises cortisol, suppressing LH. Try 4-7-8 breathing for 5 minutes daily.',        color: '#9a3dde', bg: '#f0e8fb' },
   ],
 
   checklist: [
@@ -182,9 +181,9 @@ export const IVF_CONFIG = {
 
   stats: [
     { icon: '🔬', label: 'Embryos',        value: '4',         sub: '2 frozen, 1 ready' },
-    { icon: '📅', label: 'Transfer',        value: 'Mar 26',    sub: 'In 4 days' },
-    { icon: '💉', label: 'Meds Today',      value: '3 of 5',    sub: 'Pending 2' },
-    { icon: '🌸', label: 'Cycle Day',       value: 'Day 14',    sub: 'Stimulation phase' },
+    { icon: '📅', label: 'Transfer',       value: 'Mar 26',    sub: 'In 4 days' },
+    { icon: '💉', label: 'Meds Today',     value: '3 of 5',    sub: 'Pending 2' },
+    { icon: '🌸', label: 'Cycle Day',      value: 'Day 14',    sub: 'Stimulation phase' },
   ],
 
   trackers: [
@@ -208,8 +207,8 @@ export const IVF_CONFIG = {
 
   checklist: [
     { id: 'gonal',  label: 'Gonal-F injection (07:00)',       done: true  },
-    { id: 'cetro',  label: 'Cetrotide injection (07:30)',      done: true  },
-    { id: 'prog',   label: 'Progesterone pessary (21:00)',     done: false },
+    { id: 'cetro',  label: 'Cetrotide injection (07:30)',     done: true  },
+    { id: 'prog',   label: 'Progesterone pessary (21:00)',    done: false },
     { id: 'folic',  label: 'Folic acid 5mg',                  done: false },
     { id: 'water',  label: 'Drink 8 glasses of water',        done: false },
   ],
@@ -256,7 +255,7 @@ export const MOM_CONFIG = {
   appointments: [
     { date: 'Mar 25', label: '8-Week Baby Health Check',      location: 'GP Surgery',       urgent: true  },
     { date: 'Apr 8',  label: '8-Week Vaccinations (1st set)', location: 'GP Surgery',       urgent: true  },
-    { date: 'Apr 20', label: 'Postnatal Midwife Visit',        location: 'Community Clinic', urgent: false },
+    { date: 'Apr 20', label: 'Postnatal Midwife Visit',       location: 'Community Clinic', urgent: false },
   ],
 
   insights: [
@@ -356,3 +355,13 @@ export const HOME_CONFIG = {
   mom:       MOM_CONFIG,
   menopause: MENOPAUSE_CONFIG,
 };
+
+// Helper function to get home config by journey type
+export function getHomeConfig(journeyType) {
+  return HOME_CONFIG[journeyType] || PREGNANCY_CONFIG;
+}
+
+// Helper function to get journey meta by type
+export function getJourneyMeta(journeyType) {
+  return JOURNEY_META[journeyType] || JOURNEY_META.pregnant;
+}

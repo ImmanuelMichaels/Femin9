@@ -1,5 +1,7 @@
-import { useState } from "react";
-// import "./ivfjourney.css";
+import { useState, useEffect } from 'react';
+import { useApp } from '../../context/AppContext';
+import GlowCard from '../../components/GlowCard';
+import './ivfjourney.css';
 
 /* ─────────────────────────────────────────────────────────
    DATA
@@ -16,7 +18,7 @@ const TIMELINE_STAGES = [
   { id: 8, label: "Pregnancy Test",  date: "Apr 9",     done: false, active: false },
 ];
 
-const MEDICATIONS = [
+const INITIAL_MEDICATIONS = [
   {
     id: 1, name: "Gonal-F",     type: "Injection", dose: "150 IU",
     time: "07:00 AM", status: "taken",
@@ -166,14 +168,6 @@ const CONTACTS = [
   },
 ];
 
-const NAV_ITEMS = [
-  { id: "home",     label: "Home",        icon: HomeIcon    },
-  { id: "journey",  label: "Journey",     icon: JourneyIcon },
-  { id: "meds",     label: "Medications", icon: MedIcon     },
-  { id: "insights", label: "Insights",    icon: InsightIcon },
-  { id: "profile",  label: "Profile",     icon: ProfileIcon },
-];
-
 /* ─────────────────────────────────────────────────────────
    SVG ICON COMPONENTS
 ───────────────────────────────────────────────────────── */
@@ -188,6 +182,7 @@ function HomeIcon({ active }) {
     </svg>
   );
 }
+
 function JourneyIcon({ active }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -198,6 +193,7 @@ function JourneyIcon({ active }) {
     </svg>
   );
 }
+
 function MedIcon({ active }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -208,6 +204,7 @@ function MedIcon({ active }) {
     </svg>
   );
 }
+
 function InsightIcon({ active }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -217,6 +214,7 @@ function InsightIcon({ active }) {
     </svg>
   );
 }
+
 function ProfileIcon({ active }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -227,6 +225,7 @@ function ProfileIcon({ active }) {
     </svg>
   );
 }
+
 function CheckIcon() {
   return (
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -235,6 +234,7 @@ function CheckIcon() {
     </svg>
   );
 }
+
 function BellIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -244,6 +244,7 @@ function BellIcon() {
     </svg>
   );
 }
+
 function ChevronDown() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -268,10 +269,10 @@ function SectionHeader({ label, title, subtitle, accent }) {
 }
 
 /* ─────────────────────────────────────────────────────────
-   HERO
+   HERO SECTION
 ───────────────────────────────────────────────────────── */
 
-function HeroSection() {
+function HeroSection({ userName, stage, progress }) {
   return (
     <section className="hero">
       <div className="hero-blob blob-a" />
@@ -279,10 +280,10 @@ function HeroSection() {
 
       <div className="hero-top-bar">
         <div className="hero-identity">
-          <div className="hero-avatar">S</div>
+          <div className="hero-avatar">{userName?.charAt(0) || 'S'}</div>
           <div>
-            <p className="hero-hello">Good morning, Sophie 🌸</p>
-            <p className="hero-meta">Friday, 22 March · Cycle Day 14</p>
+            <p className="hero-hello">Good morning, {userName || 'Sophie'} 🌸</p>
+            <p className="hero-meta">{new Date().toLocaleDateString('en-NG', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
           </div>
         </div>
         <button className="hero-bell" aria-label="Notifications">
@@ -295,17 +296,17 @@ function HeroSection() {
         <div className="hero-card-row">
           <div className="hero-card-text">
             <p className="hero-stage-label">Current Stage</p>
-            <h1 className="hero-stage-name">Embryo Development</h1>
-            <p className="hero-stage-sub">Day 5 post-retrieval · blastocyst stage</p>
+            <h1 className="hero-stage-name">{stage}</h1>
+            <p className="hero-stage-sub">Day {progress} of cycle</p>
           </div>
           <div className="hero-ring-wrap">
             <svg width="76" height="76" viewBox="0 0 76 76">
               <circle cx="38" cy="38" r="32" fill="none" stroke="#FFE4D0" strokeWidth="6" />
               <circle cx="38" cy="38" r="32" fill="none" stroke="#F08C2E" strokeWidth="6"
-                strokeDasharray="201.06" strokeDashoffset="100.53"
+                strokeDasharray="201.06" strokeDashoffset={201.06 * (1 - progress / 100)}
                 strokeLinecap="round" transform="rotate(-90 38 38)" />
               <text x="38" y="43" textAnchor="middle" fill="#C96A10"
-                fontSize="15" fontWeight="700" fontFamily="DM Sans, sans-serif">50%</text>
+                fontSize="15" fontWeight="700" fontFamily="DM Sans, sans-serif">{progress}%</text>
             </svg>
           </div>
         </div>
@@ -330,7 +331,7 @@ function HeroSection() {
    IVF TIMELINE
 ───────────────────────────────────────────────────────── */
 
-function IVFTimeline() {
+function IVFTimeline({ stages, onStageUpdate }) {
   return (
     <section className="section">
       <SectionHeader
@@ -341,18 +342,18 @@ function IVFTimeline() {
       />
       <div className="tl-scroll-area">
         <div className="tl-track">
-          {TIMELINE_STAGES.map((stage, i) => (
+          {stages.map((stage, i) => (
             <div key={stage.id}
               className={`tl-step ${stage.done ? "tl-done" : ""} ${stage.active ? "tl-active" : ""}`}>
               <div className="tl-connector-wrap">
                 {i > 0 && (
-                  <div className={`tl-line ${TIMELINE_STAGES[i - 1].done ? "tl-line-done" : ""}`} />
+                  <div className={`tl-line ${stages[i - 1].done ? "tl-line-done" : ""}`} />
                 )}
                 <div className="tl-dot">
                   {stage.done && <CheckIcon />}
                   {stage.active && <div className="tl-pulse" />}
                 </div>
-                {i < TIMELINE_STAGES.length - 1 && (
+                {i < stages.length - 1 && (
                   <div className={`tl-line ${stage.done ? "tl-line-done" : ""}`} />
                 )}
               </div>
@@ -370,10 +371,16 @@ function IVFTimeline() {
    MEDICATION SCHEDULE
 ───────────────────────────────────────────────────────── */
 
-function MedicationSection() {
+function MedicationSection({ medications, onMedicationUpdate }) {
   const [expanded, setExpanded] = useState(null);
-  const taken   = MEDICATIONS.filter(m => m.status === "taken").length;
-  const pct     = Math.round((taken / MEDICATIONS.length) * 100);
+  const taken = medications.filter(m => m.status === "taken").length;
+  const pct = Math.round((taken / medications.length) * 100);
+
+  const handleMarkTaken = (id) => {
+    onMedicationUpdate(medications.map(med =>
+      med.id === id ? { ...med, status: "taken" } : med
+    ));
+  };
 
   return (
     <section className="section">
@@ -385,7 +392,7 @@ function MedicationSection() {
 
       <div className="med-bar-wrap">
         <div className="med-bar-info">
-          <span className="med-bar-text">{taken} of {MEDICATIONS.length} taken today</span>
+          <span className="med-bar-text">{taken} of {medications.length} taken today</span>
           <span className="med-bar-pct">{pct}%</span>
         </div>
         <div className="med-bar-track">
@@ -394,7 +401,7 @@ function MedicationSection() {
       </div>
 
       <div className="med-list">
-        {MEDICATIONS.map(med => (
+        {medications.map(med => (
           <div key={med.id}
             className={`med-card med-${med.status}`}
             style={{ "--mc": med.color, "--mbg": med.bg }}>
@@ -419,7 +426,11 @@ function MedicationSection() {
               <div className="med-expand">
                 <p className="med-note-text">{med.notes}</p>
                 {med.status === "pending" && (
-                  <button className="med-take-btn">Mark as Taken</button>
+                  <button 
+                    className="med-take-btn"
+                    onClick={() => handleMarkTaken(med.id)}>
+                    Mark as Taken
+                  </button>
                 )}
               </div>
             )}
@@ -434,7 +445,7 @@ function MedicationSection() {
    FERTILITY SCANS
 ───────────────────────────────────────────────────────── */
 
-function ScanSection() {
+function ScanSection({ scans }) {
   return (
     <section className="section">
       <SectionHeader
@@ -444,7 +455,7 @@ function ScanSection() {
         accent="#2E9E9B"
       />
       <div className="scan-list">
-        {SCANS.map(scan => (
+        {scans.map(scan => (
           <div key={scan.id} className={`scan-card scan-${scan.status}`}>
             <div className="scan-top">
               <div className="scan-left">
@@ -485,21 +496,21 @@ function ScanSection() {
    EMBRYO DEVELOPMENT
 ───────────────────────────────────────────────────────── */
 
-function EmbryoSection() {
+function EmbryoSection({ embryos }) {
   const [selected, setSelected] = useState(null);
-  const transferReady = EMBRYOS.filter(e => e.status === "transfer-ready").length;
-  const frozen        = EMBRYOS.filter(e => e.status === "frozen").length;
+  const transferReady = embryos.filter(e => e.status === "transfer-ready").length;
+  const frozen = embryos.filter(e => e.status === "frozen").length;
 
   return (
     <section className="section">
       <SectionHeader
         label="LAB UPDATE"
         title="Embryo Development"
-        subtitle={`${EMBRYOS.length} embryos tracked · ${frozen} frozen · ${transferReady} transfer-ready`}
+        subtitle={`${embryos.length} embryos tracked · ${frozen} frozen · ${transferReady} transfer-ready`}
         accent="#E87070"
       />
       <div className="embryo-grid">
-        {EMBRYOS.map(em => (
+        {embryos.map(em => (
           <div
             key={em.id}
             className={`embryo-card embryo-${em.status} ${selected === em.id ? "embryo-open" : ""}`}
@@ -517,7 +528,7 @@ function EmbryoSection() {
               <p className="embryo-stage-txt">Day {em.day} · {em.stage}</p>
               <div className="embryo-tag-row">
                 <span className={`embryo-status-tag est-${em.status}`}>
-                  {em.status === "frozen"          ? "❄️ Frozen"
+                  {em.status === "frozen" ? "❄️ Frozen"
                    : em.status === "transfer-ready" ? "✅ Transfer Ready"
                    : "🔬 Monitoring"}
                 </span>
@@ -541,15 +552,49 @@ function EmbryoSection() {
    TWO-WEEK WAIT
 ───────────────────────────────────────────────────────── */
 
+const SYMPTOMS = ["Bloating", "Cramping", "Spotting", "Nausea", "Breast tenderness",
+                  "Fatigue", "Headache", "Mood changes", "Increased urination"];
+
+function SymptomLog() {
+  const [active, setActive] = useState([]);
+  const toggle = s => setActive(a => a.includes(s) ? a.filter(x => x !== s) : [...a, s]);
+  return (
+    <div className="symptom-wrap">
+      {SYMPTOMS.map(s => (
+        <button key={s}
+          className={`symptom-chip ${active.includes(s) ? "symptom-on" : ""}`}
+          onClick={() => toggle(s)}>{s}</button>
+      ))}
+    </div>
+  );
+}
+
 function TwoWeekWait() {
-  const [mood,       setMood]       = useState(null);
-  const [hydration,  setHydration]  = useState(5);
-  const [affirmIdx,  setAffirmIdx]  = useState(0);
-  const [journal,    setJournal]    = useState("");
-  const [saved,      setSaved]      = useState(false);
+  const [mood, setMood] = useState(null);
+  const [hydration, setHydration] = useState(() => {
+    const saved = localStorage.getItem('ivf_hydration');
+    return saved ? parseInt(saved) : 5;
+  });
+  const [affirmIdx, setAffirmIdx] = useState(() => {
+    const saved = localStorage.getItem('ivf_affirmIdx');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [journal, setJournal] = useState(() => {
+    return localStorage.getItem('ivf_journal') || '';
+  });
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem('ivf_hydration', hydration.toString());
+  }, [hydration]);
+
+  useEffect(() => {
+    localStorage.setItem('ivf_affirmIdx', affirmIdx.toString());
+  }, [affirmIdx]);
 
   const handleSave = () => {
     if (!journal.trim()) return;
+    localStorage.setItem('ivf_journal', journal);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -563,7 +608,6 @@ function TwoWeekWait() {
         accent="#9B8FD8"
       />
 
-      {/* Affirmation card */}
       <div className="affirmation-card">
         <div className="affirmation-bloom">🌸</div>
         <p className="affirmation-text">"{AFFIRMATIONS[affirmIdx]}"</p>
@@ -574,7 +618,6 @@ function TwoWeekWait() {
         </button>
       </div>
 
-      {/* Mood check-in */}
       <div className="tww-card">
         <h3 className="tww-card-title">How are you feeling right now?</h3>
         <div className="mood-grid">
@@ -595,7 +638,6 @@ function TwoWeekWait() {
         )}
       </div>
 
-      {/* Hydration */}
       <div className="tww-card">
         <div className="tww-card-header">
           <h3 className="tww-card-title">Hydration Tracker</h3>
@@ -620,14 +662,12 @@ function TwoWeekWait() {
         </div>
       </div>
 
-      {/* Symptom log */}
       <div className="tww-card">
         <h3 className="tww-card-title">Symptom Log</h3>
         <p className="tww-card-sub">Tap any you're experiencing today.</p>
         <SymptomLog />
       </div>
 
-      {/* Journal */}
       <div className="tww-card journal-card">
         <div className="journal-icon-wrap">📓</div>
         <h3 className="tww-card-title">Daily Journal</h3>
@@ -644,23 +684,6 @@ function TwoWeekWait() {
         </button>
       </div>
     </section>
-  );
-}
-
-const SYMPTOMS = ["Bloating", "Cramping", "Spotting", "Nausea", "Breast tenderness",
-                  "Fatigue", "Headache", "Mood changes", "Increased urination"];
-
-function SymptomLog() {
-  const [active, setActive] = useState([]);
-  const toggle = s => setActive(a => a.includes(s) ? a.filter(x => x !== s) : [...a, s]);
-  return (
-    <div className="symptom-wrap">
-      {SYMPTOMS.map(s => (
-        <button key={s}
-          className={`symptom-chip ${active.includes(s) ? "symptom-on" : ""}`}
-          onClick={() => toggle(s)}>{s}</button>
-      ))}
-    </div>
   );
 }
 
@@ -796,13 +819,20 @@ function ContactSection() {
    BOTTOM NAVIGATION
 ───────────────────────────────────────────────────────── */
 
-function BottomNav() {
-  const [active, setActive] = useState("journey");
+const NAV_ITEMS = [
+  { id: "home", label: "Home", icon: HomeIcon },
+  { id: "journey", label: "Journey", icon: JourneyIcon },
+  { id: "meds", label: "Medications", icon: MedIcon },
+  { id: "insights", label: "Insights", icon: InsightIcon },
+  { id: "profile", label: "Profile", icon: ProfileIcon },
+];
+
+function BottomNav({ active, setActive }) {
   return (
     <nav className="bottom-nav" role="navigation" aria-label="Main navigation">
       {NAV_ITEMS.map(item => {
         const isActive = active === item.id;
-        const IconCmp  = item.icon;
+        const IconCmp = item.icon;
         return (
           <button
             key={item.id}
@@ -820,23 +850,87 @@ function BottomNav() {
 }
 
 /* ─────────────────────────────────────────────────────────
-   ROOT
+   ROOT COMPONENT
 ───────────────────────────────────────────────────────── */
 
 export default function IVFJourney() {
+  const { userName } = useApp();
+  const [activeTab, setActiveTab] = useState("home");
+  const [stages, setStages] = useState(() => {
+    const saved = localStorage.getItem('ivf_stages');
+    return saved ? JSON.parse(saved) : TIMELINE_STAGES;
+  });
+  const [medications, setMedications] = useState(() => {
+    const saved = localStorage.getItem('ivf_medications');
+    return saved ? JSON.parse(saved) : INITIAL_MEDICATIONS;
+  });
+
+  // Save to localStorage when state changes
+  useEffect(() => {
+    localStorage.setItem('ivf_stages', JSON.stringify(stages));
+  }, [stages]);
+
+  useEffect(() => {
+    localStorage.setItem('ivf_medications', JSON.stringify(medications));
+  }, [medications]);
+
+  // Calculate progress percentage
+  const completedStages = stages.filter(s => s.done).length;
+  const progress = Math.round((completedStages / stages.length) * 100);
+
+  // Get current stage name
+  const currentStage = stages.find(s => s.active)?.label || stages[0]?.label;
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'home':
+        return (
+          <>
+            <HeroSection userName={userName} stage={currentStage} progress={progress} />
+            <GlowCard journeyType="ivf" />
+            <IVFTimeline stages={stages} onStageUpdate={setStages} />
+            <div className="nav-spacer" />
+          </>
+        );
+      case 'journey':
+        return (
+          <>
+            <IVFTimeline stages={stages} onStageUpdate={setStages} />
+            <div className="nav-spacer" />
+          </>
+        );
+      case 'meds':
+        return (
+          <>
+            <MedicationSection medications={medications} onMedicationUpdate={setMedications} />
+            <div className="nav-spacer" />
+          </>
+        );
+      case 'insights':
+        return (
+          <>
+            <TwoWeekWait />
+            <AIInsightsSection />
+            <div className="nav-spacer" />
+          </>
+        );
+      case 'profile':
+        return (
+          <>
+            <PartnerSection />
+            <ContactSection />
+            <div className="nav-spacer" />
+          </>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="ivf-root">
-      <HeroSection />
-      <IVFTimeline />
-      <MedicationSection />
-      <ScanSection />
-      <EmbryoSection />
-      <TwoWeekWait />
-      <AIInsightsSection />
-      <PartnerSection />
-      <ContactSection />
-      <div className="nav-spacer" />
-      <BottomNav />
+      {renderContent()}
+      <BottomNav active={activeTab} setActive={setActiveTab} />
     </div>
   );
 }

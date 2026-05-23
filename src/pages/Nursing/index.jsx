@@ -1,43 +1,42 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertTriangle, ChevronRight, Hospital } from 'lucide-react';
 import CalendarStrip from '../../components/ui/CalendarStrip';
+import GlowCard from '../../components/GlowCard';
+import EmergencyRedFlags from '../../components/EmergencyRedFlags';
 import { JOURNEY_CONFIG, ALL_TASKS } from '../../data/journey';
 import { useApp } from '../../context/AppContext';
 import './Nursing.css';
 
 /* ── Hero illustration — swap per journey if you have separate assets ── */
 const HeroIllo = ({ src = '/pregnancy.png', alt = '' }) => (
-  <img src={src} alt={alt} />
+  <img src={src} alt={alt} style={{ maxWidth: '100%', height: 'auto' }} />
 );
 
 /* ────────────────────────────────────────────────────────────────────────
    JOURNEY HOME CONFIG
-   Every key matches a journeyType string.  Add new types here freely.
+   Every key matches a journeyType string. Add new types here freely.
    ──────────────────────────────────────────────────────────────────────── */
 const JOURNEY_HOME_CONFIG = {
-
   /* ── PREGNANT ────────────────────────────────────────────────────────── */
   pregnant: {
     greeting: name => `GOOD MORNING, ${name} ☀️`,
     heroTitle: 'Your baby is the size of a scallion today',
-    heroBody:
-      'Baby is practising breathing movements. Your iron levels need attention — eat more spinach, lentils, and fortified cereals today.',
+    heroBody: 'Baby is practising breathing movements. Your iron levels need attention — eat more spinach, lentils, and fortified cereals today.',
     actionChips: ['💊 Take Iron tablet', '💧 Drink water', '🚶‍♀️ Walk 20 min'],
     pills: [
       { text: '🤰 Week 26', cls: 'h-pill--pu' },
       { text: '🔥 Iron Low', cls: 'h-pill--or' },
-      { text: '📍 London',   cls: 'h-pill--ol' },
+      { text: '📍 London', cls: 'h-pill--ol' },
     ],
     quickActions: [
-      { emoji: '👣', label: 'Log Kick',   id: 'kicks'     },
-      { emoji: '💊', label: 'Add Vitals', id: 'vitals'    },
-      { emoji: '🍊', label: 'Meal Log',   id: 'nutrition' },
-      { emoji: '🤖', label: 'Ask AI',     id: 'chat'      },
+      { emoji: '👣', label: 'Log Kick', id: 'kicks' },
+      { emoji: '💊', label: 'Add Vitals', id: 'vitals' },
+      { emoji: '🍊', label: 'Meal Log', id: 'nutrition' },
+      { emoji: '🤖', label: 'Ask AI', id: 'chat' },
     ],
     alert: {
       title: 'Anaemia Risk Alert',
-      body:
-        'Your last haemoglobin was 9.2 g/dL (low). Eat dark leafy greens, lean red meat, lentils, and fortified breakfast cereals. Your GP can prescribe iron supplements. Next check due in 5 days.',
+      body: 'Your last haemoglobin was 9.2 g/dL (low). Eat dark leafy greens, lean red meat, lentils, and fortified breakfast cereals. Your GP can prescribe iron supplements. Next check due in 5 days.',
     },
     illoSrc: '/pregnancy.png',
   },
@@ -46,50 +45,70 @@ const JOURNEY_HOME_CONFIG = {
   ttc: {
     greeting: name => `GOOD MORNING, ${name} 🌸`,
     heroTitle: 'Your fertile window opens in 2 days',
-    heroBody:
-      'Today is Cycle Day 12. Oestrogen is rising — a great time to rest well and stay hydrated. Track your BBT and cervical mucus to sharpen your window.',
+    heroBody: 'Today is Cycle Day 12. Oestrogen is rising — a great time to rest well and stay hydrated. Track your BBT and cervical mucus to sharpen your window.',
     actionChips: ['📅 Check Cycle', '🌡️ Log BBT', '💧 Drink water'],
     pills: [
       { text: '📅 Cycle Day 12', cls: 'h-pill--pu' },
-      { text: '🟢 Fertile Soon',  cls: 'h-pill--gr' },
-      { text: '📍 London',        cls: 'h-pill--ol' },
+      { text: '🟢 Fertile Soon', cls: 'h-pill--gr' },
+      { text: '📍 London', cls: 'h-pill--ol' },
     ],
     quickActions: [
-      { emoji: '📅', label: 'Log Period',    id: 'cycle'     },
-      { emoji: '🌡️', label: 'Track BBT',    id: 'vitals'    },
-      { emoji: '🥗', label: 'Nutrition',     id: 'nutrition' },
-      { emoji: '🤖', label: 'Ask AI',        id: 'chat'      },
+      { emoji: '📅', label: 'Log Period', id: 'cycle' },
+      { emoji: '🌡️', label: 'Track BBT', id: 'vitals' },
+      { emoji: '🥗', label: 'Nutrition', id: 'nutrition' },
+      { emoji: '🤖', label: 'Ask AI', id: 'chat' },
     ],
     alert: {
       title: 'Fertile Window Approaching',
-      body:
-        'Based on your last 3 cycles, your peak fertility is predicted for days 14–16. Make sure to log any symptoms so we can refine your forecast.',
+      body: 'Based on your last 3 cycles, your peak fertility is predicted for days 14–16. Make sure to log any symptoms so we can refine your forecast.',
     },
     illoSrc: '/ttc.png',
+  },
+
+  /* ── IVF & FERTILITY ─────────────────────────────────────────────────── */
+  ivf: {
+    greeting: name => `GOOD MORNING, ${name} 💜`,
+    heroTitle: 'Your embryos are developing beautifully',
+    heroBody: 'Day 5 post-retrieval. Your embryos are being carefully nurtured in the lab. Rest, hydrate, and be gentle with yourself today.',
+    actionChips: ['💊 Log Meds', '💧 Stay Hydrated', '🧘 Rest'],
+    pills: [
+      { text: '💜 IVF Cycle', cls: 'h-pill--pu' },
+      { text: '🥚 Day 5', cls: 'h-pill--gr' },
+      { text: '📍 London', cls: 'h-pill--ol' },
+    ],
+    quickActions: [
+      { emoji: '💊', label: 'Log Meds', id: 'medications' },
+      { emoji: '🔬', label: 'Scan Results', id: 'scans' },
+      { emoji: '🥗', label: 'Nutrition', id: 'nutrition' },
+      { emoji: '🤖', label: 'Ask AI', id: 'chat' },
+    ],
+    alert: {
+      title: 'Medication Reminder',
+      body: 'Your progesterone injection is due at 9 PM tonight. Set a reminder to stay on track.',
+    },
+    illoSrc: '/ivf.png',
   },
 
   /* ── MENOPAUSE ───────────────────────────────────────────────────────── */
   menopause: {
     greeting: name => `GOOD MORNING, ${name} 🌿`,
     heroTitle: 'Today is a day to honour your body',
-    heroBody:
-      'Menopause is a transition, not an ending. Track your symptoms, rest when you need to, and remember — you know your body best. Hot flashes can ease with cool layers and paced breathing.',
+    heroBody: 'Menopause is a transition, not an ending. Track your symptoms, rest when you need to, and remember — you know your body best. Hot flashes can ease with cool layers and paced breathing.',
     actionChips: ['🌬️ Breathing exercise', '💤 Log sleep', '🧘 5-min stretch'],
     pills: [
       { text: '🌿 Perimenopause', cls: 'h-pill--pu' },
       { text: '🌡️ 3 Hot Flashes', cls: 'h-pill--or' },
-      { text: '📍 London',        cls: 'h-pill--ol' },
+      { text: '📍 London', cls: 'h-pill--ol' },
     ],
     quickActions: [
-      { emoji: '🌡️', label: 'Log Symptoms', id: 'symptoms'  },
-      { emoji: '💤',  label: 'Track Sleep',  id: 'sleep'     },
-      { emoji: '🧘',  label: 'Wellness',     id: 'wellness'  },
-      { emoji: '🤖',  label: 'Ask AI',       id: 'chat'      },
+      { emoji: '🌡️', label: 'Log Symptoms', id: 'symptoms' },
+      { emoji: '💤', label: 'Track Sleep', id: 'sleep' },
+      { emoji: '🧘', label: 'Wellness', id: 'wellness' },
+      { emoji: '🤖', label: 'Ask AI', id: 'chat' },
     ],
     alert: {
       title: 'Sleep Quality Dip Noticed',
-      body:
-        'You logged fewer than 6 hours of sleep 3 nights this week. Poor sleep can intensify hot flashes and mood shifts. Try a cooler room and limiting screens after 9 pm.',
+      body: 'You logged fewer than 6 hours of sleep 3 nights this week. Poor sleep can intensify hot flashes and mood shifts. Try a cooler room and limiting screens after 9 pm.',
     },
     illoSrc: '/menopause.png',
   },
@@ -98,24 +117,22 @@ const JOURNEY_HOME_CONFIG = {
   nursing: {
     greeting: name => `GOOD MORNING, ${name} 🍼`,
     heroTitle: "Your baby is 8 weeks old today — you're both doing great",
-    heroBody:
-      'At 8 weeks, babies begin social smiling. Keep feeding on demand; your supply is building. Don\'t forget to eat enough — you need 400–500 extra calories a day while breastfeeding.',
+    heroBody: 'At 8 weeks, babies begin social smiling. Keep feeding on demand; your supply is building. Don\'t forget to eat enough — you need 400–500 extra calories a day while breastfeeding.',
     actionChips: ['🍼 Log feed', '💧 Drink water', '😴 Rest when baby rests'],
     pills: [
       { text: '🍼 Baby: 8 weeks', cls: 'h-pill--pu' },
       { text: '🌟 4 feeds today', cls: 'h-pill--gr' },
-      { text: '📍 London',        cls: 'h-pill--ol' },
+      { text: '📍 London', cls: 'h-pill--ol' },
     ],
     quickActions: [
-      { emoji: '🍼', label: 'Log Feed',   id: 'feeds'     },
-      { emoji: '💊', label: 'Add Vitals', id: 'vitals'    },
-      { emoji: '🍊', label: 'Meal Log',   id: 'nutrition' },
-      { emoji: '🤖', label: 'Ask AI',     id: 'chat'      },
+      { emoji: '🍼', label: 'Log Feed', id: 'feeds' },
+      { emoji: '💊', label: 'Add Vitals', id: 'vitals' },
+      { emoji: '🍊', label: 'Meal Log', id: 'nutrition' },
+      { emoji: '🤖', label: 'Ask AI', id: 'chat' },
     ],
     alert: {
       title: 'Postpartum Check-In',
-      body:
-        'Your 6-week postnatal check is overdue. Please book with your GP or midwife to review your recovery, mental wellbeing, and contraception if needed.',
+      body: 'Your 6-week postnatal check is overdue. Please book with your GP or midwife to review your recovery, mental wellbeing, and contraception if needed.',
     },
     illoSrc: '/nursing.png',
   },
@@ -123,25 +140,47 @@ const JOURNEY_HOME_CONFIG = {
 
 /* ── Moods — universal ── */
 const MOODS = [
-  { emoji: '😌', label: 'Calm',    v: 4 },
-  { emoji: '😄', label: 'Happy',   v: 5 },
+  { emoji: '😌', label: 'Calm', v: 4 },
+  { emoji: '😄', label: 'Happy', v: 5 },
   { emoji: '😊', label: 'Content', v: 3 },
-  { emoji: '😕', label: 'Low',     v: 2 },
+  { emoji: '😕', label: 'Low', v: 2 },
   { emoji: '😰', label: 'Anxious', v: 1 },
 ];
 
 const HOSPITALS = [
   { name: "King's College Hospital NHS Foundation Trust", addr: '0.8 km · Open 24hrs · Maternity & Women\'s Health' },
-  { name: 'St Thomas\' Hospital – Guy\'s and St Thomas\' NHS', addr: '2.1 km · Specialist obstetrics & gynaecology'   },
+  { name: 'St Thomas\' Hospital – Guy\'s and St Thomas\' NHS', addr: '2.1 km · Specialist obstetrics & gynaecology' },
 ];
 
 /* ── Component ── */
 export default function Home({ setTab }) {
-  const { journeyType, userName = 'ADAEZE', setShowSOS } = useApp();
+  const { 
+    journeyType, 
+    userName = 'ADAEZE', 
+    setShowSOS,
+    getCurrentWeek,
+    getTrimester,
+    babyAgeDays
+  } = useApp();
+  
   const [mood, setMood] = useState(null);
+  const [bpSys, setBpSys] = useState(118);
+  const [bpDia, setBpDia] = useState(76);
+  const [bleeding, setBleeding] = useState("none");
+  const [fetalMovement, setFetalMovement] = useState("normal");
+  
+  // Get current week for pregnancy
+  const currentWeek = journeyType === 'pregnant' ? getCurrentWeek() : 26;
+  const trimester = journeyType === 'pregnant' ? getTrimester() : null;
+  const babyAgeWeeks = journeyType === 'nursing' && babyAgeDays ? Math.floor(babyAgeDays / 7) : null;
+  
+  // Get postnatal phase for Glow card
+  const postnatalPhase = journeyType === 'nursing' && babyAgeDays 
+    ? (babyAgeDays <= 14 ? 'days1_14' : babyAgeDays <= 42 ? 'weeks2_6' : 'weeks6_plus')
+    : null;
 
   // Graceful fallback — if journeyType isn't in our map, use pregnant
-  const cfg  = JOURNEY_CONFIG[journeyType] || JOURNEY_CONFIG.pregnant;
+  const cfg = JOURNEY_CONFIG[journeyType] || JOURNEY_CONFIG.pregnant;
   const home = JOURNEY_HOME_CONFIG[journeyType] || JOURNEY_HOME_CONFIG.pregnant;
 
   const [tasks, setTasks] = useState(
@@ -150,24 +189,45 @@ export default function Home({ setTab }) {
 
   const todayTasks = ALL_TASKS.filter(t => cfg.taskIds.includes(t.id));
   const done = todayTasks.filter(t => tasks[t.id]).length;
-  const pct  = todayTasks.length > 0 ? Math.round((done / todayTasks.length) * 100) : 0;
+  const pct = todayTasks.length > 0 ? Math.round((done / todayTasks.length) * 100) : 0;
+  
+  // Check for emergency flags
+  const hasEmergency = (bpSys >= 160 || bpDia >= 110) || 
+                       (currentWeek >= 24 && fetalMovement === "reduced") ||
+                       bleeding === "heavy";
 
   return (
     <div className="h-root">
+      {/* Emergency Red Flags - NEVER PAYWALLED */}
+      <EmergencyRedFlags 
+        bpSys={bpSys}
+        bpDia={bpDia}
+        bleeding={bleeding}
+        fetalMovement={fetalMovement}
+        week={currentWeek}
+      />
 
-      {/* ── Status pills ── */}
+      {/* Status pills */}
       <div className="h-pills">
         {home.pills.map((p, i) => (
           <span key={i} className={`h-pill ${p.cls}`}>{p.text}</span>
         ))}
       </div>
 
-      {/* ── Calendar ── */}
+      {/* Calendar */}
       <div className="h-card h-cal-card">
         <CalendarStrip />
       </div>
 
-      {/* ── Morning hero card ── */}
+      {/* GLOW CARD - Journey-specific */}
+      <GlowCard 
+        journeyType={journeyType === 'nursing' ? 'postpartum' : journeyType}
+        trimester={trimester}
+        postnatalDay={babyAgeDays}
+        cycleDay={{ isFertile: false }} // Will be updated from TTC module
+      />
+
+      {/* Morning hero card */}
       <div className="h-card h-hero-card">
         <div className="h-hero-l">
           <p className="h-eyebrow">{home.greeting(userName.toUpperCase())}</p>
@@ -184,7 +244,28 @@ export default function Home({ setTab }) {
         </div>
       </div>
 
-      {/* ── Mood ── */}
+      {/* Quick Emergency Alert Banner - if emergency detected */}
+      {hasEmergency && (
+        <div className="h-card" style={{ background: "var(--rdl)", border: "2px solid var(--rd)", marginBottom: "var(--gap-md)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)" }}>
+            <div style={{ fontSize: 32 }}>🚨</div>
+            <div>
+              <p style={{ fontWeight: 800, color: "var(--rd)", marginBottom: 4 }}>Urgent Medical Attention Needed</p>
+              <p style={{ fontSize: "var(--fs-sm)", color: "var(--md)" }}>
+                Please check the emergency alerts above and contact your healthcare provider immediately.
+              </p>
+              <button 
+                onClick={() => setShowSOS(true)}
+                style={{ marginTop: 8, background: "var(--rd)", color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", cursor: "pointer" }}
+              >
+                Call Emergency Services
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mood */}
       <div className="h-card">
         <p className="h-slabel">HOW ARE YOU FEELING?</p>
         <div className="h-mood-row">
@@ -205,9 +286,8 @@ export default function Home({ setTab }) {
         )}
       </div>
 
-      {/* ── Progress + Quick Actions (2-col) ── */}
+      {/* Progress + Quick Actions (2-col) */}
       <div className="h-two-col">
-
         {/* Daily Progress */}
         <div className="h-card h-prog-card">
           <div className="h-prog-top">
@@ -247,10 +327,9 @@ export default function Home({ setTab }) {
             ))}
           </div>
         </div>
-
       </div>
 
-      {/* ── Contextual Alert ── */}
+      {/* Contextual Alert */}
       {cfg.showAlert && home.alert && (
         <div className="h-card h-alert">
           <div className="h-alert-icon">
@@ -264,7 +343,31 @@ export default function Home({ setTab }) {
         </div>
       )}
 
-      {/* ── Nearby Hospitals ── */}
+      {/* Personalised Insight Card */}
+      <div className="h-card" style={{ background: "linear-gradient(135deg, var(--lvl), #F8F6FE)" }}>
+        <p className="h-slabel">✨ PERSONALISED INSIGHT</p>
+        <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "flex-start" }}>
+          <span style={{ fontSize: 32 }}>🤖</span>
+          <div>
+            <p style={{ fontWeight: 700, marginBottom: 4 }}>
+              {journeyType === 'pregnant' && `Week ${currentWeek} - ${trimester === 1 ? 'First' : trimester === 2 ? 'Second' : 'Third'} Trimester`}
+              {journeyType === 'nursing' && `Week ${babyAgeWeeks || 1} Postpartum`}
+              {journeyType === 'ttc' && 'Fertility Tracking Active'}
+              {journeyType === 'ivf' && 'IVF Journey in Progress'}
+              {journeyType === 'menopause' && 'Menopause Support Active'}
+            </p>
+            <p style={{ fontSize: "var(--fs-sm)", color: "var(--md)" }}>
+              {journeyType === 'pregnant' && `Your baby is developing rapidly this week. Focus on ${trimester === 1 ? 'folate and rest' : trimester === 2 ? 'iron and calcium' : 'omega-3s and hydration'}.`}
+              {journeyType === 'nursing' && `Your body is still healing. Remember to rest when you can and accept help. You're doing an amazing job.`}
+              {journeyType === 'ttc' && `Track your BBT and cervical mucus daily for the most accurate ovulation prediction.`}
+              {journeyType === 'ivf' && `Stay consistent with your medications. You're doing something extraordinary.`}
+              {journeyType === 'menopause' && `Listen to your body. Some days need rest, others need movement. Both are valid.`}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Nearby Hospitals */}
       <p className="h-slabel h-slabel--gap">NEARBY HOSPITALS</p>
       {HOSPITALS.map((h, i) => (
         <div key={i} className="h-card h-hosp">
@@ -280,7 +383,6 @@ export default function Home({ setTab }) {
         </div>
       ))}
       <button className="h-view-all h-view-all--ctr">View more hospitals →</button>
-
     </div>
   );
 }

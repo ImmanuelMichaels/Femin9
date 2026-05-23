@@ -1,7 +1,7 @@
 /* ── Home.css ── */
 
 .hm-root {
-  background: #efe5f9;
+  background: #efe5f954;
   min-height: 100%;
   padding: 10px 10px;
   font-family: 'Poppins', sans-serif;
@@ -392,7 +392,7 @@
 
 /* rewritting UI */
 .journey-container {
-  box-shadow: 3px 3px 3px #dddcdcd9;
+  box-shadow: 1px 1px 1px -2px#dddcdcd9;
   width: auto;
   height: fit-content;
   padding: 20px;
@@ -482,7 +482,7 @@
   padding: 15px;
   margin: 5px;
   flex-wrap: wrap;
-  box-shadow: 2px 3px 3px rgb(97 77 136 / 28%);
+  box-shadow: 1px 1px 1px -2px #dddcdcd9;
 }
 .hm-card-label {
   font-size: 14px;
@@ -515,6 +515,12 @@
 .hm-mood-lbl {
   font-size: 16px;
   font-weight: 400;
+  color: #000000;
+}
+.hm-qa-lbl {
+  font-size: 16px;
+  font-weight: 400;
+  color: #000000;
 }
 
 .hm-qa-grid {
@@ -528,6 +534,7 @@
   border-radius: 5px;
   display: flex;
   flex-direction: column;
+  background: rgb(236 227 238 / 27%);
 }
 .hm-qa-em {
   font-size: 30px;
@@ -552,13 +559,25 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 10px;
+  padding: 20px;
   max-width: 300px;
   box-shadow: inset 1px 2px 2px 1px #0606060d;
   border-radius: 10px;
+  text-align: center;
 }
 .hm-tracker-icon {
   font-size: 50px;
+}
+.hm-tracker-meta{
+  display: flex;
+  flex-direction: column;
+}
+.hm-tracker-left {
+  text-align: center;
+}
+.hm-tracker-pct {
+  font-size: 20px;
+  font-weight: 700;
 }
 .tracker-container {
   display: grid;

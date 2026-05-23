@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import './Login.css';
 
-
 const GoogleG = () => (
   <svg width="22" height="22" viewBox="0 0 24 24">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -53,6 +52,7 @@ const PhoneIcon = () => (
 
 export default function Login() {
   const navigate = useNavigate();
+  const { setJourneyType, setCulture } = useApp();
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
@@ -66,10 +66,24 @@ export default function Login() {
   const handleLogin = () => {
     if (!ready) return;
     setLoading(true);
+
+    // Simulate API call
     setTimeout(() => {
       setLoading(false);
+
+      // Mark the user as authenticated
+      localStorage.setItem('userAuth', 'true');
+
+      // Sync journey type into context from localStorage
+      const savedJourney = localStorage.getItem('userJourney');
+      const savedCulture = localStorage.getItem('userCulture');
+      if (savedJourney) setJourneyType(savedJourney);
+      if (savedCulture) setCulture(savedCulture);
+
       setAnimOut(true);
-      setTimeout(() => navigate('/onboarding'), 420);
+
+      // Login is always the final step — go straight to the app
+      setTimeout(() => navigate('/app'), 420);
     }, 1000);
   };
 
@@ -82,18 +96,10 @@ export default function Login() {
         transition: 'opacity 0.4s, transform 0.4s'
       }}
     >
-
-      {/* Form card */}
       <div className="lg-card">
-      {/* Hero */}
-      <div className="lg-hero">
-        <div className="lg-brand">
-          {/* <div>
-            <p className="lg-brand-name">Femin<span>9</span></p>
-            <p className="lg-brand-tag">Your journey, our care</p>
-          </div> */}
+        <div className="lg-hero">
+          <div className="lg-brand" />
         </div>
-      </div>
         <h1 className="lg-title">Welcome</h1>
         <p className="lg-sub">Sign in to continue your journey</p>
 
@@ -166,7 +172,7 @@ export default function Login() {
         {/* Footer */}
         <p className="lg-footer">
           New here?{' '}
-          <button className="lg-signup-link" onClick={() => navigate('/signup')}>
+          <button className="lg-signup-link" onClick={() => navigate('/onboarding')}>
             Create your free account
           </button>
         </p>

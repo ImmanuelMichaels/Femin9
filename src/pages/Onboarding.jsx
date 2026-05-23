@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import './Onboarding.css';
@@ -62,7 +63,57 @@ const CARDS = [
   },
 ];
 
-/* ── small corner icons ── */
+// Cultural background options for personalized nutrition
+const CULTURES = [
+  { id: 'west_central_african', label: 'West & Central African', emoji: '🌍', flag: '🇳🇬🇬🇭' },
+  { id: 'east_african', label: 'East African', emoji: '🌍', flag: '🇰🇪🇹🇿' },
+  { id: 'south_asian', label: 'South Asian', emoji: '🕌', flag: '🇮🇳🇵🇰' },
+  { id: 'caribbean', label: 'Caribbean', emoji: '🏝️', flag: '🇯🇲🇹🇹' },
+  { id: 'east_asian', label: 'East & Southeast Asian', emoji: '🥢', flag: '🇨🇳🇻🇳' },
+  { id: 'mena', label: 'Middle Eastern & North African', emoji: '🌙', flag: '🇪🇬🇲🇦' },
+  { id: 'latin_american', label: 'Latin American', emoji: '💃', flag: '🇧🇷🇲🇽' },
+  { id: 'white_european', label: 'White European', emoji: '🏰', flag: '🇬🇧🇪🇺' },
+  { id: 'prefer_not', label: 'Prefer not to say', emoji: '🤐', flag: '' }
+];
+
+// Personalisation questions based on journey
+const getPersonalisationQuestions = (journeyType) => {
+  const questions = {
+    pregnant: [
+      { id: 'edd', label: 'What is your estimated due date?', type: 'date', placeholder: 'Select date' },
+      { id: 'babyNumber', label: 'Which baby number is this?', type: 'select', options: ['1st', '2nd', '3rd', '4th+'] }
+    ],
+    conceive: [
+      { id: 'cycleLength', label: 'What is your average cycle length?', type: 'number', placeholder: '28 days', suffix: 'days' },
+      { id: 'periodLength', label: 'How many days does your period last?', type: 'number', placeholder: '5 days', suffix: 'days' }
+    ],
+    ivf: [
+      { id: 'treatmentType', label: 'What type of treatment are you undergoing?', type: 'select', options: ['IVF', 'ICSI', 'FET', 'IUI', 'Egg Freezing'] },
+      { id: 'cycleNumber', label: 'Which cycle number is this?', type: 'select', options: ['1st', '2nd', '3rd', '4th+'] }
+    ],
+    mom: [
+      { id: 'babyBirthDate', label: 'When was your baby born?', type: 'date', placeholder: 'Select date' },
+      { id: 'feedingMethod', label: 'How are you feeding?', type: 'select', options: ['Breastfeeding', 'Bottle feeding', 'Mixed', 'Pumping'] }
+    ],
+    menopause: [
+      { id: 'stage', label: 'Which stage are you in?', type: 'select', options: ['Perimenopause', 'Menopause', 'Post-menopause', 'Not sure'] },
+      { id: 'symptoms', label: 'Key symptoms (select all that apply)', type: 'multiselect', options: ['Hot flashes', 'Night sweats', 'Sleep issues', 'Brain fog', 'Mood changes', 'Joint pain'] }
+    ]
+  };
+  return questions[journeyType] || [];
+};
+
+// Simple spinner component
+const Spinner = () => (
+  <div style={{ 
+    width: 20, height: 20, 
+    border: '2px solid #fff', 
+    borderTopColor: 'transparent', 
+    borderRadius: '50%', 
+    animation: 'spin 0.6s linear infinite' 
+  }} />
+);
+
 const Icon = ({ id, color }) => {
   const s = { width: 18, height: 18 };
 
@@ -100,7 +151,6 @@ const Icon = ({ id, color }) => {
 
   if (id === 'ivf')
     return (
-
       <svg
         {...s}
         viewBox="0 0 24 24"
@@ -110,19 +160,12 @@ const Icon = ({ id, color }) => {
         strokeLinecap="round"
         strokeLinejoin="round"
       >
-        {/* Left ovary */}
         <circle cx="4" cy="10" r="2" />
-        {/* Right ovary */}
         <circle cx="20" cy="10" r="2" />
-        {/* Left fallopian tube */}
         <path d="M6 10 C8 9, 9 11, 10 12" />
-        {/* Right fallopian tube */}
         <path d="M18 10 C16 9, 15 11, 14 12" />
-        {/* Uterine body */}
         <path d="M10 12 Q10 16 12 17 Q14 16 14 12" />
-        {/* Cervix / lower outlet */}
         <line x1="12" y1="17" x2="12" y2="20" />
-        {/* Central embryo dot — small filled circle to suggest the retrieved egg */}
         <circle cx="12" cy="12" r="1.2" fill={color} stroke="none" />
       </svg>
     );
@@ -144,7 +187,6 @@ const Icon = ({ id, color }) => {
       </svg>
     );
 
-  /* menopause — lotus */
   return (
     <svg
       {...s}
@@ -217,82 +259,442 @@ const Logo = () => (
   </svg>
 );
 
-/* ── component ── */
+// Step indicator
+const StepIndicator = ({ currentStep, totalSteps }) => (
+  <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
+    {Array.from({ length: totalSteps }).map((_, i) => (
+      <div
+        key={i}
+        style={{
+          width: i === currentStep ? 24 : 8,
+          height: 8,
+          borderRadius: 4,
+          background: i === currentStep ? 'var(--t)' : 'var(--border)',
+          transition: 'all 0.3s'
+        }}
+      />
+    ))}
+  </div>
+);
+
+/* ── MAIN COMPONENT ── */
 export default function Onboarding() {
-  const { setJourneyType } = useApp();
+  const { 
+    setJourneyType, 
+    setUserName, 
+    setCulture,
+    setEdd,
+    setBabyNumber,
+    setCycleLength,
+    setPeriodLength,
+    setTreatmentType,
+    setIvfCycleNumber,
+    setBabyAgeDays,
+    setBabyBirthDate,
+    setMenopauseStage,
+    setMenopauseSymptoms,
+    setFeedingMethod
+  } = useApp();
   const navigate = useNavigate();
-
-  const handleSelect = (id) => {
-    setJourneyType(id);
-    setTimeout(() => navigate('/app'), 400);
+  
+  // Step management
+  const [step, setStep] = useState(1); // 1=Journey, 2=Culture, 3=Personalisation
+  const [selectedJourney, setSelectedJourney] = useState(null);
+  const [selectedCulture, setSelectedCulture] = useState('west_central_african');
+  const [personalisation, setPersonalisation] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [userName, setLocalName] = useState('');
+  
+  const personalisationQuestions = selectedJourney 
+    ? getPersonalisationQuestions(selectedJourney) 
+    : [];
+  
+  const totalSteps = selectedJourney === 'pregnant' || selectedJourney === 'conceive' || 
+                     selectedJourney === 'ivf' || selectedJourney === 'mom' || 
+                     selectedJourney === 'menopause' ? 3 : 2;
+  
+  const handleJourneySelect = (id) => {
+    setSelectedJourney(id);
+    setTimeout(() => setStep(2), 300);
   };
-
-  return (
-    <div className="ob-root">
-      {/* Logo */}
-      <div className="ob-logo">
-        <Logo />
-        <span className="ob-logo-text">Femin9</span>
-      </div>
-
-      {/* Heading */}
+  
+  const handleCultureSelect = (cultureId) => {
+    setSelectedCulture(cultureId);
+  };
+  
+  const handlePersonalisationChange = (id, value) => {
+    setPersonalisation(prev => ({ ...prev, [id]: value }));
+  };
+  
+  const handleComplete = async () => {
+    setLoading(true);
+    
+    // Save all data to context (context effects will handle localStorage automatically)
+    setJourneyType(selectedJourney);
+    setCulture(selectedCulture);
+    if (userName) setUserName(userName);
+    
+    // Journey-specific data - set in context (effects will persist)
+    if (selectedJourney === 'pregnant') {
+      if (personalisation.edd) setEdd(personalisation.edd);
+      if (personalisation.babyNumber) setBabyNumber(personalisation.babyNumber);
+    }
+    
+    if (selectedJourney === 'mom') {
+      if (personalisation.babyBirthDate) {
+        const birthDate = new Date(personalisation.babyBirthDate);
+        const today = new Date();
+        const daysOld = Math.floor((today - birthDate) / (1000 * 60 * 60 * 24));
+        setBabyAgeDays(daysOld);
+        setBabyBirthDate(personalisation.babyBirthDate);
+      }
+      if (personalisation.feedingMethod) setFeedingMethod(personalisation.feedingMethod);
+    }
+    
+    if (selectedJourney === 'conceive') {
+      if (personalisation.cycleLength) setCycleLength(personalisation.cycleLength);
+      if (personalisation.periodLength) setPeriodLength(personalisation.periodLength);
+    }
+    
+    if (selectedJourney === 'ivf') {
+      if (personalisation.treatmentType) setTreatmentType(personalisation.treatmentType);
+      if (personalisation.cycleNumber) setIvfCycleNumber(personalisation.cycleNumber);
+    }
+    
+    if (selectedJourney === 'menopause') {
+      if (personalisation.stage) setMenopauseStage(personalisation.stage);
+      if (personalisation.symptoms) setMenopauseSymptoms(personalisation.symptoms);
+    }
+    
+    // Simulate API call
+    setTimeout(() => {
+      setLoading(false);
+      navigate('/consent'); // Go to consent screen first
+    }, 800);
+  };
+  
+  const handleBack = () => {
+    if (step > 1) {
+      setStep(step - 1);
+    }
+  };
+  
+  // Render Journey Selection Step
+  const renderJourneyStep = () => (
+    <>
       <h1 className="ob-heading">
         What brings <span className="ob-highlight">you</span> here?
       </h1>
       <p className="ob-sub">
         Choose your journey so we can personalise support just for you.
       </p>
-
-      {/* Card grid
-          With 5 cards the natural 2-column grid produces a 2-2-1 layout.
-          The inline tweak below centres the lone fifth card on wider viewports
-          without touching the existing .ob-grid CSS rules for mobile. */}
-      <div
-        className="ob-grid ob-grid--five"
-        style={{
-          /* Last card spans both columns and caps its own width so it sits
-             centred rather than stretching edge-to-edge. Targets only the
-             fifth-child at the grid level; all other sizing comes from CSS. */
-        }}
-      >
+      
+      <div className="ob-grid ob-grid--five">
         {CARDS.map((card, i) => (
           <button
             key={card.id}
-            onClick={() => handleSelect(card.id)}
+            onClick={() => handleJourneySelect(card.id)}
             className={`ob-card${i === CARDS.length - 1 && CARDS.length % 2 !== 0 ? ' ob-card--last-odd' : ''}`}
             style={{ background: card.bg, animationDelay: `${i * 0.08}s` }}
           >
-            {/* Top-left icon bubble */}
-            {/* <div className="ob-icon-bubble">
-              <Icon id={card.id} color={card.iconColor} />
-            </div> */}
-
-              {/* Text */}
-              <span className="ob-card-title" style={{ color: card.titleColor }}>
-                {card.label}
-              </span>
-
-              {/* Arrow */}
-              <div
-                className="ob-arrow"
-                style={{ background: card.arrowBg, color: card.titleColor }}
-              >
-                <ArrowRight />
-              </div>
-
-              {/* Illustration */}
-              <div className="ob-illus">
-                <img src={card.imgSrc} alt={card.imgAlt} />
-              </div>
-            </button>
+            <span className="ob-card-title" style={{ color: card.titleColor }}>
+              {card.label}
+            </span>
+            <div className="ob-arrow" style={{ background: card.arrowBg, color: card.titleColor }}>
+              <ArrowRight />
+            </div>
+            <div className="ob-illus">
+              <img src={card.imgSrc} alt={card.imgAlt} />
+            </div>
+          </button>
         ))}
       </div>
-
-      {/* Privacy note */}
+    </>
+  );
+  
+  // Render Culture Selection Step
+  const renderCultureStep = () => (
+    <div style={{ maxWidth: 500, margin: '0 auto', width: '100%' }}>
+      <button 
+        onClick={handleBack}
+        style={{
+          background: 'none',
+          border: 'none',
+          fontSize: 'var(--fs-sm)',
+          color: 'var(--mt)',
+          marginBottom: 24,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4
+        }}
+      >
+        ← Back
+      </button>
+      
+      <h1 className="ob-heading" style={{ fontSize: 'var(--fs-2xl)' }}>
+        Your <span className="ob-highlight">culture</span>
+      </h1>
+      <p className="ob-sub" style={{ marginBottom: 32 }}>
+        This helps us personalise food recommendations from your own kitchen.
+      </p>
+      
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {CULTURES.map(culture => (
+          <button
+            key={culture.id}
+            onClick={() => handleCultureSelect(culture.id)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 16,
+              padding: '16px 20px',
+              borderRadius: 'var(--r)',
+              background: selectedCulture === culture.id ? 'var(--sgl)' : 'var(--card)',
+              border: selectedCulture === culture.id ? `2px solid var(--sg)` : '1px solid var(--border)',
+              cursor: 'pointer',
+              width: '100%',
+              textAlign: 'left'
+            }}
+          >
+            <span style={{ fontSize: 28 }}>{culture.emoji}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontWeight: 700, fontSize: 'var(--fs-base)' }}>{culture.label}</span>
+                {culture.flag && <span style={{ fontSize: 'var(--fs-sm)' }}>{culture.flag}</span>}
+              </div>
+              <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', marginTop: 4 }}>
+                {culture.id === 'west_central_african' && 'Jollof, Egusi, Plantain, Moi Moi'}
+                {culture.id === 'east_african' && 'Ugali, Sukuma Wiki, Nyama Choma'}
+                {culture.id === 'south_asian' && 'Dal, Roti, Curry, Samosas'}
+                {culture.id === 'caribbean' && 'Callaloo, Rice and Peas, Jerk'}
+                {culture.id === 'prefer_not' && 'We\'ll use general NHS guidance'}
+              </p>
+            </div>
+            {selectedCulture === culture.id && (
+              <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--sg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                ✓
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+      
+      <button
+        onClick={() => setStep(3)}
+        style={{
+          width: '100%',
+          padding: 'var(--sp-4)',
+          background: 'var(--dp)',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 'var(--r)',
+          fontSize: 'var(--fs-md)',
+          fontWeight: 800,
+          cursor: 'pointer',
+          marginTop: 32,
+          minHeight: 'var(--touch)'
+        }}
+      >
+        Continue →
+      </button>
+    </div>
+  );
+  
+  // Render Personalisation Step
+  const renderPersonalisationStep = () => (
+    <div style={{ maxWidth: 500, margin: '0 auto', width: '100%' }}>
+      <button 
+        onClick={handleBack}
+        style={{
+          background: 'none',
+          border: 'none',
+          fontSize: 'var(--fs-sm)',
+          color: 'var(--mt)',
+          marginBottom: 24,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4
+        }}
+      >
+        ← Back
+      </button>
+      
+      <h1 className="ob-heading" style={{ fontSize: 'var(--fs-2xl)' }}>
+        Just a few <span className="ob-highlight">details</span>
+      </h1>
+      <p className="ob-sub" style={{ marginBottom: 32 }}>
+        This helps us give you the most relevant support.
+      </p>
+      
+      {/* Name input */}
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--dp)', display: 'block', marginBottom: 8 }}>
+          What should we call you?
+        </label>
+        <input
+          type="text"
+          value={userName}
+          onChange={(e) => setLocalName(e.target.value)}
+          placeholder="e.g., Adaeze, Mama, Sarah"
+          style={{
+            width: '100%',
+            padding: 'var(--sp-3)',
+            borderRadius: 'var(--r)',
+            border: '1px solid var(--border)',
+            fontSize: 'var(--fs-base)',
+            background: 'var(--bg)'
+          }}
+        />
+      </div>
+      
+      {/* Journey-specific questions */}
+      {personalisationQuestions.map(q => (
+        <div key={q.id} style={{ marginBottom: 24 }}>
+          <label style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--dp)', display: 'block', marginBottom: 8 }}>
+            {q.label}
+          </label>
+          
+          {q.type === 'date' && (
+            <input
+              type="date"
+              value={personalisation[q.id] || ''}
+              onChange={(e) => handlePersonalisationChange(q.id, e.target.value)}
+              style={{
+                width: '100%',
+                padding: 'var(--sp-3)',
+                borderRadius: 'var(--r)',
+                border: '1px solid var(--border)',
+                fontSize: 'var(--fs-base)',
+                background: 'var(--bg)'
+              }}
+            />
+          )}
+          
+          {q.type === 'number' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="number"
+                value={personalisation[q.id] || ''}
+                onChange={(e) => handlePersonalisationChange(q.id, parseInt(e.target.value) || '')}
+                placeholder={q.placeholder}
+                style={{
+                  flex: 1,
+                  padding: 'var(--sp-3)',
+                  borderRadius: 'var(--r)',
+                  border: '1px solid var(--border)',
+                  fontSize: 'var(--fs-base)',
+                  background: 'var(--bg)'
+                }}
+              />
+              {q.suffix && <span style={{ color: 'var(--mt)' }}>{q.suffix}</span>}
+            </div>
+          )}
+          
+          {q.type === 'select' && (
+            <select
+              value={personalisation[q.id] || ''}
+              onChange={(e) => handlePersonalisationChange(q.id, e.target.value)}
+              style={{
+                width: '100%',
+                padding: 'var(--sp-3)',
+                borderRadius: 'var(--r)',
+                border: '1px solid var(--border)',
+                fontSize: 'var(--fs-base)',
+                background: 'var(--bg)'
+              }}
+            >
+              <option value="">Select one</option>
+              {q.options.map(opt => (
+                <option key={opt} value={opt}>{opt}</option>
+              ))}
+            </select>
+          )}
+          
+          {q.type === 'multiselect' && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {q.options.map(opt => {
+                const selected = personalisation[q.id]?.includes(opt);
+                return (
+                  <button
+                    key={opt}
+                    onClick={() => {
+                      const current = personalisation[q.id] || [];
+                      const updated = selected 
+                        ? current.filter(s => s !== opt)
+                        : [...current, opt];
+                      handlePersonalisationChange(q.id, updated);
+                    }}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 30,
+                      background: selected ? 'var(--t)' : 'var(--warm)',
+                      color: selected ? '#fff' : 'var(--md)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 'var(--fs-sm)'
+                    }}
+                  >
+                    {opt}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ))}
+      
+      <button
+        onClick={handleComplete}
+        disabled={loading}
+        style={{
+          width: '100%',
+          padding: 'var(--sp-4)',
+          background: 'var(--dp)',
+          color: '#fff',
+          border: 'none',
+          borderRadius: 'var(--r)',
+          fontSize: 'var(--fs-md)',
+          fontWeight: 800,
+          cursor: loading ? 'not-allowed' : 'pointer',
+          marginTop: 16,
+          minHeight: 'var(--touch)',
+          opacity: loading ? 0.7 : 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 12
+        }}
+      >
+        {loading ? <Spinner /> : 'Continue →'}
+      </button>
+    </div>
+  );
+  
+  return (
+    <div className="ob-root">
+      <div className="ob-logo">
+        <Logo />
+        <span className="ob-logo-text">Femin9</span>
+      </div>
+      
+      <StepIndicator currentStep={step - 1} totalSteps={totalSteps} />
+      
+      {step === 1 && renderJourneyStep()}
+      {step === 2 && renderCultureStep()}
+      {step === 3 && renderPersonalisationStep()}
+      
       <div className="ob-privacy">
         <ShieldIcon />
         <span>Your privacy is important to us</span>
       </div>
+      
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

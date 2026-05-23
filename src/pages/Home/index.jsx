@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AlertTriangle, ChevronRight, Hospital, CheckCircle2, Circle } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import CalendarStrip from '../../components/ui/CalendarStrip';
+import GlowCard from '../../components/GlowCard';
+import EmergencyRedFlags from '../../components/EmergencyRedFlags';
 import { HOME_CONFIG, JOURNEY_META } from '../../data/homeConfig';
 import './Home.css';
 
@@ -100,40 +102,131 @@ const MOODS = [
   { emoji: '😰', label: 'Anxious' },
 ];
 
+  
 /* ─────────────────────────────────────────────────────────────────────────────
    HOME COMPONENT
 ───────────────────────────────────────────────────────────────────────────── */
 export default function Home({ setTab }) {
-  const { journeyType, userName = 'Mama' } = useApp();
+  const { 
+    journeyType, 
+    userName = 'Mama', 
+    setShowSOS,
+    getCurrentWeek,
+    getTrimester,
+    babyAgeDays
+  } = useApp();
 
   const meta = JOURNEY_META[journeyType] || JOURNEY_META.pregnant;
   const cfg  = HOME_CONFIG[journeyType]  || HOME_CONFIG.pregnant;
 
-  const [mood,       setMood]      = useState(null);
-  const [checklist,  setChecklist] = useState(cfg.checklist);
-  const [showAllApt, setShowAllApt]= useState(false);
+  const [mood, setMood] = useState(() => {
+    const saved = localStorage.getItem('lastMood');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [checklist, setChecklist] = useState(cfg.checklist);
+  const [showAllApt, setShowAllApt] = useState(false);
+  const [moodStreak, setMoodStreak] = useState(() => {
+    return parseInt(localStorage.getItem('moodStreak') || '0');
+  });
+  
+  // Emergency state for red flags
+  const [bpSys, setBpSys] = useState(118);
+  const [bpDia, setBpDia] = useState(76);
+  const [bleeding, setBleeding] = useState("none");
+  const [fetalMovement, setFetalMovement] = useState("normal");
+  
+  // Get journey-specific data
+  const currentWeek = journeyType === 'pregnant' ? getCurrentWeek() : 26;
+  const trimester = journeyType === 'pregnant' ? getTrimester() : null;
+  const babyAgeWeeks = journeyType === 'nursing' && babyAgeDays ? Math.floor(babyAgeDays / 7) : null;
+  
+  // Get postnatal phase for Glow card
+  const postnatalPhase = journeyType === 'nursing' && babyAgeDays 
+    ? (babyAgeDays <= 14 ? 'days1_14' : babyAgeDays <= 42 ? 'weeks2_6' : 'weeks6_plus')
+    : null;
 
   const toggleCheck = (id) =>
     setChecklist(prev => prev.map(c => c.id === id ? { ...c, done: !c.done } : c));
 
-  const done    = checklist.filter(c => c.done).length;
-  const pct     = Math.round((done / checklist.length) * 100);
+  const done = checklist.filter(c => c.done).length;
+  const pct = checklist.length > 0 ? Math.round((done / checklist.length) * 100) : 0;
   const aptList = showAllApt ? cfg.appointments : cfg.appointments.slice(0, 2);
+  
+  // Handle mood logging with streak tracking
+  const handleMood = (selectedMood) => {
+    setMood(selectedMood);
+    localStorage.setItem('lastMood', JSON.stringify(selectedMood));
+    
+    const lastMoodDate = localStorage.getItem('lastMoodDate');
+    const today = new Date().toDateString();
+    
+    if (lastMoodDate === today) {
+      // Already logged today, don't increase streak
+      return;
+    }
+    
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (lastMoodDate === yesterday.toDateString()) {
+      // Consecutive day, increase streak
+      const newStreak = moodStreak + 1;
+      setMoodStreak(newStreak);
+      localStorage.setItem('moodStreak', newStreak.toString());
+    } else {
+      // New streak starting
+      setMoodStreak(1);
+      localStorage.setItem('moodStreak', '1');
+    }
+    
+    localStorage.setItem('lastMoodDate', today);
+  };
+  
+  // Check for emergency flags
+  const hasEmergency = (bpSys >= 160 || bpDia >= 110) || 
+                       (currentWeek >= 24 && fetalMovement === "reduced") ||
+                       bleeding === "heavy";
 
   return (
     <div className="hm-root">
-
+      {/* Emergency Red Flags - NEVER PAYWALLED */}
+      <EmergencyRedFlags 
+        bpSys={bpSys}
+        bpDia={bpDia}
+        bleeding={bleeding}
+        fetalMovement={fetalMovement}
+        week={currentWeek}
+      />
+      
       {/* Journey Container */}
       <div className="journey-container">
+
         {/* ── Journey badge ── */}
         <div className="hm-journey-badge" style={{ background: meta.accentSoft, color: meta.accent }}>
           <span>{meta.label}</span>
+          {journeyType === 'pregnant' && (
+            <span style={{ marginLeft: 8, fontSize: 'var(--fs-xs)' }}>
+              Week {currentWeek} · {trimester}{trimester === 1 ? 'st' : trimester === 2 ? 'nd' : 'rd'} Trimester
+            </span>
+          )}
+          {journeyType === 'nursing' && babyAgeWeeks && (
+            <span style={{ marginLeft: 8, fontSize: 'var(--fs-xs)' }}>
+              Week {babyAgeWeeks} Postpartum
+            </span>
+          )}
         </div>
 
         {/* ── Calendar ── */}
         <div className="hm-section">
           <CalendarStrip accent={meta.accent} />
         </div>
+
+        {/* ── GLOW CARD ── */}
+        <GlowCard 
+          journeyType={journeyType === 'nursing' ? 'postpartum' : journeyType}
+          trimester={trimester}
+          postnatalDay={babyAgeDays}
+        />
 
         {/* ── Hero card ── */}
         <div className="hm-hero-card" style={{ background: cfg.heroBg }}>
@@ -145,7 +238,28 @@ export default function Home({ setTab }) {
             <img src={cfg.heroIllo} alt={meta.label} />
           </div>
         </div>
-      
+      </div>
+    
+      {/* Emergency Alert Banner */}
+      {hasEmergency && (
+        <div className="hm-card" style={{ background: "var(--rdl)", border: "2px solid var(--rd)", marginBottom: "var(--gap-md)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)" }}>
+            <div style={{ fontSize: 32 }}>🚨</div>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontWeight: 800, color: "var(--rd)", marginBottom: 4 }}>Urgent Medical Attention Needed</p>
+              <p style={{ fontSize: "var(--fs-sm)", color: "var(--md)" }}>
+                Please check the emergency alerts above and contact your healthcare provider immediately.
+              </p>
+              <button 
+                onClick={() => setShowSOS(true)}
+                style={{ marginTop: 8, background: "var(--rd)", color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", cursor: "pointer" }}
+              >
+                Call Emergency Services
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Stats row ── */}
       <div className="hm-stats-row">
@@ -165,7 +279,6 @@ export default function Home({ setTab }) {
           <ChevronRight size={16} color={cfg.alert.color} strokeWidth={2} style={{ flexShrink: 0 }} />
         </div>
       )}
-    </div>
     
       {/* ── Mood check ── */}
       <div className="hm-card">
@@ -176,7 +289,7 @@ export default function Home({ setTab }) {
               key={m.label}
               className={`hm-mood-btn ${mood?.label === m.label ? 'hm-mood-btn--on' : ''}`}
               style={mood?.label === m.label ? { borderColor: meta.accent, background: meta.accentSoft } : {}}
-              onClick={() => setMood(m)}
+              onClick={() => handleMood(m)}
             >
               <span className="hm-mood-em">{m.emoji}</span>
               <span className="hm-mood-lbl">{m.label}</span>
@@ -185,7 +298,7 @@ export default function Home({ setTab }) {
         </div>
         {mood && (
           <p className="hm-mood-fb" style={{ color: meta.accent }}>
-            Feeling {mood.label} logged · 3 day streak 🔥
+            Feeling {mood.label} logged · {moodStreak} day streak 🔥
           </p>
         )}
       </div>
@@ -241,6 +354,30 @@ export default function Home({ setTab }) {
 
       </div>
 
+      {/* ── Personalised AI Insight ── */}
+      <div className="hm-card" style={{ background: "linear-gradient(135deg, var(--lvl), #F8F6FE)" }}>
+        <p className="hm-card-label">✨ YOUR AI INSIGHT</p>
+        <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "flex-start" }}>
+          <span style={{ fontSize: 32 }}>🤖</span>
+          <div>
+            <p style={{ fontWeight: 700, marginBottom: 4 }}>
+              {journeyType === 'pregnant' && `Week ${currentWeek} - Your baby is growing rapidly`}
+              {journeyType === 'nursing' && `Week ${babyAgeWeeks || 1} - You're doing amazing`}
+              {journeyType === 'ttc' && 'Track your fertile window for best chances'}
+              {journeyType === 'ivf' && 'Stay consistent with your medications'}
+              {journeyType === 'menopause' && 'Listen to your body and rest when needed'}
+            </p>
+            <p style={{ fontSize: "var(--fs-sm)", color: "var(--md)" }}>
+              {journeyType === 'pregnant' && `Based on your logs, focus on ${trimester === 1 ? 'folate and rest' : trimester === 2 ? 'iron and calcium' : 'omega-3s and hydration'} this week.`}
+              {journeyType === 'nursing' && `Your milk supply is building. Stay hydrated and rest when baby sleeps. You're doing great, mama.`}
+              {journeyType === 'ttc' && `Your fertile window is approaching. Consider logging BBT and LH tests daily for accurate prediction.`}
+              {journeyType === 'ivf' && `Your medication adherence is excellent. Keep going - you're building something beautiful.`}
+              {journeyType === 'menopause' && `Hot flashes may intensify with stress. Try our 4-7-8 breathing exercise for relief.`}
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* ── Insights ── */}
       <div className="hm-card">
         <p className="hm-card-label">PERSONALISED INSIGHTS</p>
@@ -287,6 +424,31 @@ export default function Home({ setTab }) {
             <ChevronRight size={14} color="#ccc" />
           </div>
         ))}
+      </div>
+
+      {/* ── Quick Emergency Contacts ── */}
+      <div className="hm-card" style={{ background: "var(--rdl)" }}>
+        <p className="hm-card-label">🚨 EMERGENCY CONTACTS</p>
+        <div style={{ display: "flex", gap: "var(--gap-md)", flexWrap: "wrap" }}>
+          <button 
+            onClick={() => window.location.href = "tel:112"}
+            style={{ background: "var(--rd)", color: "#fff", border: "none", borderRadius: 20, padding: "8px 16px", cursor: "pointer" }}
+          >
+            📞 112 (Emergency)
+          </button>
+          <button 
+            onClick={() => window.location.href = "tel:111"}
+            style={{ background: "var(--gd)", color: "#fff", border: "none", borderRadius: 20, padding: "8px 16px", cursor: "pointer" }}
+          >
+            🏥 NHS 111
+          </button>
+          <button 
+            onClick={() => setShowSOS(true)}
+            style={{ background: "var(--bl)", color: "#fff", border: "none", borderRadius: 20, padding: "8px 16px", cursor: "pointer" }}
+          >
+            🆘 SOS
+          </button>
+        </div>
       </div>
 
       <div style={{ height: 24 }} />

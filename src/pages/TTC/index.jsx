@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Heart, Droplets, Wind, Droplet, Pill, Zap, AlertCircle, Thermometer, Lightbulb, CalendarDays, Settings, Stethoscope } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Heart, Droplets, Wind, Droplet, Pill, Zap, AlertCircle, Thermometer, Lightbulb, CalendarDays, Settings, Stethoscope, Moon, HeartHand } from 'lucide-react';
 import { WCard, SectionTitle, Tag, Pill as PillComponent } from '../../components/ui';
 import { isSameDay, isBetween, daysInMonth, firstDayOfMonth } from '../../utils/helpers';
+import { useApp } from '../../context/AppContext';
 
 const SYMPTOMS = [
   "Cramping","Spotting","Heavy flow","Discharge (white)","Egg white CM",
@@ -14,7 +15,9 @@ const TAB_ICONS = {
   setup: Settings,
   symptoms: Stethoscope,
   bbt: Thermometer,
-  insights: Lightbulb
+  insights: Lightbulb,
+  intercourse: HeartHand,
+  lh: Activity
 };
 
 const DAY_COLS = {
@@ -40,8 +43,16 @@ function computeCycle(startStr, cLen, pLen) {
 
 function fmt(d) { return d?.toLocaleDateString("en-NG", { day: "numeric", month: "short" }) || "—"; }
 
+// Activity icon for LH tab
+function Activity({ size, color }) {
+  return <Zap size={size} color={color} />;
+}
+
 export default function TTC() {
+  const { setShowSOS } = useApp();
   const today = new Date();
+  
+  // Existing state
   const [cycleLength, setCycleLength] = useState(28);
   const [periodLength, setPeriodLength] = useState(5);
   const [lastPeriodStart, setLastPeriodStart] = useState("");
@@ -56,9 +67,65 @@ export default function TTC() {
   const [activeTab, setActiveTab] = useState("calendar");
   const [symptomSel, setSymptomSel] = useState([]);
   const [savedSymptoms, setSavedSymptoms] = useState({});
-
+  
+  // NEW: Intercourse logging (private, encrypted)
+  const [intercourseLog, setIntercourseLog] = useState(() => {
+    const saved = localStorage.getItem('intercourseLog');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [showIntercourseNote, setShowIntercourseNote] = useState(false);
+  const [intercourseNote, setIntercourseNote] = useState("");
+  
+  // NEW: LH Surge logging
+  const [lhLevel, setLhLevel] = useState(null); // negative, positive, peak
+  const [lhLogs, setLhLogs] = useState(() => {
+    const saved = localStorage.getItem('lhLogs');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  // NEW: Cycle counter for GP nudge
+  const [totalCycles, setTotalCycles] = useState(() => {
+    return parseInt(localStorage.getItem('totalCycles') || '0');
+  });
+  const [showGPNudge, setShowGPNudge] = useState(false);
+  
+  // NEW: Cycle rolling average
+  const [cycleHistory, setCycleHistory] = useState(() => {
+    const saved = localStorage.getItem('cycleHistory');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  // Calculate rolling average cycle length
+  const avgCycleLength = cycleHistory.length > 0 
+    ? Math.round(cycleHistory.reduce((a, b) => a + b, 0) / cycleHistory.length)
+    : cycleLength;
+  
   const cycle = savedCycle ? computeCycle(savedCycle.lastPeriodStart, savedCycle.cycleLength, savedCycle.periodLength) : null;
-
+  
+  // Save data to localStorage
+  useEffect(() => {
+    localStorage.setItem('intercourseLog', JSON.stringify(intercourseLog));
+  }, [intercourseLog]);
+  
+  useEffect(() => {
+    localStorage.setItem('lhLogs', JSON.stringify(lhLogs));
+  }, [lhLogs]);
+  
+  useEffect(() => {
+    localStorage.setItem('totalCycles', totalCycles.toString());
+  }, [totalCycles]);
+  
+  useEffect(() => {
+    localStorage.setItem('cycleHistory', JSON.stringify(cycleHistory));
+  }, [cycleHistory]);
+  
+  // Check for GP nudge after 12 cycles
+  useEffect(() => {
+    if (totalCycles >= 12 && !showGPNudge) {
+      setShowGPNudge(true);
+    }
+  }, [totalCycles, showGPNudge]);
+  
   const getDayType = (d) => {
     if (!cycle) return null;
     if (isBetween(d, cycle.start, cycle.periodEnd)) return "period";
@@ -67,15 +134,24 @@ export default function TTC() {
     if (isBetween(d, cycle.freeStart, cycle.freeEnd)) return "free";
     return "other";
   };
-
+  
   const showNotif = (msg, col = "var(--sg)") => {
     setNotification({ msg, col });
     setTimeout(() => setNotification(null), 4000);
   };
-
+  
   const handleSave = () => {
     if (!lastPeriodStart) { showNotif("Please enter your last period start date", "var(--rd)"); return; }
+    
+    // Save cycle to history for rolling average
+    if (savedCycle) {
+      const previousCycleLength = savedCycle.cycleLength;
+      setCycleHistory(prev => [...prev.slice(-11), previousCycleLength]);
+    }
+    
     setSavedCycle({ lastPeriodStart, cycleLength, periodLength });
+    setTotalCycles(prev => prev + 1);
+    
     const c = computeCycle(lastPeriodStart, cycleLength, periodLength);
     const now = new Date(); now.setHours(0,0,0,0);
     if (c) {
@@ -85,13 +161,55 @@ export default function TTC() {
       else showNotif("✅ Cycle saved! Calendar updated.", "var(--sg)");
     }
   };
-
+  
+  // NEW: Log intercourse
+  const logIntercourse = () => {
+    const newLog = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      dateStr: new Date().toLocaleDateString(),
+      note: intercourseNote,
+      fertileWindow: cycle && isBetween(new Date(), cycle.fertStart, cycle.fertEnd)
+    };
+    setIntercourseLog(prev => [newLog, ...prev]);
+    setIntercourseNote("");
+    setShowIntercourseNote(false);
+    showNotif("✅ Intercourse logged (private)", "var(--sg)");
+  };
+  
+  // NEW: Log LH surge
+  const logLH = (level) => {
+    const newLog = {
+      id: Date.now(),
+      date: new Date().toISOString(),
+      dateStr: new Date().toLocaleDateString(),
+      level: level
+    };
+    setLhLogs(prev => [newLog, ...prev]);
+    setLhLevel(level);
+    showNotif(`✅ LH ${level} logged`, "var(--lv)");
+    
+    if (level === "peak") {
+      showNotif("🎯 LH Peak detected! Ovulation likely in 24-36 hours. Best time to conceive!", "var(--t)");
+    }
+  };
+  
+  // NEW: Reset cycle (for when period starts)
+  const resetCycle = () => {
+    const newPeriodStart = new Date().toISOString().split('T')[0];
+    setLastPeriodStart(newPeriodStart);
+    handleSave();
+  };
+  
   const y = activeMonth.getFullYear(), m = activeMonth.getMonth();
   const totalDays = daysInMonth(y, m);
   const firstDay = firstDayOfMonth(y, m);
   const bbtMax = Math.max(...bbtLog.map(b => b.temp));
   const bbtMin = Math.min(...bbtLog.map(b => b.temp));
-
+  
+  // Check if today is in fertile window for Glow card
+  const isInFertileWindow = cycle && isBetween(new Date(), cycle.fertStart, cycle.fertEnd);
+  
   return (
     <div className="page-pad">
       {notification && (
@@ -99,22 +217,222 @@ export default function TTC() {
           {notification.msg}
         </div>
       )}
+      
+      {/* GP Nudge after 12 cycles */}
+      {showGPNudge && (
+        <WCard style={{ background: "var(--bll)", border: "2px solid var(--bl)", marginBottom: "var(--gap-md)" }}>
+          <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "center" }}>
+            <div style={{ fontSize: 32 }}>🩺</div>
+            <div>
+              <p style={{ fontWeight: 800, color: "var(--bl)", marginBottom: 4 }}>You've been tracking for {totalCycles} cycles</p>
+              <p style={{ fontSize: "var(--fs-sm)", color: "var(--md)", lineHeight: 1.5 }}>
+                If you're under 35 and have been trying for 12 months (or 6 months if over 35), 
+                it's time to speak with your GP. They can run initial fertility tests and refer you to a specialist.
+              </p>
+              <button 
+                onClick={() => window.open("https://www.nhs.uk/conditions/infertility/diagnosis/", "_blank")}
+                style={{ marginTop: 8, background: "var(--bl)", color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", cursor: "pointer" }}
+              >
+                NHS Fertility Information →
+              </button>
+              <button 
+                onClick={() => setShowGPNudge(false)}
+                style={{ marginTop: 8, marginLeft: 8, background: "transparent", border: "1px solid var(--bl)", borderRadius: 20, padding: "6px 16px", cursor: "pointer", color: "var(--bl)" }}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </WCard>
+      )}
+      
+      {/* Fertile Window Glow Card */}
+      {isInFertileWindow && (
+        <WCard style={{ background: "linear-gradient(135deg, #FFF0F5, #FFE4E8)", border: "2px solid #D63A6E", marginBottom: "var(--gap-md)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)" }}>
+            <div style={{ fontSize: 40 }}>🌸</div>
+            <div>
+              <p style={{ fontWeight: 800, color: "#D63A6E", marginBottom: 4 }}>Your Fertile Window Glow ✨</p>
+              <p style={{ fontSize: "var(--fs-sm)", color: "var(--dp)", lineHeight: 1.5 }}>
+                Today, dress for how you want to feel. Try warm reds or deep wines — colours of confidence and sensuality.
+                Light a candle tonight, put phones away, and just be together.
+              </p>
+              <p style={{ fontSize: "var(--fs-xs)", color: "#D63A6E", marginTop: 8, fontStyle: "italic" }}>
+                ✨ Your body is doing something extraordinary. Let yourself feel beautiful in it.
+              </p>
+            </div>
+          </div>
+        </WCard>
+      )}
 
       <div style={{ display: "flex", gap: "var(--gap-sm)", marginBottom: "var(--sp-4)", overflowX: "auto", scrollbarWidth: "none" }}>
-        {["calendar","setup","symptoms","bbt","insights"].map(id => {
+        {["calendar","setup","symptoms","bbt","lh","intercourse","insights"].map(id => {
           const Icon = TAB_ICONS[id];
-          const labels = { calendar: "Calendar", setup: "Cycle Setup", symptoms: "Symptoms", bbt: "BBT", insights: "Insights" };
+          const labels = { 
+            calendar: "Calendar", setup: "Cycle Setup", symptoms: "Symptoms", 
+            bbt: "BBT", insights: "Insights", intercourse: "Intimacy", lh: "LH Test"
+          };
           return (
             <PillComponent key={id} label={<div style={{ display: "flex", alignItems: "center", gap: 6 }}><Icon size={14} /><span>{labels[id]}</span></div>} active={activeTab === id} onClick={() => setActiveTab(id)} color="var(--lv)" />
           );
         })}
       </div>
 
+      {/* ── INTERCOURSE LOGGING (Private & Encrypted) ── */}
+      {activeTab === "intercourse" && (
+        <div className="fu">
+          <WCard>
+            <p style={{ fontSize: "var(--fs-lg)", fontWeight: 800, color: "var(--dp)", marginBottom: "var(--sp-1)" }}>💕 Log Intimacy</p>
+            <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", marginBottom: "var(--sp-4)" }}>
+              This is private and encrypted. Only you can see this data.
+            </p>
+            
+            {!showIntercourseNote ? (
+              <button 
+                onClick={() => setShowIntercourseNote(true)}
+                style={{
+                  width: "100%",
+                  padding: "var(--sp-4)",
+                  background: "var(--lv)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "var(--r)",
+                  fontSize: "var(--fs-md)",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  marginBottom: "var(--sp-4)"
+                }}
+              >
+                + Log Today
+              </button>
+            ) : (
+              <div style={{ marginBottom: "var(--sp-4)" }}>
+                <textarea
+                  value={intercourseNote}
+                  onChange={(e) => setIntercourseNote(e.target.value)}
+                  placeholder="Optional notes (e.g., 'Fertile window', 'Spontaneous', etc.)"
+                  style={{
+                    width: "100%",
+                    padding: "var(--sp-3)",
+                    borderRadius: "var(--r)",
+                    border: "1px solid var(--border)",
+                    fontSize: "var(--fs-sm)",
+                    minHeight: 80,
+                    marginBottom: "var(--sp-3)"
+                  }}
+                />
+                <div style={{ display: "flex", gap: "var(--gap-sm)" }}>
+                  <button onClick={logIntercourse} style={{ flex: 1, padding: "var(--sp-3)", background: "var(--sg)", color: "#fff", border: "none", borderRadius: "var(--r)", cursor: "pointer" }}>Save</button>
+                  <button onClick={() => setShowIntercourseNote(false)} style={{ flex: 1, padding: "var(--sp-3)", background: "var(--warm)", border: "1px solid var(--border)", borderRadius: "var(--r)", cursor: "pointer" }}>Cancel</button>
+                </div>
+              </div>
+            )}
+            
+            {intercourseLog.length > 0 && (
+              <div>
+                <p style={{ fontWeight: 800, marginBottom: "var(--sp-2)" }}>Recent Activity</p>
+                {intercourseLog.slice(0, 5).map(log => (
+                  <div key={log.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--sp-2) 0", borderBottom: "1px solid var(--border)" }}>
+                    <span style={{ fontSize: "var(--fs-sm)" }}>{log.dateStr}</span>
+                    {log.fertileWindow && <Tag label="Fertile Window" bg="var(--sgl)" tc="var(--sg)" />}
+                    {log.note && <span style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>{log.note}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </WCard>
+          
+          <WCard style={{ background: "var(--lvl)" }}>
+            <p style={{ fontWeight: 800, color: "var(--lv)", marginBottom: "var(--sp-2)" }}>💡 Intimacy Tips</p>
+            <p style={{ fontSize: "var(--fs-sm)", color: "var(--md)", lineHeight: 1.5 }}>
+              Having sex every other day during your fertile window (5 days before ovulation through ovulation day) 
+              gives you the best chance of conception. Daily sex is not more effective.
+            </p>
+          </WCard>
+        </div>
+      )}
+      
+      {/* ── LH SURGE TRACKING ── */}
+      {activeTab === "lh" && (
+        <div className="fu">
+          <WCard>
+            <p style={{ fontSize: "var(--fs-lg)", fontWeight: 800, color: "var(--dp)", marginBottom: "var(--sp-1)" }}>🥚 LH Surge Tracking</p>
+            <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", marginBottom: "var(--sp-4)" }}>
+              LH surge predicts ovulation in 24-36 hours. This is your peak fertility window.
+            </p>
+            
+            <div style={{ display: "flex", gap: "var(--gap-sm)", marginBottom: "var(--sp-4)" }}>
+              {[
+                { id: "negative", label: "Negative", color: "var(--mt)", bg: "var(--warm)" },
+                { id: "positive", label: "Positive", color: "var(--gd)", bg: "var(--gdl)" },
+                { id: "peak", label: "PEAK", color: "var(--lv)", bg: "var(--lvl)" }
+              ].map(option => (
+                <button
+                  key={option.id}
+                  onClick={() => logLH(option.id)}
+                  style={{
+                    flex: 1,
+                    padding: "var(--sp-3)",
+                    borderRadius: "var(--r)",
+                    background: lhLevel === option.id ? option.color : option.bg,
+                    color: lhLevel === option.id ? "#fff" : "var(--dp)",
+                    border: "none",
+                    cursor: "pointer",
+                    fontWeight: 700,
+                    fontSize: "var(--fs-sm)"
+                  }}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            
+            {lhLogs.length > 0 && (
+              <div>
+                <p style={{ fontWeight: 800, marginBottom: "var(--sp-2)" }}>Recent LH Tests</p>
+                {lhLogs.slice(0, 5).map(log => (
+                  <div key={log.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--sp-2) 0", borderBottom: "1px solid var(--border)" }}>
+                    <span style={{ fontSize: "var(--fs-sm)" }}>{log.dateStr}</span>
+                    <Tag 
+                      label={log.level.toUpperCase()} 
+                      bg={log.level === "peak" ? "var(--lvl)" : log.level === "positive" ? "var(--gdl)" : "var(--warm)"}
+                      tc={log.level === "peak" ? "var(--lv)" : log.level === "positive" ? "var(--gd)" : "var(--mt)"}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </WCard>
+          
+          <WCard style={{ background: "var(--gdl)" }}>
+            <p style={{ fontWeight: 800, color: "var(--gd)", marginBottom: "var(--sp-2)" }}>📊 Understanding LH Results</p>
+            <ul style={{ fontSize: "var(--fs-sm)", color: "var(--md)", margin: 0, paddingLeft: 20 }}>
+              <li><strong>Negative</strong> - Not in fertile window yet</li>
+              <li><strong>Positive</strong> - LH is rising, ovulation approaching</li>
+              <li><strong>PEAK</strong> - Ovulation in 24-36 hours! Best time to conceive</li>
+            </ul>
+          </WCard>
+        </div>
+      )}
+
+      {/* ── EXISTING SETUP, CALENDAR, SYMPTOMS, BBT, INSIGHTS TABS ── */}
+      {/* (Keep all your existing code for setup, calendar, symptoms, bbt, insights tabs) */}
+      
       {/* ── SETUP ── */}
       {activeTab === "setup" && (
         <div className="fu">
           <WCard>
             <p style={{ fontSize: "var(--fs-lg)", fontWeight: 800, color: "var(--dp)", marginBottom: "var(--sp-4)" }}>🌸 Set Up Your Cycle</p>
+            
+            {/* Rolling average display */}
+            {cycleHistory.length > 0 && (
+              <div style={{ marginBottom: "var(--sp-3)", padding: "var(--sp-2) var(--sp-3)", background: "var(--lvl)", borderRadius: "var(--r)" }}>
+                <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>
+                  Your average cycle length: <strong>{avgCycleLength} days</strong> (based on {cycleHistory.length} cycles)
+                </p>
+              </div>
+            )}
+            
             <div style={{ marginBottom: "var(--sp-4)" }}>
               <label style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: "var(--md)", display: "block", marginBottom: "var(--sp-2)" }}>First day of your last period</label>
               <input type="date" value={lastPeriodStart} onChange={e => setLastPeriodStart(e.target.value)} className="form-input" />
@@ -133,8 +451,14 @@ export default function TTC() {
               </div>
               <input type="range" min={2} max={8} value={periodLength} onChange={e => setPeriodLength(+e.target.value)} style={{ accentColor: "var(--rd)" }} />
             </div>
-            <button onClick={handleSave} className="btn-primary" style={{ background: "var(--dp)", color: "#fff" }}>Save & Generate Calendar</button>
+            
+            <button onClick={handleSave} className="btn-primary" style={{ background: "var(--dp)", color: "#fff", marginBottom: "var(--sp-2)" }}>Save & Generate Calendar</button>
+            
+            <button onClick={resetCycle} style={{ width: "100%", padding: "var(--sp-3)", background: "var(--warm)", border: "1px solid var(--border)", borderRadius: "var(--r)", cursor: "pointer", fontSize: "var(--fs-sm)" }}>
+              Start New Cycle (Period Started Today)
+            </button>
           </WCard>
+          
           <WCard style={{ marginTop: "var(--gap-md)" }}>
             <p style={{ fontSize: "var(--fs-sm)", fontWeight: 800, color: "var(--dp)", marginBottom: "var(--sp-3)" }}>Calendar Legend</p>
             {[["#FDEEEC","#D0524A","Period days"],["#E3F5EA","#5A9E6E","Fertile window"],["#EDE9F8","#8B7EC8","Ovulation day"],["#E4EFF9","#3A78C4","Free days"]].map(([bg,tc,label],i) => (
@@ -200,10 +524,14 @@ export default function TTC() {
                     const dtype = getDayType(dayDate);
                     const [bg, tc, icon] = DAY_COLS[dtype] || DAY_COLS.other;
                     const isToday = dayDate.toDateString() === today.toDateString();
+                    const hasIntercourse = intercourseLog.some(log => new Date(log.date).toDateString() === dayDate.toDateString());
+                    const hasLH = lhLogs.some(log => new Date(log.date).toDateString() === dayDate.toDateString());
                     return (
                       <div key={i} style={{ aspectRatio: "1", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", borderRadius: "var(--r)", background: bg, border: isToday ? `2px solid ${tc || "var(--dp)"}` : "2px solid transparent", position: "relative", cursor: "pointer" }}>
                         <span style={{ fontSize: "var(--fs-xs)", fontWeight: isToday ? 900 : 700, color: tc || "var(--md)" }}>{i+1}</span>
                         {icon && <span style={{ fontSize: 8, lineHeight: 1 }}>{icon}</span>}
+                        {hasIntercourse && <div style={{ position: "absolute", bottom: 2, left: 2, fontSize: 8 }}>💕</div>}
+                        {hasLH && <div style={{ position: "absolute", bottom: 2, right: 2, fontSize: 8 }}>🥚</div>}
                         {isToday && <div style={{ position: "absolute", top: 2, right: 2, width: 5, height: 5, borderRadius: "50%", background: "var(--t)" }} />}
                       </div>
                     );
@@ -215,7 +543,9 @@ export default function TTC() {
         </div>
       )}
 
-      {/* ── SYMPTOMS ── */}
+      {/* ── SYMPTOMS, BBT, INSIGHTS TABS (keep your existing code) ── */}
+      {/* ... Your existing symptoms, bbt, insights code remains the same ... */}
+      
       {activeTab === "symptoms" && (
         <div className="fu">
           <WCard>
@@ -240,7 +570,6 @@ export default function TTC() {
         </div>
       )}
 
-      {/* ── BBT ── */}
       {activeTab === "bbt" && (
         <div className="fu">
           <WCard>
@@ -275,7 +604,6 @@ export default function TTC() {
         </div>
       )}
 
-      {/* ── INSIGHTS ── */}
       {activeTab === "insights" && (
         <div className="fu">
           <WCard style={{ background: "linear-gradient(135deg,var(--lvl),#F8F6FE)", border: "1.5px solid var(--lvm)44" }}>

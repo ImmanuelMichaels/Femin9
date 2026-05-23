@@ -1,10 +1,125 @@
+// data/drugs.js
+
 export const DRUGS = {
-  paracetamol: { name: "Paracetamol 500mg", safety: "SAFE", cat: "Pain Relief", trim: "All trimesters", dose: "500mg–1g every 4–6 hrs. Max 4g/day.", warn: "Safe short-term. Do not exceed dose. Avoid alcohol.", alt: "Cold compress, rest", col: ["#E3F5EA", "#5A9E6E"], icon: "✅" },
-  ibuprofen: { name: "Ibuprofen 400mg", safety: "AVOID", cat: "NSAID / Pain Relief", trim: "AVOID — especially after 20 weeks", dose: "NOT RECOMMENDED", warn: "Causes premature closure of ductus arteriosus. Risk of low amniotic fluid.", alt: "Paracetamol is safer", col: ["#FDEEEC", "#D0524A"], icon: "🚫" },
-  amoxicillin: { name: "Amoxicillin 250mg", safety: "GENERALLY SAFE", cat: "Antibiotic", trim: "All trimesters with prescription", dose: "As prescribed only", warn: "Must be prescribed. Never self-medicate antibiotics during pregnancy.", alt: "Only on prescription", col: ["#E4EFF9", "#3A78C4"], icon: "ℹ️" },
-  "folic acid": { name: "Folic Acid 5mg", safety: "RECOMMENDED", cat: "Vitamin B9", trim: "All trimesters — start before conception", dose: "400–600mcg daily", warn: "One of the most important supplements. Start before conception.", alt: "Foods: Efo, Moi Moi, Lentils", col: ["#E3F5EA", "#5A9E6E"], icon: "💚" },
-  malaria: { name: "Antimalarial Drug", safety: "DEPENDS ON TYPE", cat: "Antimalarial", trim: "Check specific drug with doctor", dose: "CONSULT DOCTOR IMMEDIATELY", warn: "Malaria is extremely dangerous in pregnancy. Some safe (Artemether-Lumefantrine), others not.", alt: "Hospital treatment immediately", col: ["#FEF2E0", "#C87C30"], icon: "⚠️" },
-  default: { name: "Unknown Medication", safety: "CONSULT DOCTOR", cat: "Unknown", trim: "Unknown", dose: "Cannot advise", warn: "Not in database. NEVER take any medication in pregnancy without consulting your doctor.", alt: "Consult healthcare provider", col: ["#FEF2E0", "#C87C30"], icon: "👩‍⚕️" },
+  paracetamol: { 
+    name: "Paracetamol 500mg", 
+    safety: "SAFE", 
+    cat: "Pain Relief", 
+    trim: "All trimesters", 
+    dose: "500mg–1g every 4–6 hrs. Max 4g/day.", 
+    warn: "Safe short-term. Do not exceed dose. Avoid alcohol.", 
+    alt: "Cold compress, rest", 
+    col: ["#E3F5EA", "#5A9E6E"], 
+    icon: "✅",
+    nigerianBrands: ["Panadol Extra", "M&B Paracetamol", "Emzor Paracetamol", "Pacymol"]
+  },
+  ibuprofen: { 
+    name: "Ibuprofen 400mg", 
+    safety: "AVOID", 
+    cat: "NSAID / Pain Relief", 
+    trim: "AVOID — especially after 20 weeks", 
+    dose: "NOT RECOMMENDED", 
+    warn: "Causes premature closure of ductus arteriosus. Risk of low amniotic fluid.", 
+    alt: "Paracetamol is safer", 
+    col: ["#FDEEEC", "#D0524A"], 
+    icon: "🚫",
+    nigerianBrands: ["Brufen", "Ibugesic", "Nurofen", "Advil"]
+  },
+  amoxicillin: { 
+    name: "Amoxicillin 250mg", 
+    safety: "GENERALLY SAFE", 
+    cat: "Antibiotic", 
+    trim: "All trimesters with prescription", 
+    dose: "As prescribed only", 
+    warn: "Must be prescribed. Never self-medicate antibiotics during pregnancy.", 
+    alt: "Only on prescription", 
+    col: ["#E4EFF9", "#3A78C4"], 
+    icon: "ℹ️",
+    nigerianBrands: ["Amoxil", "Clamoxyl", "Amoxiclav"]
+  },
+  "folic acid": { 
+    name: "Folic Acid 5mg", 
+    safety: "RECOMMENDED", 
+    cat: "Vitamin B9", 
+    trim: "All trimesters — start before conception", 
+    dose: "400–600mcg daily (5mg if high risk)", 
+    warn: "One of the most important supplements. Start before conception.", 
+    alt: "Foods: Efo, Moi Moi, Lentils, Ugu leaf", 
+    col: ["#E3F5EA", "#5A9E6E"], 
+    icon: "💚",
+    nigerianBrands: ["Folic Acid Tablets", "Folate 5mg", "Pregnacare"]
+  },
+  malaria: { 
+    name: "Antimalarial Drug", 
+    safety: "DEPENDS ON TYPE", 
+    cat: "Antimalarial", 
+    trim: "Check specific drug with doctor", 
+    dose: "CONSULT DOCTOR IMMEDIATELY", 
+    warn: "Malaria is extremely dangerous in pregnancy. Artemether-Lumefantrine generally safe in 2nd/3rd trimester.", 
+    alt: "Hospital treatment immediately", 
+    col: ["#FEF2E0", "#C87C30"], 
+    icon: "⚠️",
+    nigerianBrands: ["Coartem", "Lonart", "Artequin", "Lumether"]
+  },
+  ampiclox: {
+    name: "Ampiclox (Ampicillin + Cloxacillin)",
+    safety: "CAUTION",
+    cat: "Antibiotic",
+    trim: "Prescription only",
+    dose: "As prescribed",
+    warn: "Use only when prescribed. Complete full course.",
+    alt: "Consult doctor for alternative",
+    col: ["#FEF2E0", "#C87C30"],
+    icon: "⚠️",
+    nigerianBrands: ["Ampiclox", "Ampclox Beecham", "Clampicil"]
+  },
+  flagyl: {
+    name: "Flagyl / Metronidazole",
+    safety: "CAUTION",
+    cat: "Antibiotic",
+    trim: "Avoid 1st trimester",
+    dose: "Prescription only",
+    warn: "Avoid in first trimester if possible. Use only if clearly needed.",
+    alt: "Consult doctor for alternative",
+    col: ["#FEF2E0", "#C87C30"],
+    icon: "⚠️",
+    nigerianBrands: ["Flagyl", "Metrozine", "Rozex"]
+  },
+  codeine: {
+    name: "Codeine / Codipar",
+    safety: "AVOID",
+    cat: "Opioid Analgesic",
+    trim: "AVOID all trimesters",
+    dose: "NOT RECOMMENDED",
+    warn: "Risk of neonatal abstinence syndrome. Avoid while breastfeeding.",
+    alt: "Paracetamol for pain relief",
+    col: ["#FDEEEC", "#D0524A"],
+    icon: "🚫",
+    nigerianBrands: ["Codipar", "Codipront", "Paracod"]
+  },
+  artemether: {
+    name: "Artemether-Lumefantrine",
+    safety: "SAFE (2nd/3rd trimester)",
+    cat: "Antimalarial",
+    trim: "Safe 2nd/3rd trimester, caution 1st",
+    dose: "As prescribed by doctor",
+    warn: "Safe for treating uncomplicated malaria in 2nd/3rd trimester. Hospital preferred for 1st trimester.",
+    alt: "Seek hospital care",
+    col: ["#E3F5EA", "#5A9E6E"],
+    icon: "✅",
+    nigerianBrands: ["Coartem", "Lonart", "Artequin"]
+  },
+  default: { 
+    name: "Unknown Medication", 
+    safety: "CONSULT DOCTOR", 
+    cat: "Unknown", 
+    trim: "Unknown", 
+    dose: "Cannot advise", 
+    warn: "Not in database. NEVER take any medication in pregnancy without consulting your doctor.", 
+    alt: "Consult healthcare provider", 
+    col: ["#FEF2E0", "#C87C30"], 
+    icon: "👩‍⚕️" 
+  },
 };
 
 export const DRUG_DB = {
@@ -25,6 +140,7 @@ export const DRUG_DB = {
   pesticides:   { name:"Pesticides / Insecticides", cat:"Environmental Hazard", icon:"🚫", rating:"AVOID", col:["#FDEEEC","#D0524A"], mechanism:"Organophosphates disrupt fetal neurological development.", guidance:{ "T1":"AVOID spraying.", "T2":"AVOID.", "T3":"AVOID.", postpartum:"Avoid near fresh spray.", menstrual:"Minimise.", follicular:"Minimise.", ovulatory:"Minimise.", luteal:"Minimise." }, nigerian:["Rambo insecticide","Raid","Farm pesticides"], alt:"Mosquito nets, neem-based repellents" },
   relaxers:     { name:"Hair Relaxers / Chemical Straighteners", cat:"Environmental Hazard", icon:"⚠️", rating:"CAUTION", col:["#FEF2E0","#C87C30"], mechanism:"Contain formaldehyde releasers and endocrine-disrupting phthalates.", guidance:{ "T1":"AVOID.", "T2":"Minimise. Ventilate, wear gloves.", "T3":"Minimise.", postpartum:"Ventilated areas only.", menstrual:"Patch test.", follicular:"Okay with ventilation.", ovulatory:"Fine.", luteal:"Fine." }, nigerian:["Dark & Lovely","ORS Olive Oil Relaxer","TCB Naturals"], alt:"Braids, twists, protective styles" },
   "paint fumes": { name:"Paint Fumes / VOCs", cat:"Environmental Hazard", icon:"🚫", rating:"AVOID", col:["#FDEEEC","#D0524A"], mechanism:"VOCs — benzene, toluene — are neurotoxic.", guidance:{ "T1":"AVOID entirely.", "T2":"AVOID. Ventilate for 72 h.", "T3":"AVOID fresh paint fumes.", postpartum:"Ventilate well for 2 weeks.", menstrual:"Minimise VOC exposure.", follicular:"Low-VOC paints.", ovulatory:"Minimise.", luteal:"Minimise." }, nigerian:["Dulux","Berger Paints (conventional)"], alt:"Low-VOC / zero-VOC paints" },
+  artemether:   { name:"Artemether-Lumefantrine", cat:"Antimalarial", icon:"✅", rating:"SAFE (2nd/3rd)", col:["#E3F5EA","#5A9E6E"], mechanism:"Artemisinin combination therapy. Effective for uncomplicated malaria.", guidance:{ "T1":"Hospital assessment required.", "T2":"First-line treatment in Nigeria. Safe.", "T3":"Safe. Complete full course.", postpartum:"Safe while breastfeeding.", menstrual:"Fine.", follicular:"Fine.", ovulatory:"Fine.", luteal:"Fine." }, nigerian:["Coartem","Lonart","Artequin"], alt:"Seek hospital care immediately" },
 };
 
 export const TRADITIONAL = [
@@ -34,17 +150,27 @@ export const TRADITIONAL = [
   { practice: "Using Dry Gin for Baby Bath", status: "DANGEROUS", reason: "Toxic to newborn skin and respiratory system. Never use on newborns.", safe: false },
   { practice: "Drinking Orishirishi (Mixed Herbs)", status: "AVOID", reason: "Unknown composition. Many contain plants with abortifacient properties.", safe: false },
   { practice: "Eating Unripe Pawpaw (Papaya)", status: "AVOID", reason: "Contains latex that can trigger uterine contractions.", safe: false },
-  { practice: "Eating Plenty of Ugwu", status: "SAFE", reason: "Fluted pumpkin leaf is rich in iron, folate, and Vitamin C.", safe: true },
+  { practice: "Eating Plenty of Ugwu (Pumpkin Leaves)", status: "SAFE", reason: "Fluted pumpkin leaf is rich in iron, folate, and Vitamin C.", safe: true },
   { practice: "Tying Wrapper Tight on Belly", status: "CAUTION", reason: "Very tight wrapping can restrict fetal movement and reduce blood flow.", safe: false },
+  { practice: "Eating Okra (Ila)", status: "SAFE", reason: "Rich in folate, vitamin C, and fiber. Excellent for digestion.", safe: true },
+  { practice: "Using Moringa (Zogale)", status: "SAFE", reason: "Highly nutritious. Good for milk supply postpartum.", safe: true },
+  { practice: "Drinking Agbo (Herbal Mix)", status: "DANGEROUS", reason: "Unknown ingredients. Many contain abortifacient herbs like Ereru, Ewe Igbale.", safe: false },
+  { practice: "Eating Pounded Yam", status: "SAFE", reason: "Good source of carbohydrates. Ensure hygiene in preparation.", safe: true },
+  { practice: "Hot Pepper Soup", status: "CAUTION", reason: "Very spicy food may cause heartburn and indigestion.", safe: false },
+  { practice: "Eating Ugba (Oil Bean Seed)", status: "CAUTION", reason: "May contain preservatives. Ensure well-cooked from clean source.", safe: false },
 ];
 
 export const SYMPTOMS_RISK = [
-  { combo: ["Headache", "Swelling", "High BP"], risk: "EMERGENCY", condition: "Preeclampsia", action: "Go to hospital IMMEDIATELY. Do not drive yourself." },
-  { combo: ["Fever", "Chills", "Headache"], risk: "HIGH", condition: "Malaria / Infection", action: "Go to hospital for blood test and treatment today." },
-  { combo: ["Reduced kicks", "No movement 2hr"], risk: "EMERGENCY", condition: "Fetal Distress", action: "Go to hospital immediately. Time-critical emergency." },
-  { combo: ["Vaginal bleeding", "Cramping"], risk: "EMERGENCY", condition: "Placental Abruption / Preterm Labour", action: "Call emergency services or go to hospital now." },
-  { combo: ["Nausea", "Fatigue"], risk: "LOW", condition: "Normal Pregnancy Symptoms", action: "Rest, stay hydrated. Eat small frequent meals." },
-  { combo: ["Back pain", "Leg swelling"], risk: "MEDIUM", condition: "Possible DVT / Fluid Retention", action: "Elevate legs, stay hydrated. See doctor this week." },
+  { combo: ["Headache", "Swelling", "High BP"], risk: "EMERGENCY", condition: "Preeclampsia", action: "Go to hospital IMMEDIATELY. Do not drive yourself.", urgency: "critical" },
+  { combo: ["Fever", "Chills", "Headache"], risk: "HIGH", condition: "Malaria / Infection", action: "Go to hospital for blood test and treatment today.", urgency: "urgent" },
+  { combo: ["Reduced kicks", "No movement 2hr"], risk: "EMERGENCY", condition: "Fetal Distress", action: "Go to hospital immediately. Time-critical emergency.", urgency: "critical" },
+  { combo: ["Vaginal bleeding", "Cramping"], risk: "EMERGENCY", condition: "Placental Abruption / Preterm Labour", action: "Call emergency services or go to hospital now.", urgency: "critical" },
+  { combo: ["Nausea", "Fatigue"], risk: "LOW", condition: "Normal Pregnancy Symptoms", action: "Rest, stay hydrated. Eat small frequent meals.", urgency: "low" },
+  { combo: ["Back pain", "Leg swelling"], risk: "MEDIUM", condition: "Possible DVT / Fluid Retention", action: "Elevate legs, stay hydrated. See doctor this week.", urgency: "medium" },
+  { combo: ["Severe headache", "Vision changes"], risk: "EMERGENCY", condition: "Preeclampsia", action: "Call 999 or go to A&E immediately.", urgency: "critical" },
+  { combo: ["Shortness of breath", "Chest pain"], risk: "EMERGENCY", condition: "Pulmonary Embolism / Heart Issue", action: "Call 999 immediately.", urgency: "critical" },
+  { combo: ["Water breaking", "Contractions"], risk: "EMERGENCY", condition: "Preterm Labour", action: "Go to hospital immediately.", urgency: "critical" },
+  { combo: ["Itching all over", "Dark urine"], risk: "HIGH", condition: "Obstetric Cholestasis", action: "See GP or midwife today for blood test.", urgency: "urgent" },
 ];
 
 export const CONTEXT_KEYS = {
@@ -66,10 +192,67 @@ export const RATING_META = {
   EMERGENCY:{icon:"🆘",col:"#D0524A",bg:"#FDEEEC",label:"Seek Emergency Care"},
   "CONSULT DOCTOR":{icon:"👩‍⚕️",col:"#C87C30",bg:"#FEF2E0",label:"Consult Doctor"},
   "GENERALLY SAFE":{icon:"✅",col:"#5A9E6E",bg:"#E3F5EA",label:"Generally Safe"},
-  "DEPENDS ON TYPE":{icon:"⚠️",col:"#C87C30",bg:"#FEF2E0",label:"Depends on Type"}
+  "DEPENDS ON TYPE":{icon:"⚠️",col:"#C87C30",bg:"#FEF2E0",label:"Depends on Type"},
+  "SAFE (2nd/3rd trimester)":{icon:"✅",col:"#5A9E6E",bg:"#E3F5EA",label:"Safe in 2nd/3rd Trimester"},
+  DANGEROUS:{icon:"🚫",col:"#D0524A",bg:"#FDEEEC",label:"Dangerous - Do Not Use"}
 };
 
 export const DRUG_SUGGESTIONS = [
-  "Panadol","Ibuprofen","Ampiclox","Flagyl","Codeine","Folic Acid",
-  "Zobo","Ginger","Bitter Leaf","Raw Fish","Liver","Cheese","Pesticides","Relaxers","Paint Fumes","Malaria"
+  "Panadol","Paracetamol","Ibuprofen","Brufen","Ampiclox","Flagyl","Metronidazole","Codeine",
+  "Folic Acid","Folate","Coartem","Artemether","Malaria drugs","Zobo","Ginger","Atale",
+  "Bitter Leaf","Onugbu","Fenugreek","Eru","Raw Fish","Sushi","Liver","Cheese","Wara",
+  "Pesticides","Rambo","Insecticide","Relaxers","Hair relaxer","Dark & Lovely","Paint fumes",
+  "Shea butter","Ori","Tiger nuts","Aya","Ugwu","Pumpkin leaves","Okra","Ila","Moringa","Zogale",
+  "Agbo","Herbal mixture","Pounded yam","Hot pepper soup","Ugba","Oil bean"
 ];
+
+// Helper function to get drug by name (case-insensitive)
+export function getDrugByName(name) {
+  const lowerName = name.toLowerCase().trim();
+  
+  // Check main DRUGS object
+  for (const [key, drug] of Object.entries(DRUGS)) {
+    if (lowerName.includes(key) || drug.name.toLowerCase().includes(lowerName)) {
+      return drug;
+    }
+  }
+  
+  // Check DRUG_DB
+  for (const [key, drug] of Object.entries(DRUG_DB)) {
+    if (lowerName.includes(key) || drug.name.toLowerCase().includes(lowerName)) {
+      return {
+        name: drug.name,
+        safety: drug.rating,
+        cat: drug.cat,
+        trim: "Varies",
+        dose: "Consult doctor",
+        warn: drug.mechanism,
+        alt: drug.alt,
+        col: drug.col,
+        icon: drug.icon,
+        nigerianBrands: drug.nigerian
+      };
+    }
+  }
+  
+  return DRUGS.default;
+}
+
+// Helper function to get traditional practice by name
+export function getTraditionalPractice(name) {
+  const lowerName = name.toLowerCase();
+  return TRADITIONAL.find(t => t.practice.toLowerCase().includes(lowerName)) || null;
+}
+
+// Helper function to check symptom risk
+export function checkSymptomRisk(symptoms) {
+  const lowerSymptoms = symptoms.map(s => s.toLowerCase());
+  
+  for (const risk of SYMPTOMS_RISK) {
+    const matches = risk.combo.every(symptom => 
+      lowerSymptoms.some(ls => ls.includes(symptom.toLowerCase()))
+    );
+    if (matches) return risk;
+  }
+  return null;
+}
