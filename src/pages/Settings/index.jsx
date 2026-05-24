@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WCard } from '../../components/ui';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 
 const Toggle = ({ value, onChange, label, desc, color = "var(--sg)" }) => (
   <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)", padding: "var(--sp-4) 0", borderBottom: "1px solid var(--border)" }}>

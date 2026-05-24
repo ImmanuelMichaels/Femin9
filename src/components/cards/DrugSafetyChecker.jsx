@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { WCard, Tag, Pill} from '../ui'; // Button kept
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 import { DRUG_DB, CONTEXT_KEYS, RATING_META, DRUG_SUGGESTIONS } from '../../data/drugs';
 
 export default function DrugSafetyChecker() {

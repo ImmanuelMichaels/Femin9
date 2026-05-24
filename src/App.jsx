@@ -9,6 +9,8 @@ import Login from './pages/Login';
 import VerifyEmail from './pages/VerifyEmail';
 import JourneySelect from './pages/Journeyselect';
 import AppShell from './pages/AppShell';
+import { AppProvider } from './context/AppContext';
+
 
 function SplashRoute() {
   const navigate = useNavigate();
@@ -49,16 +51,18 @@ function ProtectedApp() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/"              element={<SplashRoute />} />
-      <Route path="/onboarding"    element={<Onboarding />} />
-      <Route path="/consent"       element={<Consent />} />
-      <Route path="/signup"        element={<Signup />} />       {/* fixed duplicate */}
-      <Route path="/verify-email"  element={<VerifyEmail />} />
-      <Route path="/login"         element={<Login />} />
-      <Route path="/journey-select" element={<JourneySelect />} />
-      <Route path="/app"           element={<ProtectedApp />} />
-      <Route path="*"              element={<Navigate to="/" replace />} /> {/* last */}
-    </Routes>
+    <AppProvider>
+      <Routes>
+        <Route path="/"               element={<SplashRoute />} />
+        <Route path="/onboarding"     element={<Onboarding />} />
+        <Route path="/consent"        element={<Consent />} />
+        <Route path="/signup"         element={<Signup />} />
+        <Route path="/verify-email"   element={<VerifyEmail />} />
+        <Route path="/login"          element={<Login />} />
+        <Route path="/journey-select" element={<JourneySelect />} />
+        <Route path="/app"            element={<ProtectedApp />} />
+        <Route path="*"               element={<Navigate to="/" replace />} />
+      </Routes>
+    </AppProvider>
   );
 }

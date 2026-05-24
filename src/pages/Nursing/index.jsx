@@ -4,7 +4,7 @@ import CalendarStrip from '../../components/ui/CalendarStrip';
 import GlowCard from '../../components/GlowCard';
 import EmergencyRedFlags from '../../components/EmergencyRedFlags';
 import { JOURNEY_CONFIG, ALL_TASKS } from '../../data/journey';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 import './Nursing.css';
 
 /* ── Hero illustration ── */

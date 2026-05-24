@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { WCard, Tag, Button } from '../ui';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 import { SYMPTOMS_RISK } from '../../data/drugs';
 
 const RISK_COL = {

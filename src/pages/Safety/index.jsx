@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { WCard, Tag } from '../../components/ui';
 import DrugSafetyChecker from '../../components/cards/DrugSafetyChecker';
 import { DV_CONTACTS, SEXUAL_HEALTH, REPORT_STEPS, FREE_CLINICS } from '../../data/safety';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 
 const HUB_TABS = [
   { id:"dv",     label:"🆘 DV Help" },

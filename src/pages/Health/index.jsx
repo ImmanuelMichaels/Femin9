@@ -3,7 +3,7 @@ import { WCard, SectionTitle, Tag, IconBox } from '../../components/ui';
 import SymptomRisk from '../../components/cards/SymptomRisk';
 import EmergencyRedFlags from '../../components/EmergencyRedFlags';
 import { DRUGS, TRADITIONAL } from '../../data/drugs';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 
 export default function Health() {
   const { journeyType, getCurrentWeek } = useApp();

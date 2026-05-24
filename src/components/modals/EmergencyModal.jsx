@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 
 export default function EmergencyModal({ onClose }) {
   const { userName, journeyType, setShowSOS } = useApp();

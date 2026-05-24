@@ -1,6 +1,6 @@
 // src/components/layout/AppHeader.jsx
 import { useState, useEffect, useRef } from 'react';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 import { useNotifications } from '../../hooks/useNotifications';
 import NotificationPanel from '../../pages/notifications/NotificationPanel';
 

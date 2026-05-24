@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AlertTriangle, ChevronRight, Hospital, CheckCircle2, Circle } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 import CalendarStrip from '../../components/ui/CalendarStrip';
 import GlowCard from '../../components/GlowCard';
 import EmergencyRedFlags from '../../components/EmergencyRedFlags';

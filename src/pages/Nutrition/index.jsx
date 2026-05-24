@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { WCard, SectionTitle, Tag, Pill, IconBox } from '../../components/ui';
 import { FOODS, SUPPS, CRAVINGS } from '../../data/foods';
 import { getCulturalMeal, CULTURAL_FOODS } from '../../data/culturalFoods';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 
 export default function Nutrition() {
   const { journeyType, culture, getCurrentWeek, getTrimester, babyAgeDays } = useApp();

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { WCard, SectionTitle, Tag } from '../../components/ui';
 import EmergencyRedFlags from '../../components/EmergencyRedFlags';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 
 export default function Vitals() {
   const { journeyType, getCurrentWeek } = useApp();

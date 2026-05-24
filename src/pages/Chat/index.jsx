@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import AIAssistant from './AIAssistant';
 import { WCard, Pill, Tag } from '../../components/ui';
-import { useApp } from '../../context/AppContext';
+import { useApp } from '../../context/useApp';
 
 export default function Chat() {
   const { subscriptionPlan, getAiMessageLimit, userName, journeyType } = useApp();
