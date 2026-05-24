@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/useApp';
 import GlowCard from '../../components/GlowCard';
-import './ivfjourney.css';
+// import './ivfjourney.css';
 
 /* ─────────────────────────────────────────────────────────
    DATA
