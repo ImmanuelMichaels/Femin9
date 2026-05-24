@@ -120,7 +120,6 @@ export function AppProvider({ children }) {
     if (userConsents) localStorage.setItem('userConsents', userConsents);
   }, []);
 
-  // ✅ Full logout — clears everything including auth token
   const logout = useCallback(() => {
     clearUserData();
     localStorage.removeItem('userAuth');

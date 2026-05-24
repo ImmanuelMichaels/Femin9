@@ -253,7 +253,6 @@ export function getJourneyConfig(journeyType) {
 
 // Helper function to get tasks for a journey
 export function getTasksForJourney(journeyType) {
-  const config = getJourneyConfig(journeyType);
   return ALL_TASKS.filter(task => 
     task.journey === journeyType || task.journey === 'all'
   );

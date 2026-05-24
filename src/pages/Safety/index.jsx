@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { WCard, Tag } from '../../components/ui';
 import DrugSafetyChecker from '../../components/cards/DrugSafetyChecker';
 import { DV_CONTACTS, SEXUAL_HEALTH, REPORT_STEPS, FREE_CLINICS } from '../../data/safety';
@@ -52,14 +52,24 @@ const EMERGENCY_CONTACTS = [
   }
 ];
 
-// Crisis warning signs
+// Crisis warning signs with severity levels
 const CRISIS_WARNING_SIGNS = [
-  { sign: "Talking about wanting to die", action: "Call 112 or go to nearest hospital immediately" },
-  { sign: "Feeling hopeless or trapped", action: "Speak to a mental health professional" },
-  { sign: "Withdrawing from family and friends", action: "Reach out to someone you trust" },
-  { sign: "Extreme mood swings", action: "Consult a doctor for evaluation" },
-  { sign: "Talking about being a burden", action: "You are not alone. Help is available" },
-  { sign: "Increased substance use", action: "Contact addiction support services" }
+  { id: 1, sign: "Talking about wanting to die", action: "Call 112 or go to nearest hospital immediately", severity: "critical" },
+  { id: 2, sign: "Feeling hopeless or trapped", action: "Speak to a mental health professional", severity: "high" },
+  { id: 3, sign: "Withdrawing from family and friends", action: "Reach out to someone you trust", severity: "medium" },
+  { id: 4, sign: "Extreme mood swings", action: "Consult a doctor for evaluation", severity: "high" },
+  { id: 5, sign: "Talking about being a burden", action: "You are not alone. Help is available", severity: "critical" },
+  { id: 6, sign: "Increased substance use", action: "Contact addiction support services", severity: "high" }
+];
+
+// Crisis action checklist
+const CRISIS_ACTION_CHECKLIST = [
+  { id: 1, action: "Call emergency helpline (112)", completed: false, icon: "📞" },
+  { id: 2, action: "Reach out to a trusted friend or family member", completed: false, icon: "👥" },
+  { id: 3, action: "Remove yourself from immediate danger", completed: false, icon: "🚶" },
+  { id: 4, action: "Practice grounding technique (5-4-3-2-1 method)", completed: false, icon: "🧘" },
+  { id: 5, action: "Go to nearest hospital emergency room", completed: false, icon: "🏥" },
+  { id: 6, action: "Contact your therapist or counselor", completed: false, icon: "💬" }
 ];
 
 export default function Safety() {
@@ -67,6 +77,8 @@ export default function Safety() {
   const [tab, setTab] = useState("dv");
   const [showCrisisChecklist, setShowCrisisChecklist] = useState(false);
   const [selectedCrisis, setSelectedCrisis] = useState(null);
+  const [checklistItems, setChecklistItems] = useState(CRISIS_ACTION_CHECKLIST);
+  const [crisisPlan, setCrisisPlan] = useState("");
   
   // Quick emergency action
   const handleEmergencyCall = (number) => {
@@ -77,6 +89,43 @@ export default function Safety() {
   const handleSOS = () => {
     setShowSOS(true);
   };
+  
+  // Handle crisis sign click - show action plan
+  const handleCrisisSignClick = (sign) => {
+    setSelectedCrisis(sign);
+    setShowCrisisChecklist(true);
+  };
+  
+  // Close crisis modal
+  const closeCrisisModal = () => {
+    setShowCrisisChecklist(false);
+    setSelectedCrisis(null);
+  };
+  
+  // Toggle checklist item completion
+  const toggleChecklistItem = (id) => {
+    setChecklistItems(items =>
+      items.map(item =>
+        item.id === id ? { ...item, completed: !item.completed } : item
+      )
+    );
+  };
+  
+  // Save personal crisis plan
+  const saveCrisisPlan = () => {
+    if (crisisPlan.trim()) {
+      localStorage.setItem('crisisPlan', crisisPlan);
+      alert("Your crisis plan has been saved! You can access it anytime.");
+    }
+  };
+  
+  // Load saved crisis plan on mount
+  useState(() => {
+    const savedPlan = localStorage.getItem('crisisPlan');
+    if (savedPlan) {
+      setCrisisPlan(savedPlan);
+    }
+  }, []);
   
   // Get journey-specific resources
   const getJourneyResources = () => {
@@ -103,6 +152,19 @@ export default function Safety() {
   };
   
   const journeyResources = getJourneyResources();
+  
+  // Get severity color
+  const getSeverityColor = (severity) => {
+    switch(severity) {
+      case 'critical': return 'var(--rd)';
+      case 'high': return 'var(--rdl)';
+      default: return 'var(--warm)';
+    }
+  };
+  
+  // Calculate checklist progress
+  const completedCount = checklistItems.filter(item => item.completed).length;
+  const progressPercentage = (completedCount / checklistItems.length) * 100;
   
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -223,7 +285,6 @@ export default function Safety() {
               <div style={{ fontSize: "var(--fs-sm)", color: "var(--md)", lineHeight: 1.6 }}>Domestic violence affects 1 in 3 women in Nigeria. Help is available — free, confidential, and open to all women.</div>
             </WCard>
             
-            {/* Safety Planning Tips */}
             <WCard style={{ background: "var(--bll)" }}>
               <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)", marginBottom: 8 }}>📋 Safety Planning Tips</div>
               <ul style={{ fontSize: "var(--fs-sm)", color: "var(--md)", lineHeight: 1.6, margin: 0, paddingLeft: 20 }}>
@@ -247,7 +308,6 @@ export default function Safety() {
               </WCard>
             ))}
             
-            {/* Quick Escape Button - Hidden but functional */}
             <button 
               onClick={() => window.location.href = "https://www.google.com"}
               style={{
@@ -282,7 +342,6 @@ export default function Safety() {
               </WCard>
             ))}
             
-            {/* STI Testing Reminder */}
             <WCard>
               <div style={{ fontWeight: 700, marginBottom: 8 }}>🩺 STI Testing Reminder</div>
               <p style={{ fontSize: "var(--fs-sm)", color: "var(--mt)", marginBottom: 12 }}>Regular testing is recommended if you have new or multiple partners.</p>
@@ -347,6 +406,27 @@ export default function Safety() {
               </div>
             </WCard>
             
+            {/* Button to show crisis checklist */}
+            <button
+              onClick={() => setShowCrisisChecklist(true)}
+              style={{
+                background: "var(--t)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "var(--r)",
+                padding: "var(--sp-3)",
+                fontSize: "var(--fs-sm)",
+                fontWeight: 700,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8
+              }}
+            >
+              📋 View Crisis Action Checklist
+            </button>
+            
             {/* Crisis Helplines */}
             {EMERGENCY_CONTACTS.map((contact, i) => (
               <WCard key={i}>
@@ -374,20 +454,72 @@ export default function Safety() {
               </WCard>
             ))}
             
-            {/* Warning Signs Checklist */}
+            {/* Warning Signs Checklist - Clickable */}
             <WCard>
               <div style={{ fontWeight: 700, fontSize: "var(--fs-md)", marginBottom: 8 }}>⚠️ Crisis Warning Signs</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {CRISIS_WARNING_SIGNS.map((item, i) => (
-                  <div key={i} style={{ padding: "var(--sp-2) 0", borderBottom: i < CRISIS_WARNING_SIGNS.length - 1 ? "1px solid var(--border)" : "none" }}>
+                {CRISIS_WARNING_SIGNS.map((item) => (
+                  <div 
+                    key={item.id} 
+                    onClick={() => handleCrisisSignClick(item)}
+                    style={{ 
+                      padding: "var(--sp-2) 0", 
+                      borderBottom: `1px solid var(--border)`,
+                      cursor: "pointer",
+                      transition: "all 0.2s",
+                      background: selectedCrisis?.id === item.id ? "var(--warm)" : "transparent",
+                      borderRadius: "var(--r)",
+                    }}
+                  >
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <div style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--rd)", flexShrink: 0 }} />
+                      <div style={{ 
+                        width: 10, 
+                        height: 10, 
+                        borderRadius: "50%", 
+                        background: getSeverityColor(item.severity), 
+                        flexShrink: 0 
+                      }} />
                       <span style={{ fontWeight: 700, fontSize: "var(--fs-sm)" }}>{item.sign}</span>
                     </div>
-                    <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", marginLeft: 16 }}>{item.action}</p>
+                    <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", marginLeft: 18 }}>{item.action}</p>
                   </div>
                 ))}
               </div>
+            </WCard>
+            
+            {/* Personal Crisis Plan */}
+            <WCard style={{ background: "var(--lvl)" }}>
+              <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)", color: "var(--lv)", marginBottom: 8 }}>📝 My Personal Crisis Plan</div>
+              <textarea
+                value={crisisPlan}
+                onChange={(e) => setCrisisPlan(e.target.value)}
+                placeholder="Write your personal crisis plan here... What helps you calm down? Who can you call? What makes you feel safe?"
+                style={{
+                  width: "100%",
+                  minHeight: 120,
+                  padding: "var(--sp-2)",
+                  borderRadius: "var(--r)",
+                  border: "1px solid var(--border)",
+                  fontSize: "var(--fs-sm)",
+                  fontFamily: "inherit",
+                  marginBottom: "var(--sp-2)",
+                  resize: "vertical"
+                }}
+              />
+              <button
+                onClick={saveCrisisPlan}
+                style={{
+                  background: "var(--t)",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "var(--r)",
+                  padding: "var(--sp-2) var(--sp-3)",
+                  fontSize: "var(--fs-xs)",
+                  cursor: "pointer"
+                }}
+              >
+                Save My Crisis Plan
+              </button>
             </WCard>
             
             {/* Self-Care Tips */}
@@ -404,6 +536,151 @@ export default function Safety() {
           </div>
         )}
       </div>
+      
+      {/* Crisis Checklist Modal - Using showCrisisChecklist and selectedCrisis */}
+      {showCrisisChecklist && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0,0,0,0.9)",
+          zIndex: 2000,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "var(--pad-x)",
+          overflowY: "auto"
+        }}>
+          <div style={{
+            background: "var(--card)",
+            borderRadius: "var(--r2)",
+            maxWidth: 500,
+            width: "100%",
+            maxHeight: "90vh",
+            overflowY: "auto",
+            padding: "var(--sp-5)"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--sp-4)" }}>
+              <h3 style={{ fontSize: "var(--fs-lg)", fontWeight: 800, margin: 0 }}>
+                {selectedCrisis ? "Crisis Action Plan" : "Crisis Action Checklist"}
+              </h3>
+              <button
+                onClick={closeCrisisModal}
+                style={{
+                  background: "var(--warm)",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: 32,
+                  height: 32,
+                  fontSize: 18,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center"
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            {selectedCrisis && (
+              <div style={{ 
+                background: "var(--rdl)", 
+                padding: "var(--sp-3)", 
+                borderRadius: "var(--r)", 
+                marginBottom: "var(--sp-4)" 
+              }}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>Selected Warning Sign:</div>
+                <div style={{ fontSize: "var(--fs-sm)", marginBottom: 8 }}>{selectedCrisis.sign}</div>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>Recommended Action:</div>
+                <div style={{ fontSize: "var(--fs-sm)", color: "var(--rd)" }}>{selectedCrisis.action}</div>
+              </div>
+            )}
+            
+            <div style={{ marginBottom: "var(--sp-4)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--sp-2)" }}>
+                <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)" }}>
+                  📋 Crisis Response Checklist
+                </div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--sg)" }}>
+                  {completedCount}/{checklistItems.length} completed
+                </div>
+              </div>
+              
+              {/* Progress bar */}
+              <div style={{
+                width: "100%",
+                height: 6,
+                background: "var(--border)",
+                borderRadius: 3,
+                marginBottom: "var(--sp-3)",
+                overflow: "hidden"
+              }}>
+                <div style={{
+                  width: `${progressPercentage}%`,
+                  height: "100%",
+                  background: "var(--sg)",
+                  transition: "width 0.3s"
+                }} />
+              </div>
+              
+              {checklistItems.map(item => (
+                <div 
+                  key={item.id}
+                  onClick={() => toggleChecklistItem(item.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "var(--gap-sm)",
+                    padding: "var(--sp-2)",
+                    marginBottom: "var(--sp-1)",
+                    background: item.completed ? "var(--sgl)" : "transparent",
+                    borderRadius: "var(--r)",
+                    cursor: "pointer",
+                    transition: "all 0.2s"
+                  }}
+                >
+                  <div style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    border: `2px solid ${item.completed ? "var(--sg)" : "var(--border)"}`,
+                    background: item.completed ? "var(--sg)" : "transparent",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "#fff",
+                    fontSize: 12,
+                    flexShrink: 0
+                  }}>
+                    {item.completed && "✓"}
+                  </div>
+                  <span style={{ fontSize: "var(--fs-sm)", flex: 1 }}>{item.icon} {item.action}</span>
+                </div>
+              ))}
+            </div>
+            
+            <button
+              onClick={closeCrisisModal}
+              style={{
+                width: "100%",
+                padding: "var(--sp-3)",
+                background: "var(--t)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "var(--r)",
+                fontSize: "var(--fs-sm)",
+                fontWeight: 700,
+                cursor: "pointer"
+              }}
+            >
+              Close Checklist
+            </button>
+          </div>
+        </div>
+      )}
       
       <style>{`
         @keyframes pulse {

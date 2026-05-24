@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { WCard, SectionTitle, Tag, Pill, IconBox } from '../../components/ui';
 import { FOODS, SUPPS, CRAVINGS } from '../../data/foods';
 import { getCulturalMeal, CULTURAL_FOODS } from '../../data/culturalFoods';
@@ -6,6 +6,10 @@ import { useApp } from '../../context/AppContext';
 
 export default function Nutrition() {
   const { journeyType, culture, getCurrentWeek, getTrimester, babyAgeDays } = useApp();
+  
+  // Define week and trimester at component level so they can be used anywhere
+  const currentWeek = getCurrentWeek();
+  const trimester = getTrimester();
   
   const [meal, setMeal] = useState("morning");
   const [suppTaken, setSuppTaken] = useState({ 0: true, 1: true });
@@ -18,11 +22,83 @@ export default function Nutrition() {
   // Get cultural meals based on user's culture and journey
   const culturalMeals = getCulturalMeal(culture, journeyType);
   
-  // Get journey-specific recommendations
-  const getJourneyTips = () => {
-    const week = getCurrentWeek();
-    const trimester = getTrimester();
+  // Generate weekly meal ideas based on current week
+  const getWeeklyMeals = () => {
+    // Different meal plans for different week ranges
+    const mealPlans = {
+      // Weeks 1-4
+      early: [
+        { day: "Mon", meal: "Light Chicken Soup with Vegetables", prep: "15 min prep", focus: "Easy digestion" },
+        { day: "Tue", meal: "Steamed Fish with Mashed Potatoes", prep: "20 min prep", focus: "Gentle on stomach" },
+        { day: "Wed", meal: "Smoothie Bowl with Nuts", prep: "10 min prep", focus: "Nutrient dense" },
+        { day: "Thu", meal: "Vegetable Omelette with Toast", prep: "10 min prep", focus: "Protein rich" },
+        { day: "Fri", meal: "Yogurt with Fruits and Granola", prep: "5 min prep", focus: "Probiotics" },
+        { day: "Sat", meal: "Baked Chicken with Rice", prep: "25 min prep", focus: "Balanced meal" },
+        { day: "Sun", meal: "Bean Porridge (Ewa Aganyin)", prep: "20 min prep (beans soak overnight)", focus: "Iron rich" }
+      ],
+      // Weeks 5-16 (first trimester)
+      firstTrimester: [
+        { day: "Mon", meal: "Ginger Tea with Crackers", prep: "5 min prep", focus: "Helps nausea" },
+        { day: "Tue", meal: "Ugu Leaf Soup with Fish", prep: "15 min prep", focus: "Folate rich" },
+        { day: "Wed", meal: "Mashed Plantain with Vegetable Sauce", prep: "15 min prep", focus: "Easy to digest" },
+        { day: "Thu", meal: "Brown Rice with Steamed Veggies", prep: "20 min prep", focus: "Fiber & vitamins" },
+        { day: "Fri", meal: "Moi Moi with Pap", prep: "10 min prep (soak beans overnight)", focus: "Protein packed" },
+        { day: "Sat", meal: "Fruit Salad with Yogurt", prep: "10 min prep", focus: "Antioxidants" },
+        { day: "Sun", meal: "Chicken Broth with Vegetables", prep: "25 min prep", focus: "Hydrating & nourishing" }
+      ],
+      // Weeks 17-27 (second trimester)
+      secondTrimester: [
+        { day: "Mon", meal: "Jollof Rice with Grilled Fish", prep: "15 min prep", focus: "Energy boosting" },
+        { day: "Tue", meal: "Egusi Soup with Pounded Yam", prep: "20 min prep", focus: "Calcium rich" },
+        { day: "Wed", meal: "Spinach and Cheese Omelette", prep: "10 min prep", focus: "Vitamin D & calcium" },
+        { day: "Thu", meal: "Lentil Soup with Whole Grain Bread", prep: "15 min prep", focus: "Iron & protein" },
+        { day: "Fri", meal: "Baked Salmon with Quinoa", prep: "20 min prep", focus: "Omega-3 fatty acids" },
+        { day: "Sat", meal: "Vegetable Stir-fry with Tofu", prep: "15 min prep", focus: "Antioxidants" },
+        { day: "Sun", meal: "Okro Soup with Fufu", prep: "10 min prep", focus: "Folate & fiber" }
+      ],
+      // Weeks 28-40 (third trimester)
+      thirdTrimester: [
+        { day: "Mon", meal: "Oatmeal with Berries and Nuts", prep: "10 min prep", focus: "Energy & fiber" },
+        { day: "Tue", meal: "Grilled Chicken with Sweet Potatoes", prep: "20 min prep", focus: "Iron for baby" },
+        { day: "Wed", meal: "Bean and Vegetable Soup", prep: "15 min prep", focus: "Protein & folate" },
+        { day: "Thu", meal: "Smoothie with Spinach and Banana", prep: "5 min prep", focus: "Quick nutrients" },
+        { day: "Fri", meal: "Fish Stew with Brown Rice", prep: "20 min prep", focus: "Brain development" },
+        { day: "Sat", meal: "Egg and Avocado Toast", prep: "10 min prep", focus: "Healthy fats" },
+        { day: "Sun", meal: "Efo Riro (Vegetable Soup)", prep: "25 min prep", focus: "Iron & vitamins" }
+      ],
+      // Postpartum (mom)
+      postpartum: [
+        { day: "Mon", meal: "Oatmeal with Fenugreek", prep: "10 min prep", focus: "Milk supply" },
+        { day: "Tue", meal: "Moringa Leaf Soup", prep: "15 min prep", focus: "Galactagogue" },
+        { day: "Wed", meal: "Pap with Egg and Milk", prep: "10 min prep", focus: "Easy to eat" },
+        { day: "Thu", meal: "Fish Pepper Soup", prep: "20 min prep", focus: "Hydrating & warming" },
+        { day: "Fri", meal: "Beans and Plantain", prep: "15 min prep", focus: "Energy & protein" },
+        { day: "Sat", meal: "Chicken and Vegetable Soup", prep: "20 min prep", focus: "Healing & recovery" },
+        { day: "Sun", meal: "Coconut Rice with Shrimp", prep: "20 min prep", focus: "Healthy fats" }
+      ]
+    };
     
+    // Choose meal plan based on journey type and week
+    if (journeyType === 'pregnant') {
+      if (currentWeek <= 4) return mealPlans.early;
+      if (currentWeek <= 16) return mealPlans.firstTrimester;
+      if (currentWeek <= 27) return mealPlans.secondTrimester;
+      return mealPlans.thirdTrimester;
+    }
+    
+    if (journeyType === 'mom') {
+      const days = babyAgeDays || 0;
+      return days < 42 ? mealPlans.postpartum : mealPlans.secondTrimester;
+    }
+    
+    // Default for conceive, ivf, menopause
+    return mealPlans.secondTrimester;
+  };
+  
+  const weeklyMeals = getWeeklyMeals();
+  
+  // Get journey-specific recommendations (updated to use currentWeek)
+  const getJourneyTips = () => {
     const tips = {
       pregnant: {
         t1: [
@@ -83,7 +159,6 @@ export default function Nutrition() {
     const result = CRAVINGS[k] || CRAVINGS.default;
     setCravingResult(result);
     
-    // If pica (ice, dirt, clay) - show urgent warning
     if (result.urgent) {
       setTimeout(() => {
         alert("⚠️ Pica (craving non-food items) requires medical attention. Please speak with your doctor immediately.");
@@ -93,7 +168,6 @@ export default function Nutrition() {
   
   const handleSwapMeal = (mealItem) => {
     setSelectedMeal(mealItem);
-    // Find culturally appropriate swap
     const alternatives = {
       "Jollof Rice": { name: "Coconut Rice", nutrients: "Healthy fats from coconut", prep: "Cook rice with coconut milk instead of tomato base" },
       "Egusi Soup": { name: "Groundnut Soup", nutrients: "Similar protein content", prep: "Use ground peanuts instead of melon seeds" },
@@ -107,6 +181,21 @@ export default function Nutrition() {
   return (
     <div className="page-pad">
       <SectionTitle title="🥗 Nutrition Engine" subtitle="Personalised for your journey and culture" />
+
+      {/* Show current week info */}
+      {journeyType === 'pregnant' && (
+        <div style={{ 
+          background: "var(--gl)", 
+          padding: "var(--sp-2) var(--sp-3)", 
+          borderRadius: "var(--r)", 
+          marginBottom: "var(--gap-md)",
+          textAlign: "center"
+        }}>
+          <p style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--dp)" }}>
+            📍 Week {currentWeek} of Pregnancy • Trimester {trimester}
+          </p>
+        </div>
+      )}
 
       {/* Journey-Specific Nutrition Tips */}
       <WCard style={{ background: "linear-gradient(135deg,var(--lvl),#F8F6FE)", border: "1px solid var(--lvm)44", marginBottom: "var(--gap-md)" }}>
@@ -130,7 +219,7 @@ export default function Nutrition() {
       </WCard>
 
       {/* Craving Intelligence */}
-      <WCard style={{ background: "linear-gradient(135deg,var(--warm),var(--gdl))", border: "1px solid var(--border2)" }}>
+      <WCard style={{ background: "linear-gradient(135deg,var(--warm),var(--gdl))", border: "1px solid var(--border2)", marginBottom: "var(--gap-md)" }}>
         <p style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--dp)", marginBottom: "var(--sp-2)" }}>🍫 Craving Intelligence</p>
         <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", marginBottom: "var(--sp-3)" }}>Cravings often signal nutrient deficiencies:</p>
         <div style={{ display: "flex", gap: "var(--gap-sm)", marginBottom: "var(--sp-3)" }}>
@@ -183,7 +272,7 @@ export default function Nutrition() {
 
       {/* Supplements */}
       <SectionTitle title="Daily Supplements" />
-      <WCard style={{ padding: `var(--sp-2) var(--card-p)` }}>
+      <WCard style={{ padding: `var(--sp-2) var(--card-p)`, marginBottom: "var(--gap-md)" }}>
         {SUPPS.map((s, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)", padding: "clamp(11px,2.8vw,15px) 0", borderBottom: i < SUPPS.length - 1 ? "1px solid var(--border)" : "none" }}>
             <button 
@@ -206,14 +295,14 @@ export default function Nutrition() {
             >
               {suppTaken[i] ? "✓" : ""}
             </button>
-            <IconBox emoji="💊" bg={s.col[0]} size="var(--icon-sm)" />
+            <IconBox emoji="💊" bg={s.col ? s.col[0] : "var(--gdl)"} size="var(--icon-sm)" />
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: "var(--fs-base)", fontWeight: 800, color: "var(--dp)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {s.name}
               </p>
               <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>{s.time}</p>
             </div>
-            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: s.col[1], flexShrink: 0 }}>{s.dose}</span>
+            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: s.col ? s.col[1] : "var(--sg)", flexShrink: 0 }}>{s.dose}</span>
           </div>
         ))}
       </WCard>
@@ -233,7 +322,7 @@ export default function Nutrition() {
       </div>
       
       {(culturalMeals[meal] || FOODS[meal]).map((f, i) => (
-        <WCard key={i} style={{ padding: "var(--card-p)" }}>
+        <WCard key={i} style={{ padding: "var(--card-p)", marginBottom: "var(--gap-sm)" }}>
           <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "flex-start" }}>
             <div style={{ width: "var(--icon-md)", height: "var(--icon-md)", flexShrink: 0, borderRadius: "var(--r)", background: "var(--gdl)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-2xl)" }}>
               {f.e || "🍲"}
@@ -271,25 +360,38 @@ export default function Nutrition() {
         </WCard>
       ))}
       
-      {/* Weekly Meal Ideas Carousel */}
-      <SectionTitle title="📅 Weekly Meal Ideas" />
+      {/* Weekly Meal Ideas Carousel - DYNAMIC based on week */}
+      <SectionTitle title={`📅 Week ${currentWeek} Meal Ideas`} />
       <div style={{ display: "flex", gap: "var(--gap-md)", overflowX: "auto", paddingBottom: "var(--sp-2)" }}>
-        {[
-          { day: "Mon", meal: "Jollof Rice with Grilled Fish", prep: "15 min prep" },
-          { day: "Tue", meal: "Egusi Soup with Pounded Yam", prep: "20 min prep" },
-          { day: "Wed", meal: "Moi Moi with Pap", prep: "10 min prep (soak beans overnight)" },
-          { day: "Thu", meal: "Plantain and Fish Stew", prep: "15 min prep" },
-          { day: "Fri", meal: "Okro Soup with Fufu", prep: "10 min prep" },
-          { day: "Sat", meal: "Roasted Chicken with Vegetables", prep: "25 min prep" },
-          { day: "Sun", meal: "Family Rice and Stew", prep: "20 min prep" }
-        ].map(day => (
-          <WCard key={day.day} style={{ minWidth: 150, textAlign: "center", padding: "var(--sp-3)" }}>
+        {weeklyMeals.map(day => (
+          <WCard key={day.day} style={{ minWidth: 180, textAlign: "center", padding: "var(--sp-3)" }}>
             <p style={{ fontWeight: 800, fontSize: "var(--fs-md)", marginBottom: "var(--sp-1)" }}>{day.day}</p>
-            <p style={{ fontSize: "var(--fs-xs)", color: "var(--dp)", fontWeight: 600 }}>{day.meal}</p>
-            <p style={{ fontSize: "var(--fs-2xs)", color: "var(--mt)" }}>{day.prep}</p>
+            <p style={{ fontSize: "var(--fs-xs)", color: "var(--dp)", fontWeight: 600, marginBottom: "var(--sp-1)" }}>
+              {day.meal}
+            </p>
+            <p style={{ fontSize: "var(--fs-2xs)", color: "var(--mt)", marginBottom: "var(--sp-1)" }}>
+              {day.prep}
+            </p>
+            <Tag label={day.focus} bg="var(--sgl)" tc="var(--sg)" />
           </WCard>
         ))}
       </div>
+      
+      {/* Weekly tip card */}
+      <WCard style={{ background: "linear-gradient(135deg, #FFF8E7, #FFE4B5)", marginTop: "var(--gap-md)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-sm)" }}>
+          <span style={{ fontSize: 24 }}>💡</span>
+          <div>
+            <p style={{ fontWeight: 800, fontSize: "var(--fs-sm)" }}>Week {currentWeek} Tip</p>
+            <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>
+              {journeyType === 'pregnant' && currentWeek <= 16 && "Focus on small, frequent meals to manage nausea."}
+              {journeyType === 'pregnant' && currentWeek > 16 && currentWeek <= 27 && "Your baby's bones are developing - increase calcium intake!"}
+              {journeyType === 'pregnant' && currentWeek > 27 && "Stay hydrated and eat iron-rich foods for energy."}
+              {journeyType !== 'pregnant' && "Listen to your body's hunger and fullness cues."}
+            </p>
+          </div>
+        </div>
+      </WCard>
       
       {/* Swap Meal Modal */}
       {showSwapModal && swapOption && (
@@ -334,7 +436,6 @@ export default function Nutrition() {
               </button>
               <button 
                 onClick={() => {
-                  // Apply swap (in real app, update meal plan)
                   alert("Swap saved! Your meal plan has been updated.");
                   setShowSwapModal(false);
                 }}
@@ -357,7 +458,7 @@ export default function Nutrition() {
         background: "var(--warm)",
         borderRadius: "var(--r)"
       }}>
-        ⚕️ These are general food suggestions, not a personalised diet plan. 
+        ⚕️ These are general food suggestions for week {currentWeek} of your journey, not a personalised diet plan. 
         Speak with a registered dietitian for individual advice.
       </p>
     </div>

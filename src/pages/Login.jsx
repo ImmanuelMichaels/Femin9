@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import './Login.css';
@@ -61,6 +61,13 @@ export default function Login() {
   const [animOut,  setAnimOut]  = useState(false);
   const [focused,  setFocused]  = useState(null);
 
+  // At the top of Signup(), before any state
+  useEffect(() => {
+    localStorage.removeItem('userAuth');
+    localStorage.removeItem('userName');
+    localStorage.removeItem('userEmail');
+  }, []);
+
   const ready = email && password;
 
   const handleLogin = () => {
@@ -74,16 +81,14 @@ export default function Login() {
       // Mark the user as authenticated
       localStorage.setItem('userAuth', 'true');
 
-      // Sync journey type into context from localStorage
+      // Sync journey type + culture into context from localStorage
       const savedJourney = localStorage.getItem('userJourney');
       const savedCulture = localStorage.getItem('userCulture');
       if (savedJourney) setJourneyType(savedJourney);
       if (savedCulture) setCulture(savedCulture);
 
       setAnimOut(true);
-
-      // Login is always the final step — go straight to the app
-      setTimeout(() => navigate('/app'), 420);
+      setTimeout(() => navigate('/onboarding'), 420);
     }, 1000);
   };
 
@@ -116,6 +121,7 @@ export default function Login() {
               className="lg-input"
               onFocus={() => setFocused('email')}
               onBlur={() => setFocused(null)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
             />
           </div>
         </div>
@@ -133,6 +139,7 @@ export default function Login() {
               className="lg-input"
               onFocus={() => setFocused('pass')}
               onBlur={() => setFocused(null)}
+              onKeyDown={e => e.key === 'Enter' && handleLogin()}
             />
             <button className="lg-eye" onClick={() => setShowPass(v => !v)} tabIndex={-1}>
               <EyeIcon open={showPass} />

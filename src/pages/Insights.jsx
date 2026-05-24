@@ -4,18 +4,17 @@ import { WCard, SectionTitle, Tag } from '../components/ui';
 import { useApp } from '../context/AppContext';
 
 export default function Insights() {
-  const { journeyType } = useApp();
   const [selectedPeriod, setSelectedPeriod] = useState('week');
   const [insights, setInsights] = useState([]);
   const [symptomHeatmap, setSymptomHeatmap] = useState([]);
   
   useEffect(() => {
-    // Mock data - replace with API calls
+    // Set insights data
     setInsights([
       { 
         title: 'Blood Pressure', 
         value: '118/76', 
- trend: 'Stable', 
+        trend: 'Stable', 
         change: '+0%', 
         color: 'var(--sg)',
         recommendation: 'Continue monitoring daily'
@@ -58,7 +57,7 @@ export default function Insights() {
       });
     }
     setSymptomHeatmap(heatmap);
-  }, []);
+  }, [selectedPeriod]); // Fixed: Added dependency array with selectedPeriod
   
   const getSeverityColor = (severity) => {
     if (severity <= 2) return 'var(--sgl)';

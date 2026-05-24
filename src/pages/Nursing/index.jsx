@@ -7,17 +7,13 @@ import { JOURNEY_CONFIG, ALL_TASKS } from '../../data/journey';
 import { useApp } from '../../context/AppContext';
 import './Nursing.css';
 
-/* ── Hero illustration — swap per journey if you have separate assets ── */
+/* ── Hero illustration ── */
 const HeroIllo = ({ src = '/pregnancy.png', alt = '' }) => (
   <img src={src} alt={alt} style={{ maxWidth: '100%', height: 'auto' }} />
 );
 
-/* ────────────────────────────────────────────────────────────────────────
-   JOURNEY HOME CONFIG
-   Every key matches a journeyType string. Add new types here freely.
-   ──────────────────────────────────────────────────────────────────────── */
+/* ── JOURNEY HOME CONFIG ── */
 const JOURNEY_HOME_CONFIG = {
-  /* ── PREGNANT ────────────────────────────────────────────────────────── */
   pregnant: {
     greeting: name => `GOOD MORNING, ${name} ☀️`,
     heroTitle: 'Your baby is the size of a scallion today',
@@ -36,16 +32,14 @@ const JOURNEY_HOME_CONFIG = {
     ],
     alert: {
       title: 'Anaemia Risk Alert',
-      body: 'Your last haemoglobin was 9.2 g/dL (low). Eat dark leafy greens, lean red meat, lentils, and fortified breakfast cereals. Your GP can prescribe iron supplements. Next check due in 5 days.',
+      body: 'Your last haemoglobin was 9.2 g/dL (low). Eat dark leafy greens, lean red meat, lentils, and fortified breakfast cereals.',
     },
     illoSrc: '/pregnancy.png',
   },
-
-  /* ── TRYING TO CONCEIVE (TTC) ─────────────────────────────────────────── */
   ttc: {
-    greeting: name => `GOOD MORNING, ${name} 🌸`,
+    greeting: name => `GOOD MORNING, ${name}`,
     heroTitle: 'Your fertile window opens in 2 days',
-    heroBody: 'Today is Cycle Day 12. Oestrogen is rising — a great time to rest well and stay hydrated. Track your BBT and cervical mucus to sharpen your window.',
+    heroBody: 'Today is Cycle Day 12. Oestrogen is rising — a great time to rest well and stay hydrated.',
     actionChips: ['📅 Check Cycle', '🌡️ Log BBT', '💧 Drink water'],
     pills: [
       { text: '📅 Cycle Day 12', cls: 'h-pill--pu' },
@@ -60,16 +54,14 @@ const JOURNEY_HOME_CONFIG = {
     ],
     alert: {
       title: 'Fertile Window Approaching',
-      body: 'Based on your last 3 cycles, your peak fertility is predicted for days 14–16. Make sure to log any symptoms so we can refine your forecast.',
+      body: 'Based on your last 3 cycles, your peak fertility is predicted for days 14–16.',
     },
     illoSrc: '/ttc.png',
   },
-
-  /* ── IVF & FERTILITY ─────────────────────────────────────────────────── */
   ivf: {
     greeting: name => `GOOD MORNING, ${name} 💜`,
     heroTitle: 'Your embryos are developing beautifully',
-    heroBody: 'Day 5 post-retrieval. Your embryos are being carefully nurtured in the lab. Rest, hydrate, and be gentle with yourself today.',
+    heroBody: 'Day 5 post-retrieval. Your embryos are being carefully nurtured in the lab.',
     actionChips: ['💊 Log Meds', '💧 Stay Hydrated', '🧘 Rest'],
     pills: [
       { text: '💜 IVF Cycle', cls: 'h-pill--pu' },
@@ -84,16 +76,14 @@ const JOURNEY_HOME_CONFIG = {
     ],
     alert: {
       title: 'Medication Reminder',
-      body: 'Your progesterone injection is due at 9 PM tonight. Set a reminder to stay on track.',
+      body: 'Your progesterone injection is due at 9 PM tonight.',
     },
     illoSrc: '/ivf.png',
   },
-
-  /* ── MENOPAUSE ───────────────────────────────────────────────────────── */
   menopause: {
     greeting: name => `GOOD MORNING, ${name} 🌿`,
     heroTitle: 'Today is a day to honour your body',
-    heroBody: 'Menopause is a transition, not an ending. Track your symptoms, rest when you need to, and remember — you know your body best. Hot flashes can ease with cool layers and paced breathing.',
+    heroBody: 'Menopause is a transition, not an ending. Track your symptoms and rest when you need to.',
     actionChips: ['🌬️ Breathing exercise', '💤 Log sleep', '🧘 5-min stretch'],
     pills: [
       { text: '🌿 Perimenopause', cls: 'h-pill--pu' },
@@ -108,16 +98,14 @@ const JOURNEY_HOME_CONFIG = {
     ],
     alert: {
       title: 'Sleep Quality Dip Noticed',
-      body: 'You logged fewer than 6 hours of sleep 3 nights this week. Poor sleep can intensify hot flashes and mood shifts. Try a cooler room and limiting screens after 9 pm.',
+      body: 'You logged fewer than 6 hours of sleep 3 nights this week.',
     },
     illoSrc: '/menopause.png',
   },
-
-  /* ── NURSING / POSTPARTUM ────────────────────────────────────────────── */
   nursing: {
     greeting: name => `GOOD MORNING, ${name} 🍼`,
     heroTitle: "Your baby is 8 weeks old today — you're both doing great",
-    heroBody: 'At 8 weeks, babies begin social smiling. Keep feeding on demand; your supply is building. Don\'t forget to eat enough — you need 400–500 extra calories a day while breastfeeding.',
+    heroBody: 'At 8 weeks, babies begin social smiling. Keep feeding on demand; your supply is building.',
     actionChips: ['🍼 Log feed', '💧 Drink water', '😴 Rest when baby rests'],
     pills: [
       { text: '🍼 Baby: 8 weeks', cls: 'h-pill--pu' },
@@ -132,13 +120,13 @@ const JOURNEY_HOME_CONFIG = {
     ],
     alert: {
       title: 'Postpartum Check-In',
-      body: 'Your 6-week postnatal check is overdue. Please book with your GP or midwife to review your recovery, mental wellbeing, and contraception if needed.',
+      body: 'Your 6-week postnatal check is overdue.',
     },
     illoSrc: '/nursing.png',
   },
 };
 
-/* ── Moods — universal ── */
+/* ── Moods ── */
 const MOODS = [
   { emoji: '😌', label: 'Calm', v: 4 },
   { emoji: '😄', label: 'Happy', v: 5 },
@@ -152,7 +140,7 @@ const HOSPITALS = [
   { name: 'St Thomas\' Hospital – Guy\'s and St Thomas\' NHS', addr: '2.1 km · Specialist obstetrics & gynaecology' },
 ];
 
-/* ── Component ── */
+/* ── Main Component ── */
 export default function Home({ setTab }) {
   const { 
     journeyType, 
@@ -164,10 +152,37 @@ export default function Home({ setTab }) {
   } = useApp();
   
   const [mood, setMood] = useState(null);
-  const [bpSys, setBpSys] = useState(118);
-  const [bpDia, setBpDia] = useState(76);
-  const [bleeding, setBleeding] = useState("none");
-  const [fetalMovement, setFetalMovement] = useState("normal");
+  
+  // Initialize from localStorage
+  const [bpSys, setBpSys] = useState(() => {
+    const saved = localStorage.getItem('bpSys');
+    return saved ? Number(saved) : 118;
+  });
+  
+  const [bpDia, setBpDia] = useState(() => {
+    const saved = localStorage.getItem('bpDia');
+    return saved ? Number(saved) : 76;
+  });
+  
+  const [bleeding, setBleeding] = useState(() => {
+    const saved = localStorage.getItem('bleeding');
+    return saved || "none";
+  });
+  
+  const [fetalMovement, setFetalMovement] = useState(() => {
+    const saved = localStorage.getItem('fetalMovement');
+    return saved || "normal";
+  });
+  
+  const [showVitalsCard, setShowVitalsCard] = useState(false);
+  
+  // Save to localStorage
+  useEffect(() => {
+    localStorage.setItem('bpSys', bpSys.toString());
+    localStorage.setItem('bpDia', bpDia.toString());
+    localStorage.setItem('bleeding', bleeding);
+    localStorage.setItem('fetalMovement', fetalMovement);
+  }, [bpSys, bpDia, bleeding, fetalMovement]);
   
   // Get current week for pregnancy
   const currentWeek = journeyType === 'pregnant' ? getCurrentWeek() : 26;
@@ -179,7 +194,6 @@ export default function Home({ setTab }) {
     ? (babyAgeDays <= 14 ? 'days1_14' : babyAgeDays <= 42 ? 'weeks2_6' : 'weeks6_plus')
     : null;
 
-  // Graceful fallback — if journeyType isn't in our map, use pregnant
   const cfg = JOURNEY_CONFIG[journeyType] || JOURNEY_CONFIG.pregnant;
   const home = JOURNEY_HOME_CONFIG[journeyType] || JOURNEY_HOME_CONFIG.pregnant;
 
@@ -191,14 +205,12 @@ export default function Home({ setTab }) {
   const done = todayTasks.filter(t => tasks[t.id]).length;
   const pct = todayTasks.length > 0 ? Math.round((done / todayTasks.length) * 100) : 0;
   
-  // Check for emergency flags
   const hasEmergency = (bpSys >= 160 || bpDia >= 110) || 
-                       (currentWeek >= 24 && fetalMovement === "reduced") ||
+                       (currentWeek >= 24 && (fetalMovement === "reduced" || fetalMovement === "none")) ||
                        bleeding === "heavy";
 
   return (
     <div className="h-root">
-      {/* Emergency Red Flags - NEVER PAYWALLED */}
       <EmergencyRedFlags 
         bpSys={bpSys}
         bpDia={bpDia}
@@ -207,27 +219,24 @@ export default function Home({ setTab }) {
         week={currentWeek}
       />
 
-      {/* Status pills */}
       <div className="h-pills">
         {home.pills.map((p, i) => (
           <span key={i} className={`h-pill ${p.cls}`}>{p.text}</span>
         ))}
       </div>
 
-      {/* Calendar */}
       <div className="h-card h-cal-card">
         <CalendarStrip />
       </div>
 
-      {/* GLOW CARD - Journey-specific */}
       <GlowCard 
         journeyType={journeyType === 'nursing' ? 'postpartum' : journeyType}
         trimester={trimester}
         postnatalDay={babyAgeDays}
-        cycleDay={{ isFertile: false }} // Will be updated from TTC module
+        postnatalPhase={postnatalPhase} 
+        cycleDay={{ isFertile: false }} 
       />
 
-      {/* Morning hero card */}
       <div className="h-card h-hero-card">
         <div className="h-hero-l">
           <p className="h-eyebrow">{home.greeting(userName.toUpperCase())}</p>
@@ -244,7 +253,151 @@ export default function Home({ setTab }) {
         </div>
       </div>
 
-      {/* Quick Emergency Alert Banner - if emergency detected */}
+      {/* Vitals Input Card */}
+      <div className="h-card" style={{ marginBottom: "var(--gap-md)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <p className="h-slabel" style={{ margin: 0 }}>🩺 LOG YOUR VITALS</p>
+          <button 
+            onClick={() => setShowVitalsCard(!showVitalsCard)}
+            style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
+          >
+            {showVitalsCard ? '−' : '+'}
+          </button>
+        </div>
+        
+        {showVitalsCard && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <label style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--dp)", marginBottom: 8, display: "block" }}>
+                Blood Pressure (mmHg)
+              </label>
+              <div style={{ display: "flex", gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="number"
+                    value={bpSys}
+                    onChange={(e) => setBpSys(Number(e.target.value))}
+                    style={{
+                      width: "100%",
+                      padding: "var(--sp-3)",
+                      borderRadius: "var(--r)",
+                      border: "1px solid var(--border)",
+                      fontSize: "var(--fs-base)",
+                      background: "var(--bg)"
+                    }}
+                  />
+                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>Systolic (top)</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <input
+                    type="number"
+                    value={bpDia}
+                    onChange={(e) => setBpDia(Number(e.target.value))}
+                    style={{
+                      width: "100%",
+                      padding: "var(--sp-3)",
+                      borderRadius: "var(--r)",
+                      border: "1px solid var(--border)",
+                      fontSize: "var(--fs-base)",
+                      background: "var(--bg)"
+                    }}
+                  />
+                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>Diastolic (bottom)</span>
+                </div>
+              </div>
+            </div>
+            
+            {(journeyType === 'pregnant' || journeyType === 'nursing') && (
+              <div>
+                <label style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--dp)", marginBottom: 8, display: "block" }}>
+                  Vaginal Bleeding
+                </label>
+                <div style={{ display: "flex", gap: 12 }}>
+                  {["none", "light", "moderate", "heavy"].map(option => (
+                    <button
+                      key={option}
+                      onClick={() => setBleeding(option)}
+                      style={{
+                        flex: 1,
+                        padding: "var(--sp-2)",
+                        borderRadius: "var(--r)",
+                        background: bleeding === option ? "var(--sg)" : "var(--warm)",
+                        color: bleeding === option ? "#fff" : "var(--md)",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "var(--fs-sm)",
+                        textTransform: "capitalize"
+                      }}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {journeyType === 'pregnant' && currentWeek >= 24 && (
+              <div>
+                <label style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--dp)", marginBottom: 8, display: "block" }}>
+                  Fetal Movement
+                </label>
+                <div style={{ display: "flex", gap: 12 }}>
+                  {[
+                    { value: "normal", label: "✓ Normal" },
+                    { value: "reduced", label: "⚠️ Reduced" },
+                    { value: "none", label: "🚨 None" }
+                  ].map(option => (
+                    <button
+                      key={option.value}
+                      onClick={() => setFetalMovement(option.value)}
+                      style={{
+                        flex: 1,
+                        padding: "var(--sp-2)",
+                        borderRadius: "var(--r)",
+                        background: fetalMovement === option.value ? "var(--sg)" : "var(--warm)",
+                        color: fetalMovement === option.value ? "#fff" : "var(--md)",
+                        border: "none",
+                        cursor: "pointer",
+                        fontSize: "var(--fs-sm)"
+                      }}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <button
+              onClick={() => setShowVitalsCard(false)}
+              style={{
+                padding: "var(--sp-2)",
+                background: "var(--t)",
+                color: "#fff",
+                border: "none",
+                borderRadius: "var(--r)",
+                cursor: "pointer",
+                marginTop: 8
+              }}
+            >
+              Save Changes
+            </button>
+          </div>
+        )}
+        
+        {!showVitalsCard && (
+          <div style={{ display: "flex", gap: 16, fontSize: "var(--fs-xs)", color: "var(--mt)" }}>
+            <span>💓 BP: {bpSys}/{bpDia}</span>
+            {(journeyType === 'pregnant' || journeyType === 'nursing') && (
+              <span>🩸 Bleeding: {bleeding}</span>
+            )}
+            {journeyType === 'pregnant' && currentWeek >= 24 && (
+              <span>👶 Movement: {fetalMovement}</span>
+            )}
+          </div>
+        )}
+      </div>
+
       {hasEmergency && (
         <div className="h-card" style={{ background: "var(--rdl)", border: "2px solid var(--rd)", marginBottom: "var(--gap-md)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)" }}>
@@ -265,7 +418,6 @@ export default function Home({ setTab }) {
         </div>
       )}
 
-      {/* Mood */}
       <div className="h-card">
         <p className="h-slabel">HOW ARE YOU FEELING?</p>
         <div className="h-mood-row">
@@ -286,9 +438,7 @@ export default function Home({ setTab }) {
         )}
       </div>
 
-      {/* Progress + Quick Actions (2-col) */}
       <div className="h-two-col">
-        {/* Daily Progress */}
         <div className="h-card h-prog-card">
           <div className="h-prog-top">
             <p className="h-slabel" style={{ margin: 0 }}>DAILY PROGRESS</p>
@@ -315,7 +465,6 @@ export default function Home({ setTab }) {
           <button className="h-view-all">View all progress →</button>
         </div>
 
-        {/* Quick Actions — driven by journey type */}
         <div className="h-card h-qa-card">
           <p className="h-slabel">QUICK ACTIONS</p>
           <div className="h-qa-grid">
@@ -329,7 +478,6 @@ export default function Home({ setTab }) {
         </div>
       </div>
 
-      {/* Contextual Alert */}
       {cfg.showAlert && home.alert && (
         <div className="h-card h-alert">
           <div className="h-alert-icon">
@@ -343,7 +491,6 @@ export default function Home({ setTab }) {
         </div>
       )}
 
-      {/* Personalised Insight Card */}
       <div className="h-card" style={{ background: "linear-gradient(135deg, var(--lvl), #F8F6FE)" }}>
         <p className="h-slabel">✨ PERSONALISED INSIGHT</p>
         <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "flex-start" }}>
@@ -367,7 +514,6 @@ export default function Home({ setTab }) {
         </div>
       </div>
 
-      {/* Nearby Hospitals */}
       <p className="h-slabel h-slabel--gap">NEARBY HOSPITALS</p>
       {HOSPITALS.map((h, i) => (
         <div key={i} className="h-card h-hosp">

@@ -4,8 +4,10 @@ import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import Splash from './pages/Splash';
 import Onboarding from './pages/Onboarding';
 import Consent from './pages/Consent';
-// import Signup from './pages/Signup';
+import Signup from './pages/Signup';
 import Login from './pages/Login';
+import VerifyEmail from './pages/VerifyEmail';
+import JourneySelect from './pages/JourneySelect';
 import AppShell from './pages/AppShell';
 
 function SplashRoute() {
@@ -13,16 +15,14 @@ function SplashRoute() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      // ✅ FIX: Read localStorage INSIDE the effect, not outside it.
-      // Reading outside creates a stale closure captured at render time.
       const savedJourney = localStorage.getItem('userJourney');
       const hasConsents  = localStorage.getItem('userConsents');
-      const isLoggedIn   = localStorage.getItem('userAuth'); // ✅ Add this check
+      const isLoggedIn   = localStorage.getItem('userAuth'); 
 
       if (savedJourney && hasConsents && isLoggedIn) {
         navigate('/app');
       } else if (savedJourney && hasConsents) {
-        navigate('/login');       // ✅ Had journey+consent but no auth → Login
+        navigate('/login');      
       } else if (savedJourney) {
         navigate('/consent');
       } else {
@@ -31,7 +31,7 @@ function SplashRoute() {
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [navigate]); // ✅ No localStorage values in deps — they're read fresh inside
+  }, [navigate]);
 
   return <Splash />;
 }
@@ -39,24 +39,26 @@ function SplashRoute() {
 function ProtectedApp() {
   const savedJourney = localStorage.getItem('userJourney');
   const hasConsents  = localStorage.getItem('userConsents');
-  const isLoggedIn   = localStorage.getItem('userAuth'); // ✅ Add this check
+  const isLoggedIn   = localStorage.getItem('userAuth');
 
-  if (!savedJourney) return <Navigate to="/onboarding" replace />;
-  if (!hasConsents)  return <Navigate to="/consent" replace />;
-  if (!isLoggedIn)   return <Navigate to="/login" replace />;  // ✅ Add this guard
-  return <AppShell />;
+  if (!savedJourney)      return <Navigate to="/onboarding" replace />;
+  if (!hasConsents)       return <Navigate to="/consent" replace />;
+  if (!isLoggedIn)        return <Navigate to="/login" replace />;
+  return <AppShell />;    // ← was missing
 }
 
 export default function App() {
   return (
     <Routes>
-      <Route path="/"           element={<SplashRoute />} />
-      <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/consent"    element={<Consent />} />
-      <Route path="/signup" element={<Onboarding />} />
-      <Route path="/login"      element={<Login />} />
-      <Route path="/app"        element={<ProtectedApp />} />
-      <Route path="*"           element={<Navigate to="/" replace />} />
+      <Route path="/"              element={<SplashRoute />} />
+      <Route path="/onboarding"    element={<Onboarding />} />
+      <Route path="/consent"       element={<Consent />} />
+      <Route path="/signup"        element={<Signup />} />       {/* fixed duplicate */}
+      <Route path="/verify-email"  element={<VerifyEmail />} />
+      <Route path="/login"         element={<Login />} />
+      <Route path="/journey-select" element={<JourneySelect />} />
+      <Route path="/app"           element={<ProtectedApp />} />
+      <Route path="*"              element={<Navigate to="/" replace />} /> {/* last */}
     </Routes>
   );
 }

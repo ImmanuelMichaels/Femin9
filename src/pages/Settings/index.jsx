@@ -53,22 +53,28 @@ export default function Settings() {
   // Get journey-specific display info
   const getJourneyDisplay = () => {
     switch(journeyType) {
-      case 'pregnant':
+      case 'pregnant': {
         const week = getCurrentWeek();
         const trimester = getTrimester();
         return `Week ${week} · ${trimester}${trimester === 1 ? 'st' : trimester === 2 ? 'nd' : 'rd'} Trimester`;
-      case 'conceive':
+      }
+      case 'conceive': {
         return 'Trying to Conceive';
-      case 'ivf':
+      }
+      case 'ivf': {
         return 'IVF & Fertility Treatment';
-      case 'mom':
+      }
+      case 'mom': {
         const days = localStorage.getItem('babyAgeDays');
         if (days && parseInt(days) < 42) return `Postpartum · Week ${Math.floor(parseInt(days) / 7)}`;
         return 'Postpartum & Nursing';
-      case 'menopause':
+      }
+      case 'menopause': {
         return 'Menopause Support';
-      default:
+      }
+      default: {
         return 'Health Journey';
+      }
     }
   };
   

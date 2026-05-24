@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
-import { WCard, Tag, Pill, Button } from '../ui';
+import { WCard, Tag, Pill } from '../ui';
 import { useApp } from '../../context/AppContext';
 import { DRUG_DB, CONTEXT_KEYS, RATING_META, DRUG_SUGGESTIONS } from '../../data/drugs';
 
 export default function DrugSafetyChecker() {
-  const { journeyType, getCurrentWeek, getTrimester } = useApp();
+  const { journeyType, getTrimester } = useApp();
   const [query, setQuery] = useState("");
   const [ctx, setCtx] = useState(() => {
-    // Auto-detect context based on journey
     if (journeyType === 'pregnant') {
       const trimester = getTrimester();
       return `Pregnancy — T${trimester}`;
@@ -20,7 +19,6 @@ export default function DrugSafetyChecker() {
   const [result, setResult] = useState(null);
   const [searched, setSearched] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
-  const [showEmergencyNote, setShowEmergencyNote] = useState(false);
   
   // Load recent searches
   useEffect(() => {
@@ -45,7 +43,6 @@ export default function DrugSafetyChecker() {
     const foundResult = key ? DRUG_DB[key] : null;
     setResult(foundResult);
     setSearched(true);
-    setShowEmergencyNote(foundResult?.rating === 'AVOID' || foundResult?.rating === 'EMERGENCY');
     
     // Save to recent searches
     if (foundResult && !recentSearches.includes(query)) {
@@ -57,12 +54,23 @@ export default function DrugSafetyChecker() {
   
   const handleSuggestionClick = (suggestion) => {
     setQuery(suggestion);
-    // Auto-search after a short delay
     setTimeout(() => {
+      // Use the search function after state updates
       const q = suggestion.toLowerCase().trim();
-      const key = Object.keys(DRUG_DB).find(k => q.includes(k) || k.includes(q));
-      setResult(key ? DRUG_DB[key] : null);
+      let key = Object.keys(DRUG_DB).find(k => k === q);
+      if (!key) {
+        key = Object.keys(DRUG_DB).find(k => q.includes(k) || k.includes(q));
+      }
+      const foundResult = key ? DRUG_DB[key] : null;
+      setResult(foundResult);
       setSearched(true);
+      
+      // Save to recent searches
+      if (foundResult && !recentSearches.includes(suggestion)) {
+        const newRecent = [suggestion, ...recentSearches].slice(0, 5);
+        setRecentSearches(newRecent);
+        localStorage.setItem('drugRecentSearches', JSON.stringify(newRecent));
+      }
     }, 100);
   };
   

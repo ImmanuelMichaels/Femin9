@@ -1,0 +1,525 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap');
+
+/* ── Root ────────────────────────────────────────────────────────────────────*/
+.su-root {
+  min-height: 100dvh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 28px 16px 48px;
+  background: linear-gradient(155deg, #fff5f8 0%, #fce8f1 45%, #f9e0ee 100%);
+  font-family: 'Poppins', sans-serif;
+  overflow-y: auto;
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────────*/
+.su-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 28px;
+  padding: 34px 26px 28px;
+  box-shadow:
+    0 12px 48px rgba(214, 58, 110, 0.10),
+    0 2px 8px rgba(0, 0, 0, 0.05);
+  animation: suCardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes suCardIn {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────────*/
+.su-header {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.su-brand-mark {
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #d63a6e 0%, #e07b9a 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 6px 20px rgba(214, 58, 110, 0.30);
+  animation: suMarkFloat 3.5s ease-in-out infinite;
+}
+
+@keyframes suMarkFloat {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+
+.su-brand-inner {
+  font-size: 24px;
+  color: white;
+  display: block;
+  animation: suMarkSpin 8s linear infinite;
+}
+
+@keyframes suMarkSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.su-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 24px;
+  font-weight: 400;
+  color: #1a1a2e;
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+
+.su-sub {
+  font-size: 13px;
+  color: #9a7a88;
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+/* ── Social buttons ──────────────────────────────────────────────────────────*/
+.su-socials {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.su-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 46px;
+  border-radius: 13px;
+  border: 1.5px solid #f0e0ea;
+  background: white;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #2d1a26;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  letter-spacing: 0.1px;
+}
+
+.su-social-btn:hover {
+  background: #fff5f8;
+  border-color: #d63a6e;
+  box-shadow: 0 2px 12px rgba(214, 58, 110, 0.08);
+  transform: translateY(-1px);
+}
+
+.su-social-btn:active {
+  transform: translateY(0);
+}
+
+.su-social-apple {
+  color: #1a1a2e;
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────────────*/
+.su-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.su-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #f0e0ea;
+}
+
+.su-divider-text {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #c0a0b0;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── Form ────────────────────────────────────────────────────────────────────*/
+.su-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.su-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.su-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b4a5a;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* Input wrapper */
+.su-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #fdf8fa;
+  border: 1.5px solid #f0e0ea;
+  border-radius: 13px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.su-input-wrap--focus {
+  border-color: #d63a6e;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(214, 58, 110, 0.10);
+}
+
+.su-input-wrap--error {
+  border-color: #f43f5e;
+  background: #fff8f9;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.08);
+}
+
+.su-input-wrap--valid {
+  border-color: #10b981;
+  background: #f0fdf8;
+}
+
+.su-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  flex-shrink: 0;
+}
+
+.su-input {
+  flex: 1;
+  height: 48px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  font-family: 'Poppins', sans-serif;
+  color: #1a1a2e;
+  padding-right: 12px;
+}
+
+.su-input::placeholder {
+  color: #c4a8b4;
+}
+
+.su-eye {
+  background: none;
+  border: none;
+  padding: 0 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.su-eye:hover {
+  opacity: 1;
+}
+
+.su-valid-tick {
+  position: absolute;
+  right: 14px;
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+/* Error text */
+.su-error {
+  font-size: 11.5px;
+  color: #f43f5e;
+  font-weight: 500;
+  padding-left: 2px;
+  animation: suShake 0.3s ease;
+}
+
+@keyframes suShake {
+  0%, 100% { transform: translateX(0); }
+  25%       { transform: translateX(-4px); }
+  75%       { transform: translateX(4px); }
+}
+
+/* ── Password strength ───────────────────────────────────────────────────────*/
+.su-strength {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.su-strength-bars {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.su-strength-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.su-strength-label {
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: color 0.3s;
+}
+
+/* ── Password rules ──────────────────────────────────────────────────────────*/
+.su-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 2px 2px;
+  animation: suFadeIn 0.2s ease;
+}
+
+@keyframes suFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.su-rule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: #c0a0b0;
+  transition: color 0.2s;
+}
+
+.su-rule--met {
+  color: #10b981;
+}
+
+.su-rule-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+/* ── Terms / checkbox ────────────────────────────────────────────────────────*/
+.su-terms {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+.su-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid #e0c0cc;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  background: white;
+  transition: all 0.18s ease;
+  color: white;
+  cursor: pointer;
+}
+
+.su-checkbox:hover {
+  border-color: #d63a6e;
+}
+
+.su-checkbox--checked {
+  background: #d63a6e;
+  border-color: #d63a6e;
+}
+
+.su-terms-text {
+  font-size: 12px;
+  color: #9a7a88;
+  line-height: 1.55;
+}
+
+.su-link {
+  background: none;
+  border: none;
+  font-size: 12px;
+  font-family: 'Poppins', sans-serif;
+  color: #d63a6e;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Submit button ───────────────────────────────────────────────────────────*/
+.su-submit {
+  height: 52px;
+  width: 100%;
+  background: linear-gradient(135deg, #d63a6e 0%, #c0306090 100%);
+  background: #d63a6e;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  color: white;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.22s ease;
+  margin-top: 4px;
+  box-shadow: 0 6px 20px rgba(214, 58, 110, 0.30);
+  letter-spacing: 0.2px;
+}
+
+.su-submit:hover:not(.su-submit--dim) {
+  background: #bf3060;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(214, 58, 110, 0.38);
+}
+
+.su-submit:active:not(.su-submit--dim) {
+  transform: translateY(0);
+  box-shadow: 0 4px 14px rgba(214, 58, 110, 0.25);
+}
+
+.su-submit--dim {
+  background: #e8b4c8;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.su-submit-arrow {
+  font-size: 18px;
+  transition: transform 0.2s;
+}
+
+.su-submit:hover:not(.su-submit--dim) .su-submit-arrow {
+  transform: translateX(3px);
+}
+
+/* Spinner */
+.su-spinner {
+  width: 22px;
+  height: 22px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: white;
+  border-radius: 50%;
+  display: inline-block;
+  animation: suSpin 0.7s linear infinite;
+}
+
+@keyframes suSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────────*/
+.su-footer {
+  text-align: center;
+  font-size: 13px;
+  color: #9a7a88;
+  margin-top: 20px;
+}
+
+.su-login-link {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: #d63a6e;
+  font-family: 'Poppins', sans-serif;
+  cursor: pointer;
+  padding: 0;
+}
+
+.su-login-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Success splash ──────────────────────────────────────────────────────────*/
+.su-splash {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(155deg, #fff5f8 0%, #fce8f1 50%, #f9e0ee 100%);
+  font-family: 'Poppins', sans-serif;
+  animation: suSplashIn 0.4s ease;
+  text-align: center;
+  padding: 24px;
+}
+
+@keyframes suSplashIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.su-splash-ring {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  border: 3px solid #d63a6e;
+  margin: 0 auto 0;
+  animation: suRingPulse 1.2s ease-out infinite;
+  position: absolute;
+}
+
+@keyframes suRingPulse {
+  0%   { transform: scale(0.8); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.su-splash-emoji {
+  font-size: 56px;
+  position: relative;
+  z-index: 1;
+  animation: suBounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-bottom: 20px;
+}
+
+@keyframes suBounce {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.su-splash-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  color: #1a1a2e;
+  margin: 0 0 8px;
+}
+
+.su-splash-sub {
+  font-size: 14px;
+  color: #9a7a88;
+  margin: 0;
+}

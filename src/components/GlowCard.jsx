@@ -32,7 +32,7 @@ export default function GlowCard({ journeyType, cycleDay, trimester, postnatalDa
     }, 24 * 60 * 60 * 1000);
     
     return () => clearInterval(interval);
-  }, [journeyType, trimester, postnatalDay, cycleDay]);
+  }, [journeyType, trimester, postnatalDay, cycleDay?.isFertile, cycleDay?.phase]);
   
   if (!currentTip) return null;
   

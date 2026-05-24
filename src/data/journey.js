@@ -23,7 +23,7 @@ export const JOURNEY_CONFIG = {
     showAlert: true,
     features: ['kick_counter', 'contraction_timer', 'birth_plan', 'appointment_tracker']
   },
-  
+
   // TRYING TO CONCEIVE (TTC)
   conceive: {
     id: 'conceive',
@@ -46,7 +46,7 @@ export const JOURNEY_CONFIG = {
     showAlert: false,
     features: ['cycle_tracker', 'ovulation_predictor', 'bbt_chart', 'lh_tracker']
   },
-  
+
   // IVF & FERTILITY
   ivf: {
     id: 'ivf',
@@ -69,7 +69,7 @@ export const JOURNEY_CONFIG = {
     showAlert: true,
     features: ['medication_tracker', 'embryo_tracker', 'scan_log', 'tww_support']
   },
-  
+
   // POSTPARTUM / NURSING
   mom: {
     id: 'mom',
@@ -92,7 +92,7 @@ export const JOURNEY_CONFIG = {
     showAlert: true,
     features: ['feeding_tracker', 'pump_log', 'sleep_tracker', 'vaccination_reminders', 'epds_screening']
   },
-  
+
   // MENSTRUAL HEALTH
   menstrual: {
     id: 'menstrual',
@@ -115,7 +115,7 @@ export const JOURNEY_CONFIG = {
     showAlert: false,
     features: ['period_tracker', 'symptom_log', 'mood_tracker', 'cycle_insights']
   },
-  
+
   // MENOPAUSE
   menopause: {
     id: 'menopause',
@@ -149,29 +149,29 @@ export const ALL_TASKS = [
   { id: "kicks", icon: "👶", bg: "var(--sgl)", title: "Count Baby Kicks", streak: 8, time: "10–12 AM or 7–9 PM", category: "tracking", journey: "pregnant" },
   { id: "nutrition", icon: "🥗", bg: "var(--lvl)", title: "Log Today's Meals", streak: 6, time: "After meals", category: "tracking", journey: "all" },
   { id: "walk", icon: "🚶‍♀️", bg: "var(--warm)", title: "20 min Gentle Walk", streak: 4, time: "Morning preferred", category: "exercise", journey: "all" },
-  
+
   // TTC tasks
   { id: "folic_acid", icon: "💊", bg: "var(--sgl)", title: "Take Folic Acid", streak: 14, time: "With breakfast", category: "medication", journey: "ttc" },
   { id: "bbt", icon: "🌡️", bg: "var(--rdl)", title: "Log BBT Temperature", streak: 9, time: "Immediately after waking", category: "tracking", journey: "ttc" },
   { id: "ovulation_test", icon: "🥚", bg: "var(--lvl)", title: "Take Ovulation Test", streak: 4, time: "10 AM - 2 PM", category: "tracking", journey: "ttc" },
   { id: "sleep", icon: "😴", bg: "var(--bll)", title: "Get 7-9 Hours Sleep", streak: 11, time: "Night", category: "wellness", journey: "all" },
-  
+
   // IVF tasks
   { id: "medications", icon: "💊", bg: "var(--sgl)", title: "Take IVF Medications", streak: 10, time: "As prescribed", category: "medication", journey: "ivf" },
   { id: "injections", icon: "💉", bg: "var(--rdl)", title: "Administer Injections", streak: 10, time: "Same time daily", category: "medication", journey: "ivf" },
   { id: "rest", icon: "😌", bg: "var(--lvl)", title: "Rest for 30 Minutes", streak: 7, time: "Afternoon", category: "wellness", journey: "all" },
   { id: "mood_log", icon: "😊", bg: "var(--bll)", title: "Log Your Mood", streak: 5, time: "Evening", category: "mental", journey: "all" },
-  
+
   // Postpartum tasks
   { id: "feed_baby", icon: "🍼", bg: "var(--sgl)", title: "Feed Baby (8-12x/day)", streak: 42, time: "On demand", category: "baby", journey: "postpartum" },
   { id: "diaper_change", icon: "🚼", bg: "var(--bll)", title: "Track Diaper Changes", streak: 42, time: "Each change", category: "baby", journey: "postpartum" },
   { id: "postnatal_check", icon: "🏥", bg: "var(--rdl)", title: "Book 6-Week Check", streak: 0, time: "By week 6", category: "appointment", journey: "postpartum" },
-  
+
   // Menstrual tasks
   { id: "log_period", icon: "🩸", bg: "var(--rdl)", title: "Log Period Start/End", streak: 3, time: "Daily", category: "tracking", journey: "menstrual" },
   { id: "track_symptoms", icon: "📋", bg: "var(--lvl)", title: "Track PMS Symptoms", streak: 6, time: "Evening", category: "tracking", journey: "menstrual" },
   { id: "exercise", icon: "🚶‍♀️", bg: "var(--sgl)", title: "Light Exercise", streak: 4, time: "Morning", category: "exercise", journey: "all" },
-  
+
   // Menopause tasks
   { id: "log_symptoms", icon: "🌡️", bg: "var(--rdl)", title: "Log Hot Flashes & Symptoms", streak: 8, time: "Throughout day", category: "tracking", journey: "menopause" },
   { id: "sleep_track", icon: "😴", bg: "var(--lvl)", title: "Track Sleep Quality", streak: 5, time: "Morning", category: "wellness", journey: "all" },
@@ -248,21 +248,12 @@ export const JOURNEY_META = {
 
 // Helper function to get journey config by type
 export function getJourneyConfig(journeyType) {
-  const mapping = {
-    'pregnant': JOURNEY_CONFIG.pregnant,
-    'conceive': JOURNEY_CONFIG.conceive,
-    'ivf': JOURNEY_CONFIG.ivf,
-    'mom': JOURNEY_CONFIG.mom,
-    'menstrual': JOURNEY_CONFIG.menstrual,
-    'menopause': JOURNEY_CONFIG.menopause
-  };
-  return mapping[journeyType] || JOURNEY_CONFIG.pregnant;
+  return JOURNEY_CONFIG[journeyType] ?? JOURNEY_CONFIG.pregnant;
 }
 
 // Helper function to get tasks for a journey
 export function getTasksForJourney(journeyType) {
-  const config = getJourneyConfig(journeyType);
-  return ALL_TASKS.filter(task => 
+  return ALL_TASKS.filter(task =>
     task.journey === journeyType || task.journey === 'all'
   );
 }
@@ -277,5 +268,5 @@ export function getConfigKey(onboardingId) {
     menstrual: 'menstrual',
     menopause: 'menopause'
   };
-  return mapping[onboardingId] || 'pregnant';
+  return mapping[onboardingId] ?? 'pregnant';
 }

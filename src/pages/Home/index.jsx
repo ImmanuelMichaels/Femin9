@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { AlertTriangle, ChevronRight, Hospital, CheckCircle2, Circle } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import CalendarStrip from '../../components/ui/CalendarStrip';
@@ -109,7 +109,7 @@ const MOODS = [
 export default function Home({ setTab }) {
   const { 
     journeyType, 
-    userName = 'Mama', 
+    // userName = 'Mama', 
     setShowSOS,
     getCurrentWeek,
     getTrimester,
@@ -130,20 +130,16 @@ export default function Home({ setTab }) {
   });
   
   // Emergency state for red flags
-  const [bpSys, setBpSys] = useState(118);
-  const [bpDia, setBpDia] = useState(76);
-  const [bleeding, setBleeding] = useState("none");
-  const [fetalMovement, setFetalMovement] = useState("normal");
+  const bpSys = 118;
+  const bpDia = 76;
+  const bleeding = "none";
+  const fetalMovement = "normal";
   
   // Get journey-specific data
   const currentWeek = journeyType === 'pregnant' ? getCurrentWeek() : 26;
   const trimester = journeyType === 'pregnant' ? getTrimester() : null;
   const babyAgeWeeks = journeyType === 'nursing' && babyAgeDays ? Math.floor(babyAgeDays / 7) : null;
   
-  // Get postnatal phase for Glow card
-  const postnatalPhase = journeyType === 'nursing' && babyAgeDays 
-    ? (babyAgeDays <= 14 ? 'days1_14' : babyAgeDays <= 42 ? 'weeks2_6' : 'weeks6_plus')
-    : null;
 
   const toggleCheck = (id) =>
     setChecklist(prev => prev.map(c => c.id === id ? { ...c, done: !c.done } : c));

@@ -331,7 +331,7 @@ function HeroSection({ userName, stage, progress }) {
    IVF TIMELINE
 ───────────────────────────────────────────────────────── */
 
-function IVFTimeline({ stages, onStageUpdate }) {
+function IVFTimeline({ stages }) {
   return (
     <section className="section">
       <SectionHeader
@@ -806,8 +806,7 @@ function ContactSection() {
         </div>
         <p className="doctor-note-body">
           "Sophie — your follicle response was remarkable and the lab team is extremely pleased
-          with your blastocyst development. Rest well, stay hydrated, and we will see you Tuesday
-          for your transfer. This looks very promising."
+          with your blastocyst development. Rest well, stay hydrated, and we will see you Tuesday          for your transfer. This looks very promising."
         </p>
         <p className="doctor-note-sig">— Dr. Sarah Patel, Reproductive Endocrinologist</p>
       </div>
@@ -856,7 +855,7 @@ function BottomNav({ active, setActive }) {
 export default function IVFJourney() {
   const { userName } = useApp();
   const [activeTab, setActiveTab] = useState("home");
-  const [stages, setStages] = useState(() => {
+  const [stages] = useState(() => {
     const saved = localStorage.getItem('ivf_stages');
     return saved ? JSON.parse(saved) : TIMELINE_STAGES;
   });
@@ -888,14 +887,16 @@ export default function IVFJourney() {
           <>
             <HeroSection userName={userName} stage={currentStage} progress={progress} />
             <GlowCard journeyType="ivf" />
-            <IVFTimeline stages={stages} onStageUpdate={setStages} />
+            <IVFTimeline stages={stages} />
             <div className="nav-spacer" />
           </>
         );
       case 'journey':
         return (
           <>
-            <IVFTimeline stages={stages} onStageUpdate={setStages} />
+            <IVFTimeline stages={stages} />
+            <ScanSection scans={SCANS} />
+            <EmbryoSection embryos={EMBRYOS} />
             <div className="nav-spacer" />
           </>
         );

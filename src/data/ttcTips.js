@@ -214,7 +214,7 @@ export function getJourneyConfig(journeyType) {
   return JOURNEY_CONFIG[journeyType] || JOURNEY_CONFIG.pregnant;
 }
 
-// Helper function to get tasks for a journey
+// Helper function to get tasks for a journey - FIXED: removed extra space
 export function getTasksForJourney(journeyType) {
   const config = getJourneyConfig(journeyType);
   return ALL_TASKS.filter(task => 
@@ -222,7 +222,6 @@ export function getTasksForJourney(journeyType) {
   );
 }
 
-// Helper function to get baby milestone for current week
 export function getBabyMilestone(week) {
   const milestone = BABY_MILESTONES
     .filter(m => m.week <= week)
@@ -230,15 +229,13 @@ export function getBabyMilestone(week) {
   return milestone || BABY_MILESTONES[0];
 }
 
-// Helper function to get upcoming vaccinations
 export function getUpcomingVaccinations(weeksOld) {
   return VACCINATION_SCHEDULE.filter(v => {
-    const ageInWeeks = parseInt(v.age.split(' ')[0]) * 4; // Convert months to weeks approx
+    const ageInWeeks = parseInt(v.age.split(' ')[0]) * 4; 
     return ageInWeeks > weeksOld;
   });
 }
 
-// Helper function to get postpartum week info
 export function getPostpartumInfo(week) {
   const timeline = POSTPARTUM_TIMELINE.find(t => t.week === week) ||
                    POSTPARTUM_TIMELINE.find(t => t.week > week) ||

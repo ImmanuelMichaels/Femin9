@@ -5,37 +5,42 @@ import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
-  const { userName, journeyType, setJourneyType } = useApp();
+  const { userName, journeyType } = useApp();
   const navigate = useNavigate();
-  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [notifications, setNotifications] = useState({
     healthReminders: true,
     appointmentReminders: true,
     marketing: false
   });
-  
+
   const handleDeleteAccount = () => {
     if (window.confirm('⚠️ WARNING: This will delete ALL your health data permanently. This action cannot be undone. Are you absolutely sure?')) {
-      // API call to delete account
       localStorage.clear();
       sessionStorage.clear();
       navigate('/login');
     }
   };
-  
+
   const handleExportData = () => {
-    // GDPR Right to Data Portability
     alert('Your data export request has been submitted. You will receive an email within 30 days containing all your data in JSON format.');
   };
-  
+
   const handleChangeJourney = () => {
     navigate('/onboarding');
   };
-  
+
+  const journeyLabel = {
+    mom: 'Postpartum & Nursing',
+    conceive: 'Trying to Conceive',
+    pregnant: 'Pregnancy',
+    ivf: 'IVF & Fertility',
+    menopause: 'Menopause',
+  }[journeyType] ?? journeyType;
+
   return (
     <div className="page-pad">
       <SectionTitle title="👤 Profile" subtitle="Manage your account and preferences" />
-      
+
       {/* User Info Card */}
       <WCard>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-md)' }}>
@@ -57,11 +62,7 @@ export default function Profile() {
               {userName || 'Mama'}
             </p>
             <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--mt)' }}>
-              Journey: {journeyType === 'mom' ? 'Postpartum & Nursing' : 
-                        journeyType === 'conceive' ? 'Trying to Conceive' :
-                        journeyType === 'pregnant' ? 'Pregnancy' :
-                        journeyType === 'ivf' ? 'IVF & Fertility' : 
-                        journeyType === 'menopause' ? 'Menopause' : journeyType}
+              Journey: {journeyLabel}
             </p>
             <button
               onClick={handleChangeJourney}
@@ -81,7 +82,7 @@ export default function Profile() {
           </div>
         </div>
       </WCard>
-      
+
       {/* Notification Preferences */}
       <SectionTitle title="🔔 Notifications" />
       <WCard>
@@ -90,7 +91,16 @@ export default function Profile() {
           { key: 'appointmentReminders', label: 'Appointment Reminders', desc: 'Upcoming appointments and check-ups' },
           { key: 'marketing', label: 'Marketing & Tips', desc: 'Wellness tips, offers, and updates' }
         ].map((item, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: 'var(--sp-3) 0', borderBottom: i < 2 ? '1px solid var(--border)' : 'none' }}>
+          <div
+            key={item.key}
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: 'var(--sp-3) 0',
+              borderBottom: i < 2 ? '1px solid var(--border)' : 'none'
+            }}
+          >
             <div>
               <p style={{ fontWeight: 700, fontSize: 'var(--fs-sm)' }}>{item.label}</p>
               <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)' }}>{item.desc}</p>
@@ -122,7 +132,7 @@ export default function Profile() {
           </div>
         ))}
       </WCard>
-      
+
       {/* Privacy Centre - GDPR Required */}
       <SectionTitle title="🔒 Privacy Centre" />
       <WCard>
@@ -146,9 +156,9 @@ export default function Profile() {
         >
           📥 Download My Data (GDPR Right to Portability)
         </button>
-        
+
         <button
-          onClick={() => setShowPrivacyModal(true)}
+          onClick={() => navigate('/consent')}
           style={{
             width: '100%',
             padding: 'var(--sp-3)',
@@ -168,7 +178,7 @@ export default function Profile() {
         >
           📋 Manage Consent Settings
         </button>
-        
+
         <button
           onClick={handleDeleteAccount}
           style={{
@@ -190,7 +200,7 @@ export default function Profile() {
           🗑️ Delete Account & All Data (Right to Erasure)
         </button>
       </WCard>
-      
+
       {/* Subscription */}
       <SectionTitle title="💎 Subscription" />
       <WCard>
@@ -210,7 +220,7 @@ export default function Profile() {
           </p>
         </div>
       </WCard>
-      
+
       {/* App Info */}
       <SectionTitle title="ℹ️ About" />
       <WCard>
@@ -227,10 +237,10 @@ export default function Profile() {
           <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 600 }}>UK (GDPR Compliant)</span>
         </div>
       </WCard>
-      
+
       {/* Sign Out Button */}
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         onClick={() => navigate('/login')}
         fullWidth
       >

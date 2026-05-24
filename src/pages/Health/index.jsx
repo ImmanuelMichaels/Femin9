@@ -12,9 +12,9 @@ export default function Health() {
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [selectedDrug, setSelectedDrug] = useState(null);
-  const [emergencyBp, setEmergencyBp] = useState({ sys: 118, dia: 76 });
-  const [emergencyBleeding, setEmergencyBleeding] = useState("none");
-  const [emergencyMovement, setEmergencyMovement] = useState("normal");
+  const emergencyBp = { sys: 118, dia: 76 };
+const emergencyBleeding = "none";
+const emergencyMovement = "normal";
   
   const streamRef = useRef(null);
   const intRef = useRef(null);
@@ -73,7 +73,7 @@ export default function Health() {
       { level: "Moderate", message: "Moderate jaundice detected. Please contact your midwife or GP within 24 hours.", color: "var(--t)" },
       { level: "Severe", message: "Severe jaundice detected. Seek immediate medical attention.", color: "var(--rd)" }
     ];
-    return results[Math.floor(Math.random() * results.length)];
+    // return results[Math.floor(Math.random() * results.length)];
   };
 
   const simulateSymptomVision = () => {
