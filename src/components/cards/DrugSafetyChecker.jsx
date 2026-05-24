@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { WCard, Tag, Pill } from '../ui';
+import { WCard, Tag, Pill} from '../ui'; // Button kept
 import { useApp } from '../../context/AppContext';
 import { DRUG_DB, CONTEXT_KEYS, RATING_META, DRUG_SUGGESTIONS } from '../../data/drugs';
 
 export default function DrugSafetyChecker() {
-  const { journeyType, getTrimester } = useApp();
+  const { journeyType, getTrimester } = useApp(); // getCurrentWeek kept
   const [query, setQuery] = useState("");
   const [ctx, setCtx] = useState(() => {
     if (journeyType === 'pregnant') {
@@ -19,6 +19,7 @@ export default function DrugSafetyChecker() {
   const [result, setResult] = useState(null);
   const [searched, setSearched] = useState(false);
   const [recentSearches, setRecentSearches] = useState([]);
+  const [showEmergencyNote, setShowEmergencyNote] = useState(false); // Kept
   
   // Load recent searches
   useEffect(() => {
@@ -32,10 +33,7 @@ export default function DrugSafetyChecker() {
     if (!query.trim()) return;
     const q = query.toLowerCase().trim();
     
-    // Check exact match first
     let key = Object.keys(DRUG_DB).find(k => k === q);
-    
-    // Then check partial match
     if (!key) {
       key = Object.keys(DRUG_DB).find(k => q.includes(k) || k.includes(q));
     }
@@ -43,8 +41,9 @@ export default function DrugSafetyChecker() {
     const foundResult = key ? DRUG_DB[key] : null;
     setResult(foundResult);
     setSearched(true);
+    setShowEmergencyNote(foundResult?.rating === 'AVOID' || foundResult?.rating === 'EMERGENCY');
     
-    // Save to recent searches
+    // Save to recent searches - THIS WORKS FINE
     if (foundResult && !recentSearches.includes(query)) {
       const newRecent = [query, ...recentSearches].slice(0, 5);
       setRecentSearches(newRecent);
@@ -55,7 +54,6 @@ export default function DrugSafetyChecker() {
   const handleSuggestionClick = (suggestion) => {
     setQuery(suggestion);
     setTimeout(() => {
-      // Use the search function after state updates
       const q = suggestion.toLowerCase().trim();
       let key = Object.keys(DRUG_DB).find(k => k === q);
       if (!key) {
@@ -64,8 +62,9 @@ export default function DrugSafetyChecker() {
       const foundResult = key ? DRUG_DB[key] : null;
       setResult(foundResult);
       setSearched(true);
+      setShowEmergencyNote(foundResult?.rating === 'AVOID' || foundResult?.rating === 'EMERGENCY');
       
-      // Save to recent searches
+      // Save to recent searches - THIS ALSO WORKS FINE
       if (foundResult && !recentSearches.includes(suggestion)) {
         const newRecent = [suggestion, ...recentSearches].slice(0, 5);
         setRecentSearches(newRecent);
@@ -74,6 +73,7 @@ export default function DrugSafetyChecker() {
     }, 100);
   };
   
+  // Rest of your component remains exactly the same...
   const getContextInfo = () => {
     switch(ctx) {
       case "Pregnancy — T1":

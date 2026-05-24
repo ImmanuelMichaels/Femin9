@@ -421,7 +421,7 @@
   justify-content: center;
   align-items: center;
   max-width: 150px;
-  background: rgb(236 227 238 / 27%);
+  background: #edeef2;
   padding: 20px 5px;
   border-radius: 10px;
 }
@@ -453,6 +453,14 @@
   color: #555;
   font-family: 'poppins';
 }
+.hm-stat-icon{
+  font-size: 40px;
+}
+.hm-stat-value{
+  font-size: 0.800rem;
+  font-family: 'poppins';
+  font-weight: 700;
+}
 .hm-stat-sub {
   font-size: 0.500rem;
   font-family: 'poppins';
@@ -467,6 +475,7 @@
   background: #fff8f0;
   font-family: 'poppins';
   border-radius: 10px;
+  margin-bottom: 10px;
 }
 .hm-alert-title {
   font-size: .700rem;
@@ -506,8 +515,8 @@
   gap: 4px;
   width: 200px;
   padding: 10px;
-  border-radius: 5px;
-  background: rgb(236 227 238 / 27%);
+  border-radius: 40px;
+  background: #edeeed;
 }
 .hm-mood-em {
   font-size: 50px;
@@ -531,10 +540,10 @@
 }
 .hm-qa-btn {
   padding: 20px 10px;
-  border-radius: 5px;
+  border-radius: 35px;
   display: flex;
   flex-direction: column;
-  background: rgb(236 227 238 / 27%);
+  background: #edeef2;
 }
 .hm-qa-em {
   font-size: 30px;
@@ -543,6 +552,7 @@
   display: flex;
   gap: 10px;
 }
+
 
 .hm-two-col {
   gap: 10px;
@@ -562,21 +572,42 @@
   padding: 20px;
   max-width: 300px;
   box-shadow: inset 1px 2px 2px 1px #0606060d;
-  border-radius: 10px;
+  border-radius: 40px;
   text-align: center;
+}
+.hm-tracker-row:nth-child(1) {
+  background: #a5bbec;
+}
+.hm-tracker-row:nth-child(2) {
+  background: #f29866;
+}
+.hm-tracker-row:nth-child(3) {
+  background: rgba(206, 164, 236);
+}
+.hm-tracker-row:nth-child(4) {
+  background: #9acdac;
+}
+.hm-tracker-row:nth-child(5) {
+  background: #9acdac;
 }
 .hm-tracker-icon {
   font-size: 50px;
 }
+.hm-tracker-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000000;
+}
 .hm-tracker-meta{
   display: flex;
-  flex-direction: column;
+  flex-direction: column;  
+  font-size: 12px;
 }
 .hm-tracker-left {
   text-align: center;
 }
 .hm-tracker-pct {
-  font-size: 20px;
+  font-size: 15px;
   font-weight: 700;
 }
 .tracker-container {
