@@ -1,6 +1,6 @@
 // data/journey.js
 
-export const JOURNEY_CONFIG = {
+export const BLOOM_KB = {
   // PREGNANT JOURNEY
   pregnant: {
     id: 'pregnant',

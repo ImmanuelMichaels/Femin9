@@ -1,4 +1,4 @@
-import { BLOOM_KB } from '../data/journey';
+import { BLOOM_KB } from '../data/bloomknowledge';  // ✅ Correct - has all the health content
 
 export function bloomResp(msg) {
   const l = msg.toLowerCase();
