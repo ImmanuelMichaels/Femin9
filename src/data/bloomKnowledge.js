@@ -1,5 +1,3 @@
-
-
 export const BLOOM_KB = {
   // General greeting
   greeting: "Hi mama 🌸 I'm Bloom, your AI companion. I'm here to support you with evidence-based information, Nigerian cultural context, and a warm heart. Ask me anything about pregnancy, fertility, postpartum, medications, or how you're feeling. I understand English, Yoruba, Igbo, Hausa, and Pidgin.\n\n---\n📍 This is general information, not medical advice. Always consult your GP or midwife.",
@@ -151,31 +149,4 @@ export function bloomResp(msg) {
   
   // Default response with all options
   return BLOOM_KB.default;
-}
-
-// Helper function to format time (MM:SS)
-export function formatTime(seconds) {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
-
-// Helper function to check if a date is between two dates
-export function isBetween(date, startDate, endDate) {
-  return date >= startDate && date <= endDate;
-}
-
-// Helper function to check if two dates are the same
-export function isSameDay(date1, date2) {
-  return date1.toDateString() === date2.toDateString();
-}
-
-// Helper function to get days in month
-export function daysInMonth(year, month) {
-  return new Date(year, month + 1, 0).getDate();
-}
-
-// Helper function to get first day of month (0 = Sunday, 1 = Monday, etc.)
-export function firstDayOfMonth(year, month) {
-  return new Date(year, month, 1).getDay();
 }

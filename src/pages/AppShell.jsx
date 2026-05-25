@@ -4,7 +4,7 @@ import { useApp } from '../context/useApp';
 import AppHeader from '../components/layout/AppHeader';
 import BottomNav from '../components/nav/BottomNav';
 import EmergencyModal from '../components/modals/EmergencyModal';
-import { JOURNEY_CONFIG } from '../data/journey';
+import { BLOOM_KB } from '../data/journey';
 
 // ── Existing modules ──────────────────────────────────────────────────────────
 const Home        = lazy(() => import('./Home'));
@@ -59,12 +59,12 @@ const JOURNEY_TAB_MAP = {
   menopause: 'menopause',
 };
 
-// ── Maps onboarding journey id → JOURNEY_CONFIG key ──────────────────────────
+// ── Maps onboarding journey id → BLOOM_KB key ─────────────────────────────────
 const JOURNEY_KEY_MAP = {
   pregnant:  'pregnant',
   ivf:       'ivf',
-  conceive:  'ttc',
-  mom:       'nursing',
+  conceive:  'conceive',  // Changed from 'ttc' to 'conceive'
+  mom:       'mom',       // Changed from 'nursing' to 'mom'
   menopause: 'menopause',
 };
 
@@ -97,7 +97,8 @@ export default function AppShell() {
   const [showEPDS, setShowEPDS] = useState(false);
 
   const journeyKey = JOURNEY_KEY_MAP[journeyType] ?? journeyType;
-  const allowed    = JOURNEY_CONFIG[journeyKey]?.tabs ?? [];
+  // Get tabs from BLOOM_KB instead of JOURNEY_CONFIG
+  const allowed = BLOOM_KB[journeyKey]?.tabs ?? [];
 
   // ── Tab navigation ──────────────────────────────────────────────────────────
   const handleSetTab = (id) => {
@@ -106,7 +107,7 @@ export default function AppShell() {
     }
   };
 
-  // ── EPDS screening — FIX: useEffect instead of side-effect in render ────────
+  // ── EPDS screening ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (journeyType !== 'mom') return;
 
@@ -130,7 +131,7 @@ export default function AppShell() {
     setShowEPDS(false);
     localStorage.setItem('lastEPDSScreen', new Date().toISOString());
     if (score >= 13) {
-      // High score — surface urgent guidance (replace alert with your modal)
+      // High score — surface urgent guidance
       alert('Your score suggests you may need some support. Please speak to your GP or health visitor. Help is available.');
     }
   };
@@ -173,13 +174,9 @@ export default function AppShell() {
       case 'ivf':       return <Ivfjourney />;
 
       // ── Screens still in development ────────────────────────────────────────
-      // Swap ComingSoon for the real component once the file exists:
-      //   case 'pregnancy': return <Pregnancy />;
       case 'pregnancy': return <ComingSoon name="Pregnancy Tracker" />;
-      //   case 'menstrual':  return <Menstrual />;
-      case 'menstrual':  return <ComingSoon name="Menstrual Tracker" />;
-      //   case 'menopause':  return <Menopause />;
-      case 'menopause':  return <ComingSoon name="Menopause Support" />;
+      case 'menstrual': return <ComingSoon name="Menstrual Tracker" />;
+      case 'menopause': return <ComingSoon name="Menopause Support" />;
 
       default:          return <Home setTab={handleSetTab} />;
     }
