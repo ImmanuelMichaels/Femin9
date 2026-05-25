@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CalendarDays, Settings, Stethoscope, Thermometer, Lightbulb, HeartHand, Zap } from 'lucide-react';
+import { CalendarDays, Settings, Stethoscope, Thermometer, Lightbulb, Heart, Zap } from 'lucide-react';
 import { WCard, SectionTitle, Tag, Pill as PillComponent } from '../../components/ui';
 import { isSameDay, isBetween, daysInMonth, firstDayOfMonth } from '../../utils/helpers';
 
@@ -16,7 +16,7 @@ const TAB_ICONS = {
   symptoms: Stethoscope,
   bbt: Thermometer,
   insights: Lightbulb,
-  intercourse: HeartHand,
+  intercourse: Heart,        
   lh: Zap
 };
 
