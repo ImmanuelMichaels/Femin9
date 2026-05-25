@@ -194,8 +194,12 @@ export default function Home({ setTab }) {
     ? (babyAgeDays <= 14 ? 'days1_14' : babyAgeDays <= 42 ? 'weeks2_6' : 'weeks6_plus')
     : null;
 
-  const cfg = JOURNEY_CONFIG[journeyType] || JOURNEY_CONFIG.pregnant;
-  const home = JOURNEY_HOME_CONFIG[journeyType] || JOURNEY_HOME_CONFIG.pregnant;
+  const normalizedType = 
+  journeyType === 'ttc' ? 'conceive' :
+  journeyType === 'nursing' ? 'mom' : journeyType;
+
+const cfg = JOURNEY_CONFIG[normalizedType] || JOURNEY_CONFIG.pregnant;
+const home = JOURNEY_HOME_CONFIG[normalizedType] || JOURNEY_HOME_CONFIG.pregnant;
 
   const [tasks, setTasks] = useState(
     Object.fromEntries((cfg.taskIds || []).map(id => [id, false]))
