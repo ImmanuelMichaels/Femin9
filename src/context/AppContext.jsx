@@ -1,7 +1,6 @@
-// src/context/AppContext.jsx
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useState, useEffect, useCallback } from 'react';
 
-const AppContext = createContext(null);
+export const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
   const [journeyType, setJourneyType] = useState(
@@ -36,8 +35,6 @@ export function AppProvider({ children }) {
     () => localStorage.getItem('subscriptionPlan') || 'free'
   );
 
-  // ✅ Sync every piece of state back to localStorage whenever it changes.
-  //    This means no component needs to manually call localStorage.setItem.
   useEffect(() => {
     if (journeyType) localStorage.setItem('userJourney', journeyType);
   }, [journeyType]);
@@ -75,7 +72,7 @@ export function AppProvider({ children }) {
   }, [subscriptionPlan]);
 
   const getCurrentWeek = useCallback(() => {
-    if (journeyType !== 'pregnant') return null; // ✅ Return null for non-pregnant journeys
+    if (journeyType !== 'pregnant') return null;
     if (edd) {
       const diffDays = Math.ceil((new Date(edd) - new Date()) / (1000 * 60 * 60 * 24));
       const weeks = 40 - Math.floor(diffDays / 7);
@@ -100,7 +97,6 @@ export function AppProvider({ children }) {
     }
   }, [subscriptionPlan]);
 
-  // ✅ Resets profile data only (e.g. "change journey")
   const clearUserData = useCallback(() => {
     setJourneyType(null);
     setUserName('');
@@ -112,7 +108,6 @@ export function AppProvider({ children }) {
     setLastPeriodStart('');
     setSubscriptionPlan('free');
 
-    // Preserve auth + consents — user stays logged in
     const userAuth     = localStorage.getItem('userAuth');
     const userConsents = localStorage.getItem('userConsents');
     localStorage.clear();
@@ -133,10 +128,10 @@ export function AppProvider({ children }) {
     edd,         setEdd,
     getCurrentWeek,
     getTrimester,
-    babyAgeDays,     setBabyAgeDays,
-    cycleLength,     setCycleLength,
-    periodLength,    setPeriodLength,
-    lastPeriodStart, setLastPeriodStart,
+    babyAgeDays,      setBabyAgeDays,
+    cycleLength,      setCycleLength,
+    periodLength,     setPeriodLength,
+    lastPeriodStart,  setLastPeriodStart,
     subscriptionPlan, setSubscriptionPlan,
     getAiMessageLimit,
     clearUserData,
@@ -148,10 +143,4 @@ export function AppProvider({ children }) {
       {children}
     </AppContext.Provider>
   );
-}
-
-export function useApp() {
-  const ctx = useContext(AppContext);
-  if (!ctx) throw new Error('useApp must be used within AppProvider');
-  return ctx;
 }

@@ -1,6 +1,6 @@
 // src/pages/AppShell.jsx
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../context/useApp';
 import AppHeader from '../components/layout/AppHeader';
 import BottomNav from '../components/nav/BottomNav';
 import EmergencyModal from '../components/modals/EmergencyModal';

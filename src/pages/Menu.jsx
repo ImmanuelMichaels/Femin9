@@ -3,7 +3,7 @@ import {
   Brain, Bot, ShieldCheck, Moon, HandHeart,
   Calendar, Flower2, Droplets, BarChart3,
 } from 'lucide-react';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../context/useApp';
 import './MenuScreen.css';
 
 /* ─── Feature registry ─────────────────────────────────────────────────────── */

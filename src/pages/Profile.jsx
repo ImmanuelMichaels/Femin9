@@ -1,7 +1,7 @@
 // src/pages/Profile.jsx
 import { useState } from 'react';
 import { WCard, SectionTitle, Button } from '../components/ui';
-import { useApp } from '../context/AppContext';
+import { useApp } from '../context/useApp';
 import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {

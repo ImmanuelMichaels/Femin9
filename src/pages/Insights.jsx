@@ -1,7 +1,6 @@
 // src/pages/Insights.jsx
 import { useState, useEffect } from 'react';
 import { WCard, SectionTitle, Tag } from '../components/ui';
-import { useApp } from '../context/AppContext';
 
 export default function Insights() {
   const [selectedPeriod, setSelectedPeriod] = useState('week');

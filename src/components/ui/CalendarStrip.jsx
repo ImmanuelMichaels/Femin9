@@ -64,7 +64,6 @@ export default function CalendarStrip({ accent = "var(--t)", onDateSelect, selec
   
   // Get appointment indicator (mock data - replace with real appointments)
   const hasAppointment = (date) => {
-    // Example: appointments on certain dates
     const appointmentDates = ['15', '22', '28'];
     return appointmentDates.includes(date.getDate().toString());
   };
@@ -139,7 +138,8 @@ export default function CalendarStrip({ accent = "var(--t)", onDateSelect, selec
         </div>
       )}
       
-      <style jsx>{`
+      {/* FIX: removed 'jsx' attribute from style tag */}
+      <style>{`
         .calendar-strip-container {
           background: var(--card);
           border-radius: var(--r2);
