@@ -1,12 +1,13 @@
 // src/pages/AppShell.jsx
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { useParams } from 'react-router-dom';
 import { useApp } from '../context/useApp';
 import AppHeader from '../components/layout/AppHeader';
 import BottomNav from '../components/nav/BottomNav';
 import EmergencyModal from '../components/modals/EmergencyModal';
 import { BLOOM_KB } from '../data/journey';
 
-// ── Existing modules ──────────────────────────────────────────────────────────
+// ── Lazy loaded pages ────────────────────────────────────────────────────────
 const Home        = lazy(() => import('./Home'));
 const Menu        = lazy(() => import('./Menu'));
 const Settings    = lazy(() => import('./Settings'));
@@ -24,17 +25,11 @@ const Nursing     = lazy(() => import('./Nursing'));
 const Ivfjourney  = lazy(() => import('./IVF'));
 const AIAssistant = lazy(() => import('./Chat/AIAssistant'));
 
-// ── Active new modules ────────────────────────────────────────────────────────
 const Insights          = lazy(() => import('./Insights'));
 const Profile           = lazy(() => import('./Profile'));
 const EPDSQuestionnaire = lazy(() => import('../components/EPDSQuestionnaire'));
 
-// ── Modules not yet built — uncomment each when the file exists ───────────────
-// const Pregnancy = lazy(() => import('./Pregnancy'));
-// const Menstrual = lazy(() => import('./Menstrual'));
-// const Menopause = lazy(() => import('./Menopause'));
-
-// ── Placeholder for screens still in development ──────────────────────────────
+// Placeholder for unfinished screens
 function ComingSoon({ name }) {
   return (
     <div style={{
@@ -50,7 +45,7 @@ function ComingSoon({ name }) {
   );
 }
 
-// ── Maps onboarding journey id → initial landing tab ─────────────────────────
+// Journey mapping
 const JOURNEY_TAB_MAP = {
   pregnant:  'home',
   ivf:       'ivf',
@@ -59,19 +54,16 @@ const JOURNEY_TAB_MAP = {
   menopause: 'menopause',
 };
 
-// ── Maps onboarding journey id → BLOOM_KB key ─────────────────────────────────
 const JOURNEY_KEY_MAP = {
   pregnant:  'pregnant',
   ivf:       'ivf',
-  conceive:  'conceive',  // Changed from 'ttc' to 'conceive'
-  mom:       'mom',       // Changed from 'nursing' to 'mom'
+  conceive:  'conceive',
+  mom:       'mom',
   menopause: 'menopause',
 };
 
-// ── Base tabs always available regardless of journey ─────────────────────────
 const BASE_TABS = new Set(['home', 'menu', 'settings', 'insights', 'profile']);
 
-// ── Spinner shown during lazy-load ───────────────────────────────────────────
 function Spinner() {
   return (
     <div style={{
@@ -89,29 +81,45 @@ function Spinner() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 export default function AppShell() {
-  const { journeyType, showSOS, setShowSOS } = useApp();
+  const { journey } = useParams();           // ← Get journey from URL
+  const { journeyType, setJourneyType, showSOS, setShowSOS } = useApp();
 
-  const [tab,      setTabState] = useState(JOURNEY_TAB_MAP[journeyType] || 'home');
+  const [tab, setTabState] = useState('home');
   const [showEPDS, setShowEPDS] = useState(false);
 
+  // Sync URL journey with context + localStorage
+  useEffect(() => {
+    if (journey) {
+      const validJourneys = ['pregnant', 'ivf', 'conceive', 'mom', 'menopause'];
+      
+      if (validJourneys.includes(journey)) {
+        setJourneyType(journey);
+        localStorage.setItem('userJourney', journey);
+      }
+    }
+  }, [journey, setJourneyType]);
+
+  // Set initial tab based on journey
+  useEffect(() => {
+    const initialTab = JOURNEY_TAB_MAP[journeyType] || 'home';
+    setTabState(initialTab);
+  }, [journeyType]);
+
   const journeyKey = JOURNEY_KEY_MAP[journeyType] ?? journeyType;
-  // Get tabs from BLOOM_KB instead of JOURNEY_CONFIG
   const allowed = BLOOM_KB[journeyKey]?.tabs ?? [];
 
-  // ── Tab navigation ──────────────────────────────────────────────────────────
   const handleSetTab = (id) => {
     if (BASE_TABS.has(id) || allowed.includes(id)) {
       setTabState(id);
     }
   };
 
-  // ── EPDS screening ──────────────────────────────────────────────────────────
+  // EPDS screening for nursing moms
   useEffect(() => {
     if (journeyType !== 'mom') return;
 
-    const postnatalDay   = parseInt(localStorage.getItem('postnatalDay') || '0', 10);
+    const postnatalDay = parseInt(localStorage.getItem('postnatalDay') || '0', 10);
     const lastEPDSScreen = localStorage.getItem('lastEPDSScreen');
 
     const isCheckpoint = (
@@ -126,41 +134,25 @@ export default function AppShell() {
     return () => clearTimeout(t);
   }, [journeyType]);
 
-  // ── EPDS completion handler ──────────────────────────────────────────────────
   const handleEPDSComplete = (score) => {
     setShowEPDS(false);
     localStorage.setItem('lastEPDSScreen', new Date().toISOString());
     if (score >= 13) {
-      // High score — surface urgent guidance
-      alert('Your score suggests you may need some support. Please speak to your GP or health visitor. Help is available.');
+      alert('Your score suggests you may need some support. Please speak to your GP or health visitor.');
     }
   };
 
-  // ── Page renderer ────────────────────────────────────────────────────────────
   const renderPage = () => {
     switch (tab) {
-      // Core
       case 'home':      return <Home setTab={handleSetTab} />;
       case 'menu':      return <Menu setActive={handleSetTab} />;
       case 'settings':  return <Settings />;
       case 'insights':  return <Insights />;
       case 'profile':   return <Profile />;
 
-      // AI / Chat — need full height, no extra scroll wrapper
-      case 'chat':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-            <Chat />
-          </div>
-        );
-      case 'assistant':
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-            <AIAssistant />
-          </div>
-        );
+      case 'chat':      return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><Chat /></div>;
+      case 'assistant': return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><AIAssistant /></div>;
 
-      // Journey-specific
       case 'kicks':     return <Kicks />;
       case 'nutrition': return <Nutrition />;
       case 'vitals':    return <Vitals />;
@@ -173,7 +165,6 @@ export default function AppShell() {
       case 'nursing':   return <Nursing />;
       case 'ivf':       return <Ivfjourney />;
 
-      // ── Screens still in development ────────────────────────────────────────
       case 'pregnancy': return <ComingSoon name="Pregnancy Tracker" />;
       case 'menstrual': return <ComingSoon name="Menstrual Tracker" />;
       case 'menopause': return <ComingSoon name="Menopause Support" />;
@@ -185,26 +176,16 @@ export default function AppShell() {
   return (
     <div className="app-page">
       <div className="app-frame fu">
-
-        {/* SOS Modal */}
         {showSOS && <EmergencyModal onClose={() => setShowSOS(false)} />}
 
-        {/* EPDS Postnatal Depression Screening Modal */}
         {showEPDS && (
           <div style={{
-            position: 'fixed', inset: 0,
-            background: 'rgba(0,0,0,0.8)',
-            zIndex: 2000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 'var(--pad-x)',
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 2000,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--pad-x)',
           }}>
             <div style={{
-              background: 'var(--card)',
-              borderRadius: 'var(--r2)',
-              maxWidth: 500,
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              width: '100%',
+              background: 'var(--card)', borderRadius: 'var(--r2)', maxWidth: 500,
+              maxHeight: '90vh', overflowY: 'auto', width: '100%',
             }}>
               <Suspense fallback={<Spinner />}>
                 <EPDSQuestionnaire onComplete={handleEPDSComplete} />
@@ -218,11 +199,7 @@ export default function AppShell() {
         <div
           className="scroll-area fu"
           key={tab}
-          style={
-            tab === 'chat' || tab === 'assistant'
-              ? { display: 'flex', flexDirection: 'column', overflow: 'hidden' }
-              : {}
-          }
+          style={tab === 'chat' || tab === 'assistant' ? { display: 'flex', flexDirection: 'column', overflow: 'hidden' } : {}}
         >
           <Suspense fallback={<Spinner />}>
             {renderPage()}

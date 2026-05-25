@@ -11,27 +11,12 @@ import JourneySelect from './pages/Journeyselect';
 import AppShell from './pages/AppShell';
 import { AppProvider } from './context/AppContext';
 
-
 function SplashRoute() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      const savedJourney = localStorage.getItem('userJourney');
-      const hasConsents  = localStorage.getItem('userConsents');
-      const isLoggedIn   = localStorage.getItem('userAuth'); 
-
-      if (savedJourney && hasConsents && isLoggedIn) {
-        navigate('/app');
-      } else if (savedJourney && hasConsents) {
-        navigate('/login');      
-      } else if (savedJourney) {
-        navigate('/consent');
-      } else {
-        navigate('/onboarding');
-      }
-    }, 2000);
-
+    localStorage.removeItem('userJourney');
+    const timer = setTimeout(() => navigate('/onboarding'), 2000);
     return () => clearTimeout(timer);
   }, [navigate]);
 
@@ -40,28 +25,34 @@ function SplashRoute() {
 
 function ProtectedApp() {
   const savedJourney = localStorage.getItem('userJourney');
-  const hasConsents  = localStorage.getItem('userConsents');
-  const isLoggedIn   = localStorage.getItem('userAuth');
+  const hasConsents = localStorage.getItem('userConsents');
+  const isLoggedIn = localStorage.getItem('userAuth');
 
-  if (!savedJourney)      return <Navigate to="/onboarding" replace />;
-  if (!hasConsents)       return <Navigate to="/consent" replace />;
-  if (!isLoggedIn)        return <Navigate to="/login" replace />;
-  return <AppShell />;    // ← was missing
+  if (!savedJourney) return <Navigate to="/onboarding" replace />;
+  if (!hasConsents) return <Navigate to="/consent" replace />;
+  if (!isLoggedIn) return <Navigate to="/login" replace />;
+
+  return <AppShell />;
 }
 
 export default function App() {
   return (
     <AppProvider>
       <Routes>
-        <Route path="/"               element={<SplashRoute />} />
-        <Route path="/onboarding"     element={<Onboarding />} />
-        <Route path="/consent"        element={<Consent />} />
-        <Route path="/signup"         element={<Signup />} />
-        <Route path="/verify-email"   element={<VerifyEmail />} />
-        <Route path="/login"          element={<Login />} />
+        <Route path="/" element={<SplashRoute />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/consent" element={<Consent />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/journey-select" element={<JourneySelect />} />
-        <Route path="/app"            element={<ProtectedApp />} />
-        <Route path="*"               element={<Navigate to="/" replace />} />
+
+        {/* Journey-specific app routes */}
+        <Route path="/app/:journey" element={<ProtectedApp />} />
+
+        {/* Fallback */}
+        <Route path="/app" element={<Navigate to="/app/pregnant" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AppProvider>
   );

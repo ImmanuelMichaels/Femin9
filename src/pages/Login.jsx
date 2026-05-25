@@ -54,61 +54,71 @@ export default function Login() {
   const navigate = useNavigate();
   const { setJourneyType, setCulture } = useApp();
 
-  const [email,    setEmail]    = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
-  const [loading,  setLoading]  = useState(false);
-  const [animOut,  setAnimOut]  = useState(false);
-  const [focused,  setFocused]  = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [animOut, setAnimOut] = useState(false);
+  const [focused, setFocused] = useState(null);
 
-  // At the top of Signup(), before any state
+  // Clear previous session on login page
   useEffect(() => {
     localStorage.removeItem('userAuth');
     localStorage.removeItem('userName');
     localStorage.removeItem('userEmail');
   }, []);
 
-  const ready = email && password;
+  const ready = email.trim() && password.trim();
 
   const handleLogin = () => {
     if (!ready) return;
+
     setLoading(true);
 
     // Simulate API call
     setTimeout(() => {
       setLoading(false);
 
-      // Mark the user as authenticated
+      // Save authentication
       localStorage.setItem('userAuth', 'true');
+      localStorage.setItem('userEmail', email);
 
-      // Sync journey type + culture into context from localStorage
-      const savedJourney = localStorage.getItem('userJourney');
+      // Get user's chosen journey
+      const savedJourney = localStorage.getItem('userJourney') || 'pregnant';
       const savedCulture = localStorage.getItem('userCulture');
-      if (savedJourney) setJourneyType(savedJourney);
+
+      // Sync with context
+      setJourneyType(savedJourney);
       if (savedCulture) setCulture(savedCulture);
 
+      // Trigger exit animation
       setAnimOut(true);
-      setTimeout(() => navigate('/onboarding'), 420);
-    }, 1000);
+
+      // Redirect to journey-specific homepage
+      setTimeout(() => {
+        navigate(`/app/${savedJourney}`);
+      }, 450);
+    }, 1100);
   };
 
   return (
     <div
-      className="lg-root"
+      className={`lg-root ${animOut ? 'lg-root--out' : ''}`}
       style={{
         opacity: animOut ? 0 : 1,
-        transform: animOut ? 'translateY(20px)' : 'none',
-        transition: 'opacity 0.4s, transform 0.4s'
+        transform: animOut ? 'translateY(30px) scale(0.97)' : 'none',
+        transition: 'all 0.45s cubic-bezier(0.4, 0, 0.2, 1)'
       }}
     >
       <div className="lg-card">
         <div className="lg-hero">
           <div className="lg-brand" />
         </div>
-        <h1 className="lg-title">Welcome</h1>
+
+        <h1 className="lg-title">Welcome back</h1>
         <p className="lg-sub">Sign in to continue your journey</p>
 
-        {/* Email */}
+        {/* Email Field */}
         <div className="lg-field">
           <label className="lg-label">Email Address</label>
           <div className={`lg-input-wrap${focused === 'email' ? ' lg-input-wrap--focus' : ''}`}>
@@ -126,7 +136,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Password */}
+        {/* Password Field */}
         <div className="lg-field">
           <label className="lg-label">Password</label>
           <div className={`lg-input-wrap${focused === 'pass' ? ' lg-input-wrap--focus' : ''}`}>
@@ -150,7 +160,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Sign In */}
+        {/* Sign In Button */}
         <button
           className={`lg-signin${ready ? '' : ' lg-signin--dim'}`}
           onClick={handleLogin}
@@ -166,11 +176,12 @@ export default function Login() {
           <div className="lg-or-line" />
         </div>
 
-        {/* Social */}
+        {/* Social Logins */}
         <button className="lg-social" onClick={handleLogin}>
           <GoogleG />
           <span>Continue with Google</span>
         </button>
+
         <button className="lg-social" onClick={handleLogin}>
           <PhoneIcon />
           <span>Continue with Phone</span>
@@ -179,7 +190,10 @@ export default function Login() {
         {/* Footer */}
         <p className="lg-footer">
           New here?{' '}
-          <button className="lg-signup-link" onClick={() => navigate('/onboarding')}>
+          <button 
+            className="lg-signup-link" 
+            onClick={() => navigate('/onboarding')}
+          >
             Create your free account
           </button>
         </p>

@@ -366,10 +366,24 @@ export default function Onboarding() {
       if (personalisation.symptoms) setMenopauseSymptoms(personalisation.symptoms);
     }
     
-    // Simulate API call
+    // Save journey to localStorage
+    localStorage.setItem('userJourney', selectedJourney);
+    
+    // Check existing session and navigate accordingly
+    const hasConsents = localStorage.getItem('userConsents');
+    const isLoggedIn = localStorage.getItem('userAuth');
+    
+    // Simulate API call delay
     setTimeout(() => {
       setLoading(false);
-      navigate('/consent'); // Go to consent screen first
+      
+      if (hasConsents && isLoggedIn) {
+        navigate(`/app/${selectedJourney}`);
+      } else if (hasConsents) {
+        navigate('/login');
+      } else {
+        navigate('/consent');
+      }
     }, 800);
   };
   

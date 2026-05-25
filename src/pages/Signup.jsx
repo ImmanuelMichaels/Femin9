@@ -212,9 +212,6 @@ export default function Signup() {
 
         {/* ── Brand header ─────────────────────────────────────────────────── */}
         <div className="su-header">
-          <div className="su-brand-mark">
-            <span className="su-brand-inner">✦</span>
-          </div>
           <h1 className="su-title">Create your account</h1>
           <p className="su-sub">Your journey to better health starts here.</p>
         </div>
@@ -257,7 +254,7 @@ export default function Signup() {
                 onChange={(e) => setName(e.target.value)}
                 onFocus={() => setFocused('name')}
                 onBlur={() => { setFocused(null); touch('name'); }}
-                placeholder="Ada Okafor"
+                placeholder="Full Name"
                 className="su-input"
                 autoComplete="name"
               />
@@ -284,7 +281,7 @@ export default function Signup() {
                 onChange={(e) => setEmail(e.target.value)}
                 onFocus={() => setFocused('email')}
                 onBlur={() => { setFocused(null); touch('email'); }}
-                placeholder="ada@example.com"
+                placeholder="email@example.com"
                 className="su-input"
                 autoComplete="email"
               />
