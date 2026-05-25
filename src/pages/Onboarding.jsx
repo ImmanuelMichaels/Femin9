@@ -304,6 +304,7 @@ export default function Onboarding() {
   const [personalisation, setPersonalisation] = useState({});
   const [loading, setLoading] = useState(false);
   const [userName, setLocalName] = useState('');
+  const [clickedCard, setClickedCard] = useState(null);
   
   const personalisationQuestions = selectedJourney 
     ? getPersonalisationQuestions(selectedJourney) 
@@ -314,8 +315,14 @@ export default function Onboarding() {
                      selectedJourney === 'menopause' ? 3 : 2;
   
   const handleJourneySelect = (id) => {
-    setSelectedJourney(id);
-    setTimeout(() => setStep(2), 300);
+    setClickedCard(id);
+    
+    // Add pop animation class
+    setTimeout(() => {
+      setSelectedJourney(id);
+      setClickedCard(null);
+      setTimeout(() => setStep(2), 300);
+    }, 200);
   };
   
   const handleCultureSelect = (cultureId) => {
@@ -408,8 +415,14 @@ export default function Onboarding() {
           <button
             key={card.id}
             onClick={() => handleJourneySelect(card.id)}
-            className={`ob-card${i === CARDS.length - 1 && CARDS.length % 2 !== 0 ? ' ob-card--last-odd' : ''}`}
-            style={{ background: card.bg, animationDelay: `${i * 0.08}s` }}
+            className={`ob-card ${clickedCard === card.id ? 'ob-card-pop' : ''}${
+              i === CARDS.length - 1 && CARDS.length % 2 !== 0 ? ' ob-card--last-odd' : ''
+            }`}
+            style={{ 
+              background: card.bg, 
+              animationDelay: `${i * 0.08}s`,
+              transition: 'all 0.2s cubic-bezier(0.34, 1.2, 0.64, 1)'
+            }}
           >
             <span className="ob-card-title" style={{ color: card.titleColor }}>
               {card.label}
@@ -479,7 +492,7 @@ export default function Onboarding() {
               </div>
               <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', marginTop: 4 }}>
                 {culture.id === 'west_central_african' && 'Jollof, Egusi, Plantain, Moi Moi'}
-                {culture.id === 'east_african' && 'Ugali, Sukuma Wiki, Nyama Choma'}
+                {culture.id === 'east_african' && 'Ugali, Sukuma Wiki, Nyama Chara'}
                 {culture.id === 'south_asian' && 'Dal, Roti, Curry, Samosas'}
                 {culture.id === 'caribbean' && 'Callaloo, Rice and Peas, Jerk'}
                 {culture.id === 'prefer_not' && 'We\'ll use general NHS guidance'}
@@ -707,6 +720,39 @@ export default function Onboarding() {
       <style>{`
         @keyframes spin {
           to { transform: rotate(360deg); }
+        }
+        
+        /* Pop animation for journey cards */
+        .ob-card-pop {
+          animation: pop 0.3s cubic-bezier(0.34, 1.2, 0.64, 1) forwards !important;
+        }
+        
+        @keyframes pop {
+          0% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.1);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+          }
+          100% {
+            transform: scale(0.98);
+            opacity: 0.8;
+          }
+        }
+        
+        /* Hover effect for cards */
+        .ob-card {
+          transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+        }
+        
+        .ob-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .ob-card:active {
+          transform: scale(0.98);
         }
       `}</style>
     </div>
