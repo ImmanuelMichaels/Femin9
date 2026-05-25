@@ -1,4 +1,4 @@
-import { BLOOM_KB } from '../data/bloomknowledge';
+import { BLOOM_KB } from '../data/bloomKnowledge';
 
 export function bloomResp(msg) {
   const l = msg.toLowerCase();
