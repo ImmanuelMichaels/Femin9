@@ -153,59 +153,40 @@ export default function Home({ setTab }) {
   
   const [mood, setMood] = useState(null);
   
-  // Initialize from localStorage
-  const [bpSys, setBpSys] = useState(() => {
-    const saved = localStorage.getItem('bpSys');
-    return saved ? Number(saved) : 118;
-  });
-  
-  const [bpDia, setBpDia] = useState(() => {
-    const saved = localStorage.getItem('bpDia');
-    return saved ? Number(saved) : 76;
-  });
-  
-  const [bleeding, setBleeding] = useState(() => {
-    const saved = localStorage.getItem('bleeding');
-    return saved || "none";
-  });
-  
-  const [fetalMovement, setFetalMovement] = useState(() => {
-    const saved = localStorage.getItem('fetalMovement');
-    return saved || "normal";
-  });
-  
+  const [bpSys, setBpSys] = useState(() => Number(localStorage.getItem('bpSys')) || 118);
+  const [bpDia, setBpDia] = useState(() => Number(localStorage.getItem('bpDia')) || 76);
+  const [bleeding, setBleeding] = useState(() => localStorage.getItem('bleeding') || "none");
+  const [fetalMovement, setFetalMovement] = useState(() => localStorage.getItem('fetalMovement') || "normal");
   const [showVitalsCard, setShowVitalsCard] = useState(false);
-  
-  // Save to localStorage
+
   useEffect(() => {
-    localStorage.setItem('bpSys', bpSys.toString());
-    localStorage.setItem('bpDia', bpDia.toString());
+    localStorage.setItem('bpSys', bpSys);
+    localStorage.setItem('bpDia', bpDia);
     localStorage.setItem('bleeding', bleeding);
     localStorage.setItem('fetalMovement', fetalMovement);
   }, [bpSys, bpDia, bleeding, fetalMovement]);
-  
-  // Get current week for pregnancy
+
   const currentWeek = journeyType === 'pregnant' ? getCurrentWeek() : 26;
   const trimester = journeyType === 'pregnant' ? getTrimester() : null;
   const babyAgeWeeks = journeyType === 'nursing' && babyAgeDays ? Math.floor(babyAgeDays / 7) : null;
-  
-  // Get postnatal phase for Glow card
+
   const postnatalPhase = journeyType === 'nursing' && babyAgeDays 
     ? (babyAgeDays <= 14 ? 'days1_14' : babyAgeDays <= 42 ? 'weeks2_6' : 'weeks6_plus')
     : null;
 
+  // Normalize journey type
   const normalizedType = 
-  journeyType === 'ttc' ? 'conceive' :
-  journeyType === 'nursing' ? 'mom' : journeyType;
+    journeyType === 'ttc' ? 'conceive' :
+    journeyType === 'nursing' ? 'mom' : journeyType;
 
-const cfg = JOURNEY_CONFIG[normalizedType] || JOURNEY_CONFIG.pregnant;
-const home = JOURNEY_HOME_CONFIG[normalizedType] || JOURNEY_HOME_CONFIG.pregnant;
+  const cfg = JOURNEY_CONFIG[normalizedType] || JOURNEY_CONFIG.pregnant;
+  const home = JOURNEY_HOME_CONFIG[journeyType] || JOURNEY_HOME_CONFIG.pregnant;
 
   const [tasks, setTasks] = useState(
     Object.fromEntries((cfg.taskIds || []).map(id => [id, false]))
   );
 
-  const todayTasks = ALL_TASKS.filter(t => cfg.taskIds.includes(t.id));
+  const todayTasks = ALL_TASKS.filter(t => cfg.taskIds?.includes(t.id));
   const done = todayTasks.filter(t => tasks[t.id]).length;
   const pct = todayTasks.length > 0 ? Math.round((done / todayTasks.length) * 100) : 0;
   
@@ -257,7 +238,7 @@ const home = JOURNEY_HOME_CONFIG[normalizedType] || JOURNEY_HOME_CONFIG.pregnant
         </div>
       </div>
 
-      {/* Vitals Input Card */}
+      {/* ==================== FULL VITALS CARD ==================== */}
       <div className="h-card" style={{ marginBottom: "var(--gap-md)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <p className="h-slabel" style={{ margin: 0 }}>🩺 LOG YOUR VITALS</p>
@@ -281,14 +262,7 @@ const home = JOURNEY_HOME_CONFIG[normalizedType] || JOURNEY_HOME_CONFIG.pregnant
                     type="number"
                     value={bpSys}
                     onChange={(e) => setBpSys(Number(e.target.value))}
-                    style={{
-                      width: "100%",
-                      padding: "var(--sp-3)",
-                      borderRadius: "var(--r)",
-                      border: "1px solid var(--border)",
-                      fontSize: "var(--fs-base)",
-                      background: "var(--bg)"
-                    }}
+                    style={{ width: "100%", padding: "var(--sp-3)", borderRadius: "var(--r)", border: "1px solid var(--border)", fontSize: "var(--fs-base)", background: "var(--bg)" }}
                   />
                   <span style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>Systolic (top)</span>
                 </div>
@@ -297,14 +271,7 @@ const home = JOURNEY_HOME_CONFIG[normalizedType] || JOURNEY_HOME_CONFIG.pregnant
                     type="number"
                     value={bpDia}
                     onChange={(e) => setBpDia(Number(e.target.value))}
-                    style={{
-                      width: "100%",
-                      padding: "var(--sp-3)",
-                      borderRadius: "var(--r)",
-                      border: "1px solid var(--border)",
-                      fontSize: "var(--fs-base)",
-                      background: "var(--bg)"
-                    }}
+                    style={{ width: "100%", padding: "var(--sp-3)", borderRadius: "var(--r)", border: "1px solid var(--border)", fontSize: "var(--fs-base)", background: "var(--bg)" }}
                   />
                   <span style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>Diastolic (bottom)</span>
                 </div>
@@ -374,15 +341,7 @@ const home = JOURNEY_HOME_CONFIG[normalizedType] || JOURNEY_HOME_CONFIG.pregnant
             
             <button
               onClick={() => setShowVitalsCard(false)}
-              style={{
-                padding: "var(--sp-2)",
-                background: "var(--t)",
-                color: "#fff",
-                border: "none",
-                borderRadius: "var(--r)",
-                cursor: "pointer",
-                marginTop: 8
-              }}
+              style={{ padding: "var(--sp-2)", background: "var(--t)", color: "#fff", border: "none", borderRadius: "var(--r)", cursor: "pointer", marginTop: 8 }}
             >
               Save Changes
             </button>
