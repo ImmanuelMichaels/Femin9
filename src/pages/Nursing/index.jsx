@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { WCard, SectionTitle, Tag } from '../../components/ui';
 import { useApp } from '../../context/useApp';
+import './Nursing.css';
 
 /* ── Helpers ── */
 const fmt = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -273,12 +274,12 @@ export default function Nursing() {
 
   return (
     <div className="page-pad">
-      <SectionTitle title="🤱 Nursing Centre" subtitle={`Week ${babyWeeks} postpartum`} />
+      <SectionTitle title="Nursing Centre" subtitle={`Week ${babyWeeks} postpartum`} />
 
       {/* ── FEEDING TIMER ── */}
-      <WCard>
+      <div className='feeding-card'>
         <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--dp)', marginBottom: 'var(--sp-3)' }}>
-          🍼 Feeding Timer
+          Feeding Timer 🍼 
         </p>
 
         {feedActive ? (
@@ -329,7 +330,7 @@ export default function Nursing() {
             { v: `Start ${nextSide}`,     l: 'Next side' },
           ].map((s, i) => (
             <div key={i} style={{ background: 'var(--warm)', borderRadius: 'var(--r)', padding: 'var(--sp-2)', textAlign: 'center' }}>
-              <p style={{ fontWeight: 900, fontSize: 'var(--fs-md)', color: 'var(--dp)' }}>{s.v}</p>
+              <p style={{ fontWeight: 400, fontSize: 'var(--fs-md)', color: 'var(--dp)' }}>{s.v}</p>
               <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mt)', marginTop: 2 }}>{s.l}</p>
             </div>
           ))}
@@ -337,7 +338,7 @@ export default function Nursing() {
 
         {feedLog.length > 0 && (
           <div style={{ marginTop: 'var(--sp-3)' }}>
-            <p style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--mt)', marginBottom: 'var(--sp-2)' }}>RECENT FEEDS</p>
+            <p style={{ fontSize: '14px', fontWeight: 700, color: 'var(--mt)', marginBottom: 'var(--sp-2)' }}>RECENT FEEDS</p>
             {feedLog.slice(0, 4).map(f => (
               <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 'var(--fs-xs)' }}>
                 <span style={{ color: 'var(--dp)', fontWeight: 600 }}>{f.side === 'left' ? '◀ Left' : 'Right ▶'}</span>
@@ -346,7 +347,7 @@ export default function Nursing() {
             ))}
           </div>
         )}
-      </WCard>
+      </div>
 
       {/* ── BABY WEIGHT TRACKER ── */}
       <WCard style={{ background: 'linear-gradient(135deg, #E8F5E9, #F1F8E9)', border: '1px solid #A5D6A744' }}>
@@ -355,7 +356,7 @@ export default function Nursing() {
         </p>
         
         <div style={{ marginBottom: 'var(--sp-3)' }}>
-          <div style={{ display: 'flex', gap: 'var(--gap-sm)', marginBottom: 'var(--sp-2)', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--gap-sm)', marginBottom: 'var(--sp-2)', flexWrap: 'wrap' }}>
             <input
               type="number"
               step="0.01"
@@ -424,7 +425,7 @@ export default function Nursing() {
         </div>
         
         <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 'var(--r)', padding: 'var(--sp-2)' }}>
-          <p style={{ fontSize: 'var(--fs-2xs)', color: '#555', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '13px', color: '#555', lineHeight: 1.5 }}>
             💡 Newborns typically regain birth weight by day 10-14, then gain 150-200g (5-7oz) per week in first 3 months.
           </p>
         </div>
@@ -433,13 +434,13 @@ export default function Nursing() {
       {/* ── IMMUNISATION TRACKER ── */}
       <WCard style={{ background: 'linear-gradient(135deg, #E3F2FD, #E8EAF6)', border: '1px solid #90CAF944' }}>
         <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: '#1565C0', marginBottom: 'var(--sp-3)' }}>
-          💉 Immunisation Schedule
+          Immunisation Schedule 💉
         </p>
         
         {showImmunisationInput ? (
           <div>
             <div style={{ marginBottom: 'var(--sp-2)' }}>
-              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', display: 'block', marginBottom: 4 }}>Next immunisation date</label>
+              <label style={{ fontSize: '12px', color: 'var(--mt)', display: 'block', marginBottom: 4 }}>Next immunisation date</label>
               <input
                 type="date"
                 value={nextImmunisation}
@@ -449,13 +450,13 @@ export default function Nursing() {
                   padding: 'var(--sp-2)',
                   border: '1px solid var(--border)',
                   borderRadius: 'var(--r)',
-                  fontSize: 'var(--fs-sm)',
+                  fontSize: '13px',
                   marginBottom: 'var(--sp-2)',
                 }}
               />
             </div>
             <div style={{ marginBottom: 'var(--sp-3)' }}>
-              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', display: 'block', marginBottom: 4 }}>Notes / reminders</label>
+              <label style={{ fontSize: '13px', color: 'var(--mt)', display: 'block', marginBottom: 4 }}>Notes / reminders</label>
               <textarea
                 value={immunisationNotes}
                 onChange={(e) => setImmunisationNotes(e.target.value)}
@@ -466,7 +467,7 @@ export default function Nursing() {
                   padding: 'var(--sp-2)',
                   border: '1px solid var(--border)',
                   borderRadius: 'var(--r)',
-                  fontSize: 'var(--fs-sm)',
+                  fontSize: '13px',
                   resize: 'vertical',
                 }}
               />
@@ -493,13 +494,13 @@ export default function Nursing() {
               <div>
                 {daysUntilVaccine !== null && (
                   <div>
-                    <p style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: daysUntilVaccine <= 7 ? '#D32F2F' : daysUntilVaccine <= 14 ? '#F57C00' : '#1565C0' }}>
+                    <p style={{ fontSize: '13px', fontWeight: 700, color: daysUntilVaccine <= 7 ? '#D32F2F' : daysUntilVaccine <= 14 ? '#F57C00' : '#1565C0' }}>
                       {daysUntilVaccine <= 0 
                         ? '📅 Immunisation due or overdue — contact your GP' 
                         : `📅 Next immunisation in ${daysUntilVaccine} day${daysUntilVaccine !== 1 ? 's' : ''}`
                       }
                     </p>
-                    <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)' }}>
+                    <p style={{ fontSize: '13px', color: 'var(--mt)' }}>
                       Date: {new Date(nextImmunisation).toLocaleDateString()}
                     </p>
                   </div>
@@ -529,7 +530,7 @@ export default function Nursing() {
         )}
         
         <div style={{ marginTop: 'var(--sp-3)', background: 'rgba(255,255,255,0.5)', borderRadius: 'var(--r)', padding: 'var(--sp-2)' }}>
-          <p style={{ fontSize: 'var(--fs-2xs)', color: '#555', lineHeight: 1.5 }}>
+          <p style={{ fontSize: '13px', color: '#555', lineHeight: 1.5 }}>
             🗓️ Typical schedule: 8 weeks (6-in-1, MenB, Rotavirus), 12 weeks (6-in-1 #2, Pneumococcal), 16 weeks (6-in-1 #3, MenB #2).
           </p>
         </div>
@@ -547,7 +548,7 @@ export default function Nursing() {
             <p style={{ fontSize: 'clamp(40px,10vw,56px)', fontWeight: 900, color: 'var(--lv)', lineHeight: 1 }}>
               {fmt(pumpSecs)}
             </p>
-            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', marginTop: 4 }}>
+            <p style={{ fontSize: '13px', color: 'var(--mt)', marginTop: 4 }}>
               Recommended: 15–20 min per session
             </p>
           </div>
@@ -570,13 +571,13 @@ export default function Nursing() {
         )}
 
         <div style={{ background: 'rgba(255,255,255,0.6)', borderRadius: 'var(--r)', padding: 'var(--sp-3)' }}>
-          <p style={{ fontSize: 'var(--fs-xs)', fontWeight: 800, color: 'var(--lv)', marginBottom: 'var(--sp-2)' }}>🤖 AI PUMP TIPS</p>
+          <p style={{ fontSize: '13px', fontWeight: 800, color: 'var(--lv)', marginBottom: 'var(--sp-2)' }}>🤖 AI PUMP TIPS</p>
           {[
             'Best time: 30–60 min after morning feed when supply is highest.',
             'Pump every 2–3 hrs to signal supply if baby is not latching.',
             'Warm compress before pumping increases output by up to 30%.',
           ].map((tip, i) => (
-            <p key={i} style={{ fontSize: 'var(--fs-xs)', color: 'var(--md)', lineHeight: 1.6, marginBottom: 4 }}>· {tip}</p>
+            <p key={i} style={{ fontSize: '13px', color: 'var(--md)', lineHeight: 1.6, marginBottom: 4 }}>· {tip}</p>
           ))}
         </div>
 

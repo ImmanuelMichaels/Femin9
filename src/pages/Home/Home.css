@@ -647,6 +647,12 @@
   background: none;
   gap: 10px;
 }
+.hm-insight-title{
+  line-height: 2;
+}
+.hm-check-label {
+  font-size: 14px;
+}
 .hm-check-label--done {
   font-size: 14px;
   font-weight: 400px;
