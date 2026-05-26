@@ -1,0 +1,664 @@
+/* ── Section label ─────────────────────────────────────────────────────────── */
+.mn-section-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  color: #9E9E9E;
+  margin: 0 0 10px;
+  text-transform: uppercase;
+}
+
+.mn-section-sub {
+  font-size: 13px;
+  color: #9E9E9E;
+  margin: -6px 0 14px;
+  line-height: 1.5;
+}
+
+/* ── Stage Picker ──────────────────────────────────────────────────────────── */
+.mn-stage-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.mn-stage-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 14px;
+  border: 1.5px solid #E0E0E0;
+  background: #FAFAFA;
+  cursor: pointer;
+  font-size: 18px;
+  transition: all .2s ease;
+}
+
+.mn-stage-btn--active {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0,0,0,.12);
+}
+
+.mn-stage-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+/* ── Hero ──────────────────────────────────────────────────────────────────── */
+.mn-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 18px;
+  border-radius: 20px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.mn-hero-left {
+  flex: 1;
+}
+
+.mn-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+
+.mn-hero-title {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.25;
+  white-space: pre-line;
+  color: #1A1A2E;
+  margin: 0 0 8px;
+}
+
+.mn-hero-sub {
+  font-size: 13px;
+  color: #6B6B80;
+  line-height: 1.5;
+  max-width: 200px;
+}
+
+.mn-hero-ring {
+  flex-shrink: 0;
+  margin-left: 12px;
+}
+
+.mn-ring-wrap {
+  /* SVG container */
+}
+
+/* ── Stats Row ─────────────────────────────────────────────────────────────── */
+.mn-stats-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.mn-stat-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: #FAFAFA;
+  border: 1.5px solid #F0F0F0;
+  border-radius: 16px;
+  padding: 12px 8px;
+}
+
+.mn-stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mn-stat-value {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.mn-stat-label {
+  font-size: 9px;
+  font-weight: 600;
+  color: #AAAAAA;
+  text-align: center;
+  letter-spacing: .03em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+/* ── Clothing Badge ────────────────────────────────────────────────────────── */
+.mn-clothing-card {
+  border: 1.5px solid transparent;
+  border-radius: 18px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+
+.mn-clothing-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  cursor: pointer;
+}
+
+.mn-clothing-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mn-clothing-badge {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0;
+}
+
+.mn-clothing-body {
+  padding: 0 16px 16px;
+  animation: mn-slide-down .25s ease;
+}
+
+@keyframes mn-slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.mn-clothing-tip {
+  font-size: 13px;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.mn-clothing-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mn-clothing-sub {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+
+.mn-clothing-item {
+  font-size: 12px;
+  color: #555;
+  margin: 0 0 4px;
+}
+
+/* ── Symptom Tracker ───────────────────────────────────────────────────────── */
+.mn-symptom-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mn-symptom-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.mn-symptom-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.mn-symptom-emoji {
+  font-size: 20px;
+  width: 28px;
+  text-align: center;
+}
+
+.mn-symptom-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.mn-symptom-level {
+  font-size: 11px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.mn-severity-dots {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mn-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+
+/* ── Mood ──────────────────────────────────────────────────────────────────── */
+.mn-mood-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.mn-mood-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 14px;
+  border: 1.5px solid #EEEEEE;
+  background: #FAFAFA;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.mn-mood-btn--on {
+  border-width: 2px;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0,0,0,.1);
+}
+
+.mn-mood-em {
+  font-size: 22px;
+}
+
+.mn-mood-lbl {
+  font-size: 11px;
+  font-weight: 700;
+  color: #555;
+}
+
+.mn-mood-fb {
+  padding: 12px;
+  border-radius: 12px;
+  margin-top: 10px;
+}
+
+/* ── Hormone Bars ──────────────────────────────────────────────────────────── */
+.mn-hbar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.mn-hbar-row {
+  /* container */
+}
+
+.mn-hbar-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.mn-hbar-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+}
+
+.mn-hbar-val {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.mn-hbar-unit {
+  font-size: 10px;
+  font-weight: 600;
+  color: #AAAAAA;
+}
+
+.mn-hbar-bg {
+  height: 8px;
+  border-radius: 100px;
+  background: #F0F0F0;
+  overflow: hidden;
+}
+
+.mn-hbar-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 1s ease;
+}
+
+.mn-horm-note {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.5;
+  background: #F8F8F8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: 4px;
+}
+
+/* ── Temperature Chart ─────────────────────────────────────────────────────── */
+.mn-temp-chart {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  padding: 8px 0;
+  margin-bottom: 10px;
+}
+
+.mn-temp-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.mn-temp-val {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.mn-temp-bar-wrap {
+  height: 80px;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  justify-content: center;
+}
+
+.mn-temp-bar {
+  width: 100%;
+  max-width: 28px;
+  border-radius: 6px 6px 0 0;
+  min-height: 4px;
+  transition: height .8s ease;
+}
+
+.mn-temp-day {
+  font-size: 9px;
+  font-weight: 600;
+  color: #AAAAAA;
+  text-transform: uppercase;
+}
+
+.mn-temp-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #888;
+}
+
+.mn-leg-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* ── Menstrual Cycle ───────────────────────────────────────────────────────── */
+.mn-cycle-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.mn-cycle-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.mn-cycle-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: background .3s;
+}
+
+.mn-cycle-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  color: #AAAAAA;
+  text-transform: uppercase;
+}
+
+.mn-cycle-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 14px;
+}
+
+.mn-cycle-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  border-top: 1px solid #F0F0F0;
+  padding-top: 14px;
+}
+
+.mn-cycle-stat {
+  text-align: center;
+}
+
+.mn-cstat-val {
+  font-size: 18px;
+  font-weight: 900;
+  margin: 0 0 2px;
+}
+
+.mn-cstat-lbl {
+  font-size: 10px;
+  color: #AAAAAA;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ── AI Insight ────────────────────────────────────────────────────────────── */
+.mn-ai-wrap {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.mn-ai-title {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0 0 6px;
+}
+
+.mn-ai-body {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Mental Health Tips ────────────────────────────────────────────────────── */
+.mn-mental-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.mn-mental-card {
+  display: flex;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1.5px solid transparent;
+  animation: mn-slide-down .3s ease;
+}
+
+.mn-mental-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mn-mental-body {
+  flex: 1;
+}
+
+.mn-mental-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mn-mental-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.mn-mental-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  padding: 3px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mn-mental-text {
+  font-size: 12.5px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Nutrition Grid ────────────────────────────────────────────────────────── */
+.mn-nutrition-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.mn-nutrition-card {
+  border: 1.5px solid transparent;
+  border-radius: 16px;
+  padding: 12px 10px;
+  text-align: center;
+}
+
+.mn-nutrition-em {
+  font-size: 22px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.mn-nutrition-name {
+  font-size: 11px;
+  font-weight: 800;
+  margin: 0 0 3px;
+}
+
+.mn-nutrition-sub {
+  font-size: 10px;
+  color: #888;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* ── HRT List ──────────────────────────────────────────────────────────────── */
+.mn-hrt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.mn-hrt-item {
+  padding-bottom: 14px;
+  border-bottom: 1px solid #F0F0F0;
+}
+
+.mn-hrt-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.mn-hrt-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.mn-hrt-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+  flex: 1;
+}
+
+.mn-hrt-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  padding: 3px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.mn-hrt-body {
+  font-size: 12.5px;
+  color: #666;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ── Responsive tweaks ─────────────────────────────────────────────────────── */
+@media (max-width: 360px) {
+  .mn-stats-row        { grid-template-columns: repeat(2, 1fr); }
+  .mn-nutrition-grid   { grid-template-columns: repeat(2, 1fr); }
+  .mn-stage-label      { display: none; }
+}

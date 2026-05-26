@@ -333,19 +333,21 @@ export default function Home({ setTab }) {
             <p className="hm-card-label" style={{ margin: 0 }}>DAILY CHECKLIST</p>
             <span className="hm-checklist-pct" style={{ color: meta.accent }}>{pct}%</span>
           </div>
-          <div className="hm-checklist-bar-bg">
-            <div className="hm-checklist-bar-fill"
-              style={{ width: `${pct}%`, background: meta.accent }} />
-          </div>
-          {checklist.map(c => (
-            <ChecklistItem
-              key={c.id}
-              label={c.label}
-              done={c.done}
-              accent={meta.accent}
-              onToggle={() => toggleCheck(c.id)}
-            />
-          ))}
+            <div className="routine-box">
+              <div className="hm-checklist-bar-bg">
+                <div className="hm-checklist-bar-fill"
+                  style={{ width: `${pct}%`, background: meta.accent }} />
+              </div>
+              {checklist.map(c => (
+                <ChecklistItem
+                  key={c.id}
+                  label={c.label}
+                  done={c.done}
+                  accent={meta.accent}
+                  onToggle={() => toggleCheck(c.id)}
+                />
+              ))}
+            </div>
         </div>
 
       </div>

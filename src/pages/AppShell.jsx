@@ -24,6 +24,7 @@ const TTC         = lazy(() => import('./TTC'));
 const Nursing     = lazy(() => import('./Nursing'));
 const Ivfjourney  = lazy(() => import('./IVF'));
 const AIAssistant = lazy(() => import('./Chat/AIAssistant'));
+const Menopause   = lazy(() => import('./Menopause/Menopause'));
 
 const Insights          = lazy(() => import('./Insights'));
 const Profile           = lazy(() => import('./Profile'));
@@ -167,7 +168,7 @@ export default function AppShell() {
 
       case 'pregnancy': return <ComingSoon name="Pregnancy Tracker" />;
       case 'menstrual': return <ComingSoon name="Menstrual Tracker" />;
-      case 'menopause': return <ComingSoon name="Menopause Support" />;
+      case 'menopause': return <Menopause />;
 
       default:          return <Home setTab={handleSetTab} />;
     }

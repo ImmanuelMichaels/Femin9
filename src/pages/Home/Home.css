@@ -100,6 +100,14 @@
 /* ── Calendar card ── */
 .h-cal-card { padding: 14px; }
 
+/* Wears card */
+.wcard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+}
+
 /* ── Hero card ── */
 .h-hero-card {
   background: #9C29CC;
@@ -413,6 +421,8 @@
   display: flex;
   padding: 15px 5px;
   gap: 10px;
+  justify-content: center;
+  align-items: center;
 }
 .hm-stat-card {
   width: 300px;
@@ -476,6 +486,7 @@
   font-family: 'poppins';
   border-radius: 10px;
   margin-bottom: 10px;
+  justify-content: center;
 }
 .hm-alert-title {
   font-size: .700rem;
@@ -484,6 +495,8 @@
   font-size: 0.600rem;
   color: #8a5a1a;
   line-height: 1.6;
+  max-width: 400px;
+  display: flex;
 }
 .hm-card {
   background: #fff;
@@ -564,6 +577,7 @@
   align-items: center;
   margin-bottom: 10px;
   gap: 20px;
+  padding: 10px;
 }
 .hm-tracker-row {
   display: flex;
@@ -615,4 +629,80 @@
   grid-template-columns: 1fr 1fr;
   gap: 10px;
   width: 100%;
+}
+.routine-box {
+  background: #fff;
+  font-family: 'poppins';
+  gap: 10px;
+}
+.hm-check-row {
+  display: flex;
+  margin: 10px;
+  background: none;
+  gap: 10px;
+}
+.hm-check-label--done {
+  font-size: 14px;
+  font-weight: 400px;
+}
+.hm-insight-card {
+  border-radius: 5px;
+  padding: 15px;
+  margin: 5px;
+}
+.hm-insight-icon-wrap span {
+  font-size: 30px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.hm-appt-row--urgent {
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 14px;
+  gap: 10px;
+  line-height: 2;
+}
+.hm-appt-date {
+  padding: 0 10px
+}
+.hm-appt-label {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 0 10px;
+}
+.hm-appt-loc {
+  font-size: 12px;
+  color: #555;
+  padding: 0 10px;
+}
+.hm-view-all {
+  padding: 0 10px;
+  background: none;
+}
+
+/*  */
+.hm-hosp-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+.hm-hosp-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fde8ef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.hm-open-badge {
+  background: transparent;
+  border: 1.5px solid #fde8ef;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
 }

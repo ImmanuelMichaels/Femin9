@@ -1,497 +1,821 @@
-import { useState, useEffect } from 'react';
-import { AlertTriangle, ChevronRight, Hospital } from 'lucide-react';
-import CalendarStrip from '../../components/ui/CalendarStrip';
-import GlowCard from '../../components/GlowCard';
-import EmergencyRedFlags from '../../components/EmergencyRedFlags';
-import { JOURNEY_CONFIG, ALL_TASKS } from '../../data/journey';
+import { useState, useEffect, useRef } from 'react';
+import { WCard, SectionTitle, Tag } from '../../components/ui';
 import { useApp } from '../../context/useApp';
-import './Nursing.css';
 
-/* ── Hero illustration ── */
-const HeroIllo = ({ src = '/pregnancy.png', alt = '' }) => (
-  <img src={src} alt={alt} style={{ maxWidth: '100%', height: 'auto' }} />
-);
+/* ── Helpers ── */
+const fmt = s => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 
-/* ── JOURNEY HOME CONFIG ── */
-const JOURNEY_HOME_CONFIG = {
-  pregnant: {
-    greeting: name => `GOOD MORNING, ${name} ☀️`,
-    heroTitle: 'Your baby is the size of a scallion today',
-    heroBody: 'Baby is practising breathing movements. Your iron levels need attention — eat more spinach, lentils, and fortified cereals today.',
-    actionChips: ['💊 Take Iron tablet', '💧 Drink water', '🚶‍♀️ Walk 20 min'],
-    pills: [
-      { text: '🤰 Week 26', cls: 'h-pill--pu' },
-      { text: '🔥 Iron Low', cls: 'h-pill--or' },
-      { text: '📍 London', cls: 'h-pill--ol' },
-    ],
-    quickActions: [
-      { emoji: '👣', label: 'Log Kick', id: 'kicks' },
-      { emoji: '💊', label: 'Add Vitals', id: 'vitals' },
-      { emoji: '🍊', label: 'Meal Log', id: 'nutrition' },
-      { emoji: '🤖', label: 'Ask AI', id: 'chat' },
-    ],
-    alert: {
-      title: 'Anaemia Risk Alert',
-      body: 'Your last haemoglobin was 9.2 g/dL (low). Eat dark leafy greens, lean red meat, lentils, and fortified breakfast cereals.',
-    },
-    illoSrc: '/pregnancy.png',
+/* ── Poop colour data ── */
+const POOP_COLORS = [
+  { id: 'mustard',  label: 'Mustard Yellow', emoji: '🟡', status: 'normal',  msg: 'Normal for breastfed babies. Seedy texture is expected.' },
+  { id: 'tan',      label: 'Tan / Beige',    emoji: '🟤', status: 'normal',  msg: 'Normal for formula-fed babies.' },
+  { id: 'green',    label: 'Green',           emoji: '🟢', status: 'watch',   msg: 'Can indicate foremilk/hindmilk imbalance or fast gut transit. Monitor.' },
+  { id: 'orange',   label: 'Orange',          emoji: '🟠', status: 'normal',  msg: 'Normal variation, often diet-related.' },
+  { id: 'red',      label: 'Red / Blood',     emoji: '🔴', status: 'urgent',  msg: 'Contact your GP or midwife today. Could indicate allergy or tear.' },
+  { id: 'black',    label: 'Black (after day 3)', emoji: '⚫', status: 'urgent', msg: 'Black stool after day 3 needs immediate medical review.' },
+  { id: 'white',    label: 'White / Grey',    emoji: '⚪', status: 'urgent',  msg: 'Seek medical attention urgently — may indicate liver issue.' },
+  { id: 'meconium', label: 'Dark Green/Black (day 1–2)', emoji: '🫙', status: 'normal', msg: 'Meconium — completely normal in first 48 hours.' },
+];
+
+/* ── Outfit suggestions ── */
+const OUTFITS = [
+  {
+    occasion: 'Daily comfort',
+    items: ['Wrap dress (easy access for feeds)', 'Nursing tank top layered under open shirt', 'High-waist leggings'],
+    tip: 'Two-layer method: lift top layer up, pull bottom layer down — no full exposure.',
+    emoji: '👗',
   },
-  ttc: {
-    greeting: name => `GOOD MORNING, ${name}`,
-    heroTitle: 'Your fertile window opens in 2 days',
-    heroBody: 'Today is Cycle Day 12. Oestrogen is rising — a great time to rest well and stay hydrated.',
-    actionChips: ['📅 Check Cycle', '🌡️ Log BBT', '💧 Drink water'],
-    pills: [
-      { text: '📅 Cycle Day 12', cls: 'h-pill--pu' },
-      { text: '🟢 Fertile Soon', cls: 'h-pill--gr' },
-      { text: '📍 London', cls: 'h-pill--ol' },
-    ],
-    quickActions: [
-      { emoji: '📅', label: 'Log Period', id: 'cycle' },
-      { emoji: '🌡️', label: 'Track BBT', id: 'vitals' },
-      { emoji: '🥗', label: 'Nutrition', id: 'nutrition' },
-      { emoji: '🤖', label: 'Ask AI', id: 'chat' },
-    ],
-    alert: {
-      title: 'Fertile Window Approaching',
-      body: 'Based on your last 3 cycles, your peak fertility is predicted for days 14–16.',
-    },
-    illoSrc: '/ttc.png',
+  {
+    occasion: 'Going out',
+    items: ['Button-front midi dress', 'Blazer over nursing cami', 'Dark jeans + flowy blouse'],
+    tip: 'Pattern and print tops hide any milk leaks discreetly.',
+    emoji: '✨',
   },
-  ivf: {
-    greeting: name => `GOOD MORNING, ${name} 💜`,
-    heroTitle: 'Your embryos are developing beautifully',
-    heroBody: 'Day 5 post-retrieval. Your embryos are being carefully nurtured in the lab.',
-    actionChips: ['💊 Log Meds', '💧 Stay Hydrated', '🧘 Rest'],
-    pills: [
-      { text: '💜 IVF Cycle', cls: 'h-pill--pu' },
-      { text: '🥚 Day 5', cls: 'h-pill--gr' },
-      { text: '📍 London', cls: 'h-pill--ol' },
-    ],
-    quickActions: [
-      { emoji: '💊', label: 'Log Meds', id: 'medications' },
-      { emoji: '🔬', label: 'Scan Results', id: 'scans' },
-      { emoji: '🥗', label: 'Nutrition', id: 'nutrition' },
-      { emoji: '🤖', label: 'Ask AI', id: 'chat' },
-    ],
-    alert: {
-      title: 'Medication Reminder',
-      body: 'Your progesterone injection is due at 9 PM tonight.',
-    },
-    illoSrc: '/ivf.png',
+  {
+    occasion: 'Night feeds',
+    items: ['Nursing sleep bra + soft shorts', 'Zip-front hoodie', 'Loose cotton PJ set'],
+    tip: 'Keep a muslin and change of top by your feeding chair for quick swaps.',
+    emoji: '🌙',
   },
-  menopause: {
-    greeting: name => `GOOD MORNING, ${name} 🌿`,
-    heroTitle: 'Today is a day to honour your body',
-    heroBody: 'Menopause is a transition, not an ending. Track your symptoms and rest when you need to.',
-    actionChips: ['🌬️ Breathing exercise', '💤 Log sleep', '🧘 5-min stretch'],
-    pills: [
-      { text: '🌿 Perimenopause', cls: 'h-pill--pu' },
-      { text: '🌡️ 3 Hot Flashes', cls: 'h-pill--or' },
-      { text: '📍 London', cls: 'h-pill--ol' },
-    ],
-    quickActions: [
-      { emoji: '🌡️', label: 'Log Symptoms', id: 'symptoms' },
-      { emoji: '💤', label: 'Track Sleep', id: 'sleep' },
-      { emoji: '🧘', label: 'Wellness', id: 'wellness' },
-      { emoji: '🤖', label: 'Ask AI', id: 'chat' },
-    ],
-    alert: {
-      title: 'Sleep Quality Dip Noticed',
-      body: 'You logged fewer than 6 hours of sleep 3 nights this week.',
-    },
-    illoSrc: '/menopause.png',
+  {
+    occasion: 'Postpartum body',
+    items: ['Empire waist tops (hide tummy)', 'Ruched sides (adjusts with body)', 'A-line skirts'],
+    tip: "Your body is still changing. Shop second-hand or rent — don't invest heavily yet.",
+    emoji: '💐',
   },
-  nursing: {
-    greeting: name => `GOOD MORNING, ${name} 🍼`,
-    heroTitle: "Your baby is 8 weeks old today — you're both doing great",
-    heroBody: 'At 8 weeks, babies begin social smiling. Keep feeding on demand; your supply is building.',
-    actionChips: ['🍼 Log feed', '💧 Drink water', '😴 Rest when baby rests'],
-    pills: [
-      { text: '🍼 Baby: 8 weeks', cls: 'h-pill--pu' },
-      { text: '🌟 4 feeds today', cls: 'h-pill--gr' },
-      { text: '📍 London', cls: 'h-pill--ol' },
-    ],
-    quickActions: [
-      { emoji: '🍼', label: 'Log Feed', id: 'feeds' },
-      { emoji: '💊', label: 'Add Vitals', id: 'vitals' },
-      { emoji: '🍊', label: 'Meal Log', id: 'nutrition' },
-      { emoji: '🤖', label: 'Ask AI', id: 'chat' },
-    ],
-    alert: {
-      title: 'Postpartum Check-In',
-      body: 'Your 6-week postnatal check is overdue.',
-    },
-    illoSrc: '/nursing.png',
-  },
+];
+
+/* ── Sleep tips ── */
+const SLEEP_TIPS = [
+  'Sleep when baby sleeps — even 20 minutes counts.',
+  'Ask your partner to take one night feed with expressed milk.',
+  'White noise helps extend sleep cycles for newborns.',
+  'Put baby down drowsy but awake from 6–8 weeks to build self-settling.',
+  'Room temperature 16–20°C is optimal for safe baby sleep.',
+];
+
+/* ── AI Sleep/Wake Predictor ── */
+const predictNextSleep = (sleepLog, babyWeeks) => {
+  if (sleepLog.length < 2) {
+    return {
+      nextSleepWindow: 'No enough data yet — keep logging sleep for AI predictions',
+      recommendedWakeWindow: babyWeeks < 4 ? '45–60 min' : babyWeeks < 8 ? '60–90 min' : '90–120 min',
+      confidence: 'low'
+    };
+  }
+  
+  const avgSleepDuration = sleepLog.slice(0, 5).reduce((sum, s) => sum + s.duration, 0) / Math.min(sleepLog.length, 5);
+  const avgMinutes = Math.round(avgSleepDuration / 60);
+  
+  let wakeWindow;
+  if (babyWeeks < 4) wakeWindow = '45–60 min';
+  else if (babyWeeks < 8) wakeWindow = '60–90 min';
+  else if (babyWeeks < 16) wakeWindow = '75–105 min';
+  else wakeWindow = '90–120 min';
+  
+  const nextSleepIn = avgMinutes > 45 ? '20–30 min' : '30–45 min';
+  
+  return {
+    nextSleepWindow: `Based on ${Math.min(sleepLog.length, 5)} sessions, baby typically sleeps ${avgMinutes} minutes. Next sleep likely in ${nextSleepIn}.`,
+    recommendedWakeWindow: wakeWindow,
+    confidence: sleepLog.length > 10 ? 'high' : sleepLog.length > 5 ? 'medium' : 'low'
+  };
 };
 
-/* ── Moods ── */
-const MOODS = [
-  { emoji: '😌', label: 'Calm', v: 4 },
-  { emoji: '😄', label: 'Happy', v: 5 },
-  { emoji: '😊', label: 'Content', v: 3 },
-  { emoji: '😕', label: 'Low', v: 2 },
-  { emoji: '😰', label: 'Anxious', v: 1 },
-];
+export default function Nursing() {
+  const { babyAgeDays } = useApp();
+  const babyWeeks = babyAgeDays ? Math.floor(babyAgeDays / 7) : 8;
 
-const HOSPITALS = [
-  { name: "King's College Hospital NHS Foundation Trust", addr: '0.8 km · Open 24hrs · Maternity & Women\'s Health' },
-  { name: 'St Thomas\' Hospital – Guy\'s and St Thomas\' NHS', addr: '2.1 km · Specialist obstetrics & gynaecology' },
-];
-
-/* ── Main Component ── */
-export default function Home({ setTab }) {
-  const { 
-    journeyType, 
-    userName = 'ADAEZE', 
-    setShowSOS,
-    getCurrentWeek,
-    getTrimester,
-    babyAgeDays
-  } = useApp();
-  
-  const [mood, setMood] = useState(null);
-  
-  const [bpSys, setBpSys] = useState(() => Number(localStorage.getItem('bpSys')) || 118);
-  const [bpDia, setBpDia] = useState(() => Number(localStorage.getItem('bpDia')) || 76);
-  const [bleeding, setBleeding] = useState(() => localStorage.getItem('bleeding') || "none");
-  const [fetalMovement, setFetalMovement] = useState(() => localStorage.getItem('fetalMovement') || "normal");
-  const [showVitalsCard, setShowVitalsCard] = useState(false);
+  /* ── Feed timer ── */
+  const [feedSide, setFeedSide]     = useState('left');
+  const [feedActive, setFeedActive] = useState(false);
+  const [feedSecs, setFeedSecs]     = useState(0);
+  const [feedLog, setFeedLog]       = useState(() => {
+    try { return JSON.parse(localStorage.getItem('nursingFeedLog') || '[]'); } catch { return []; }
+  });
+  const feedRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem('bpSys', bpSys);
-    localStorage.setItem('bpDia', bpDia);
-    localStorage.setItem('bleeding', bleeding);
-    localStorage.setItem('fetalMovement', fetalMovement);
-  }, [bpSys, bpDia, bleeding, fetalMovement]);
+    if (feedActive) {
+      feedRef.current = setInterval(() => setFeedSecs(s => s + 1), 1000);
+    } else {
+      clearInterval(feedRef.current);
+    }
+    return () => clearInterval(feedRef.current);
+  }, [feedActive]);
 
-  const currentWeek = journeyType === 'pregnant' ? getCurrentWeek() : 26;
-  const trimester = journeyType === 'pregnant' ? getTrimester() : null;
-  const babyAgeWeeks = journeyType === 'nursing' && babyAgeDays ? Math.floor(babyAgeDays / 7) : null;
+  const startFeed = side => { setFeedSide(side); setFeedSecs(0); setFeedActive(true); };
+  const stopFeed  = () => {
+    setFeedActive(false);
+    if (feedSecs > 10) {
+      const entry = { side: feedSide, duration: feedSecs, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: Date.now() };
+      const updated = [entry, ...feedLog].slice(0, 10);
+      setFeedLog(updated);
+      localStorage.setItem('nursingFeedLog', JSON.stringify(updated));
+    }
+    setFeedSecs(0);
+  };
 
-  const postnatalPhase = journeyType === 'nursing' && babyAgeDays 
-    ? (babyAgeDays <= 14 ? 'days1_14' : babyAgeDays <= 42 ? 'weeks2_6' : 'weeks6_plus')
-    : null;
+  const lastFeed    = feedLog[0];
+  const todayFeeds  = feedLog.filter(f => new Date(f.id).toDateString() === new Date().toDateString()).length;
+  const nextSide    = lastFeed?.side === 'left' ? 'RIGHT' : 'LEFT';
 
-  // Normalize journey type
-  const normalizedType = 
-    journeyType === 'ttc' ? 'conceive' :
-    journeyType === 'nursing' ? 'mom' : journeyType;
+  /* ── Pump timer ── */
+  const [pumpActive, setPumpActive] = useState(false);
+  const [pumpSecs, setPumpSecs]     = useState(0);
+  const [pumpLog, setPumpLog]       = useState(() => {
+    try { return JSON.parse(localStorage.getItem('nursingPumpLog') || '[]'); } catch { return []; }
+  });
+  const pumpRef = useRef(null);
 
-  const cfg = JOURNEY_CONFIG[normalizedType] || JOURNEY_CONFIG.pregnant;
-  const home = JOURNEY_HOME_CONFIG[journeyType] || JOURNEY_HOME_CONFIG.pregnant;
+  useEffect(() => {
+    if (pumpActive) {
+      pumpRef.current = setInterval(() => setPumpSecs(s => s + 1), 1000);
+    } else {
+      clearInterval(pumpRef.current);
+    }
+    return () => clearInterval(pumpRef.current);
+  }, [pumpActive]);
 
-  const [tasks, setTasks] = useState(
-    Object.fromEntries((cfg.taskIds || []).map(id => [id, false]))
-  );
+  const stopPump = () => {
+    setPumpActive(false);
+    if (pumpSecs > 10) {
+      const entry = { duration: pumpSecs, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: Date.now() };
+      const updated = [entry, ...pumpLog].slice(0, 10);
+      setPumpLog(updated);
+      localStorage.setItem('nursingPumpLog', JSON.stringify(updated));
+    }
+    setPumpSecs(0);
+  };
 
-  const todayTasks = ALL_TASKS.filter(t => cfg.taskIds?.includes(t.id));
-  const done = todayTasks.filter(t => tasks[t.id]).length;
-  const pct = todayTasks.length > 0 ? Math.round((done / todayTasks.length) * 100) : 0;
-  
-  const hasEmergency = (bpSys >= 160 || bpDia >= 110) || 
-                       (currentWeek >= 24 && (fetalMovement === "reduced" || fetalMovement === "none")) ||
-                       bleeding === "heavy";
+  /* ── Poop scanner ── */
+  const [poopSelected, setPoopSelected] = useState(null);
+  const [poopLogged, setPoopLogged]     = useState(false);
+
+  const logPoop = () => {
+    if (!poopSelected) return;
+    setPoopLogged(true);
+    setTimeout(() => setPoopLogged(false), 3000);
+  };
+
+  /* ── Sleep pattern ── */
+  const [sleepActive, setSleepActive]   = useState(false);
+  const [sleepStart, setSleepStart]     = useState(null);
+  const [sleepSecs, setSleepSecs]       = useState(0);
+  const [sleepLog, setSleepLog]         = useState(() => {
+    try { return JSON.parse(localStorage.getItem('nursingSleepLog') || '[]'); } catch { return []; }
+  });
+  const sleepRef = useRef(null);
+
+  useEffect(() => {
+    if (sleepActive) {
+      sleepRef.current = setInterval(() => setSleepSecs(s => s + 1), 1000);
+    } else {
+      clearInterval(sleepRef.current);
+    }
+    return () => clearInterval(sleepRef.current);
+  }, [sleepActive]);
+
+  const startSleep = () => { setSleepActive(true); setSleepStart(Date.now()); setSleepSecs(0); };
+  const stopSleep  = () => {
+    setSleepActive(false);
+    if (sleepSecs > 30) {
+      const entry = {
+        duration: sleepSecs,
+        start: new Date(sleepStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        end: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        id: Date.now(),
+      };
+      const updated = [entry, ...sleepLog].slice(0, 14);
+      setSleepLog(updated);
+      localStorage.setItem('nursingSleepLog', JSON.stringify(updated));
+    }
+    setSleepSecs(0);
+  };
+
+  const totalSleepToday = sleepLog
+    .filter(s => new Date(s.id).toDateString() === new Date().toDateString())
+    .reduce((sum, s) => sum + s.duration, 0);
+
+  const avgSleepPerSession = sleepLog.length
+    ? Math.round(sleepLog.slice(0, 5).reduce((s, e) => s + e.duration, 0) / Math.min(sleepLog.length, 5))
+    : 0;
+
+  /* ── Baby Weight Tracker ── */
+  const [babyWeight, setBabyWeight] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('babyWeightLog') || '[]'); } catch { return []; }
+  });
+  const [weightInput, setWeightInput] = useState('');
+  const [weightUnit, setWeightUnit] = useState('kg');
+
+  const addWeight = () => {
+    if (!weightInput) return;
+    const weightNum = parseFloat(weightInput);
+    if (isNaN(weightNum)) return;
+    
+    const entry = {
+      weight: weightNum,
+      unit: weightUnit,
+      date: new Date().toISOString(),
+      ageDays: babyAgeDays,
+      id: Date.now()
+    };
+    const updated = [entry, ...babyWeight].slice(0, 20);
+    setBabyWeight(updated);
+    localStorage.setItem('babyWeightLog', JSON.stringify(updated));
+    setWeightInput('');
+  };
+
+  const getWeightPercentile = (weight, unit) => {
+    const weightKg = unit === 'kg' ? weight : weight * 0.453592;
+    if (babyWeeks < 2) {
+      if (weightKg < 2.5) return 'below 1st percentile — contact healthcare provider';
+      if (weightKg < 2.8) return '5th percentile — small but often healthy';
+      if (weightKg < 3.2) return '25th percentile';
+      if (weightKg < 3.6) return '50th percentile (average)';
+      if (weightKg < 4.0) return '75th percentile';
+      return 'above 90th percentile — growing beautifully!';
+    }
+    return null;
+  };
+
+  /* ── Immunisation Tracker ── */
+  const [nextImmunisation, setNextImmunisation] = useState(() => {
+    try { return localStorage.getItem('nextImmunisationDate') || ''; } catch { return ''; }
+  });
+  const [immunisationNotes, setImmunisationNotes] = useState(() => {
+    try { return localStorage.getItem('immunisationNotes') || ''; } catch { return ''; }
+  });
+  const [showImmunisationInput, setShowImmunisationInput] = useState(!nextImmunisation);
+
+  const saveImmunisation = () => {
+    localStorage.setItem('nextImmunisationDate', nextImmunisation);
+    localStorage.setItem('immunisationNotes', immunisationNotes);
+    setShowImmunisationInput(false);
+  };
+
+  const getDaysUntilImmunisation = () => {
+    if (!nextImmunisation) return null;
+    const today = new Date();
+    const target = new Date(nextImmunisation);
+    const diffTime = target - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const daysUntilVaccine = getDaysUntilImmunisation();
+
+  /* ── AI Sleep Predictor ── */
+  const sleepPrediction = predictNextSleep(sleepLog, babyWeeks);
+
+  /* ── Outfit tab ── */
+  const [outfitTab, setOutfitTab] = useState(0);
 
   return (
-    <div className="h-root">
-      <EmergencyRedFlags 
-        bpSys={bpSys}
-        bpDia={bpDia}
-        bleeding={bleeding}
-        fetalMovement={fetalMovement}
-        week={currentWeek}
-      />
+    <div className="page-pad">
+      <SectionTitle title="🤱 Nursing Centre" subtitle={`Week ${babyWeeks} postpartum`} />
 
-      <div className="h-pills">
-        {home.pills.map((p, i) => (
-          <span key={i} className={`h-pill ${p.cls}`}>{p.text}</span>
-        ))}
-      </div>
+      {/* ── FEEDING TIMER ── */}
+      <WCard>
+        <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--dp)', marginBottom: 'var(--sp-3)' }}>
+          🍼 Feeding Timer
+        </p>
 
-      <div className="h-card h-cal-card">
-        <CalendarStrip />
-      </div>
-
-      <GlowCard 
-        journeyType={journeyType === 'nursing' ? 'postpartum' : journeyType}
-        trimester={trimester}
-        postnatalDay={babyAgeDays}
-        postnatalPhase={postnatalPhase} 
-        cycleDay={{ isFertile: false }} 
-      />
-
-      <div className="h-card h-hero-card">
-        <div className="h-hero-l">
-          <p className="h-eyebrow">{home.greeting(userName.toUpperCase())}</p>
-          <p className="h-hero-title">{home.heroTitle}</p>
-          <p className="h-hero-body">{home.heroBody}</p>
-          <div className="h-action-pills">
-            {home.actionChips.map((chip, i) => (
-              <span key={i} className="h-ap">{chip}</span>
+        {feedActive ? (
+          <div style={{ textAlign: 'center', marginBottom: 'var(--sp-4)' }}>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', fontWeight: 600, marginBottom: 4 }}>
+              {feedSide.toUpperCase()} BREAST · FEEDING
+            </p>
+            <p style={{ fontSize: 'clamp(40px,10vw,56px)', fontWeight: 900, color: 'var(--t)', lineHeight: 1 }}>
+              {fmt(feedSecs)}
+            </p>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', marginTop: 4 }}>
+              Aim: 10–20 min per side
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 'var(--gap-md)', marginBottom: 'var(--sp-3)' }}>
+            {['left', 'right'].map(side => (
+              <button
+                key={side}
+                onClick={() => startFeed(side)}
+                style={{
+                  flex: 1, padding: 'var(--sp-3)',
+                  background: side === 'left' ? 'var(--t)' : 'var(--sg)',
+                  color: '#fff', border: 'none', borderRadius: 'var(--r)',
+                  fontSize: 'var(--fs-sm)', fontWeight: 800, cursor: 'pointer',
+                  minHeight: 'var(--touch)',
+                }}
+              >
+                {side === 'left' ? '◀ Left' : 'Right ▶'}
+              </button>
             ))}
           </div>
-        </div>
-        <div className="h-hero-illo">
-          <HeroIllo src={home.illoSrc} />
-        </div>
-      </div>
+        )}
 
-      {/* ==================== FULL VITALS CARD ==================== */}
-      <div className="h-card" style={{ marginBottom: "var(--gap-md)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <p className="h-slabel" style={{ margin: 0 }}>🩺 LOG YOUR VITALS</p>
-          <button 
-            onClick={() => setShowVitalsCard(!showVitalsCard)}
-            style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer" }}
+        {feedActive && (
+          <button
+            onClick={stopFeed}
+            style={{ width: '100%', padding: 'var(--sp-3)', background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer' }}
           >
-            {showVitalsCard ? '−' : '+'}
+            ⏹ Stop & Save
           </button>
-        </div>
-        
-        {showVitalsCard && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
-              <label style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--dp)", marginBottom: 8, display: "block" }}>
-                Blood Pressure (mmHg)
-              </label>
-              <div style={{ display: "flex", gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <input
-                    type="number"
-                    value={bpSys}
-                    onChange={(e) => setBpSys(Number(e.target.value))}
-                    style={{ width: "100%", padding: "var(--sp-3)", borderRadius: "var(--r)", border: "1px solid var(--border)", fontSize: "var(--fs-base)", background: "var(--bg)" }}
-                  />
-                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>Systolic (top)</span>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <input
-                    type="number"
-                    value={bpDia}
-                    onChange={(e) => setBpDia(Number(e.target.value))}
-                    style={{ width: "100%", padding: "var(--sp-3)", borderRadius: "var(--r)", border: "1px solid var(--border)", fontSize: "var(--fs-base)", background: "var(--bg)" }}
-                  />
-                  <span style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>Diastolic (bottom)</span>
-                </div>
-              </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--gap-sm)', marginTop: 'var(--sp-3)' }}>
+          {[
+            { v: todayFeeds,              l: 'Feeds today' },
+            { v: lastFeed ? fmt(lastFeed.duration) : '--', l: 'Last feed' },
+            { v: `Start ${nextSide}`,     l: 'Next side' },
+          ].map((s, i) => (
+            <div key={i} style={{ background: 'var(--warm)', borderRadius: 'var(--r)', padding: 'var(--sp-2)', textAlign: 'center' }}>
+              <p style={{ fontWeight: 900, fontSize: 'var(--fs-md)', color: 'var(--dp)' }}>{s.v}</p>
+              <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mt)', marginTop: 2 }}>{s.l}</p>
             </div>
-            
-            {(journeyType === 'pregnant' || journeyType === 'nursing') && (
-              <div>
-                <label style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--dp)", marginBottom: 8, display: "block" }}>
-                  Vaginal Bleeding
-                </label>
-                <div style={{ display: "flex", gap: 12 }}>
-                  {["none", "light", "moderate", "heavy"].map(option => (
-                    <button
-                      key={option}
-                      onClick={() => setBleeding(option)}
-                      style={{
-                        flex: 1,
-                        padding: "var(--sp-2)",
-                        borderRadius: "var(--r)",
-                        background: bleeding === option ? "var(--sg)" : "var(--warm)",
-                        color: bleeding === option ? "#fff" : "var(--md)",
-                        border: "none",
-                        cursor: "pointer",
-                        fontSize: "var(--fs-sm)",
-                        textTransform: "capitalize"
-                      }}
-                    >
-                      {option}
-                    </button>
-                  ))}
-                </div>
+          ))}
+        </div>
+
+        {feedLog.length > 0 && (
+          <div style={{ marginTop: 'var(--sp-3)' }}>
+            <p style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--mt)', marginBottom: 'var(--sp-2)' }}>RECENT FEEDS</p>
+            {feedLog.slice(0, 4).map(f => (
+              <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 'var(--fs-xs)' }}>
+                <span style={{ color: 'var(--dp)', fontWeight: 600 }}>{f.side === 'left' ? '◀ Left' : 'Right ▶'}</span>
+                <span style={{ color: 'var(--mt)' }}>{fmt(f.duration)} · {f.time}</span>
               </div>
-            )}
-            
-            {journeyType === 'pregnant' && currentWeek >= 24 && (
-              <div>
-                <label style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--dp)", marginBottom: 8, display: "block" }}>
-                  Fetal Movement
-                </label>
-                <div style={{ display: "flex", gap: 12 }}>
-                  {[
-                    { value: "normal", label: "✓ Normal" },
-                    { value: "reduced", label: "⚠️ Reduced" },
-                    { value: "none", label: "🚨 None" }
-                  ].map(option => (
-                    <button
-                      key={option.value}
-                      onClick={() => setFetalMovement(option.value)}
-                      style={{
-                        flex: 1,
-                        padding: "var(--sp-2)",
-                        borderRadius: "var(--r)",
-                        background: fetalMovement === option.value ? "var(--sg)" : "var(--warm)",
-                        color: fetalMovement === option.value ? "#fff" : "var(--md)",
-                        border: "none",
-                        cursor: "pointer",
-                        fontSize: "var(--fs-sm)"
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            
-            <button
-              onClick={() => setShowVitalsCard(false)}
-              style={{ padding: "var(--sp-2)", background: "var(--t)", color: "#fff", border: "none", borderRadius: "var(--r)", cursor: "pointer", marginTop: 8 }}
+            ))}
+          </div>
+        )}
+      </WCard>
+
+      {/* ── BABY WEIGHT TRACKER ── */}
+      <WCard style={{ background: 'linear-gradient(135deg, #E8F5E9, #F1F8E9)', border: '1px solid #A5D6A744' }}>
+        <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: '#2E7D32', marginBottom: 'var(--sp-3)' }}>
+          ⚖️ Baby Weight Tracker
+        </p>
+        
+        <div style={{ marginBottom: 'var(--sp-3)' }}>
+          <div style={{ display: 'flex', gap: 'var(--gap-sm)', marginBottom: 'var(--sp-2)', flexWrap: 'wrap' }}>
+            <input
+              type="number"
+              step="0.01"
+              placeholder={`Weight in ${weightUnit}`}
+              value={weightInput}
+              onChange={(e) => setWeightInput(e.target.value)}
+              style={{
+                flex: 2,
+                padding: 'var(--sp-2) var(--sp-3)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r)',
+                fontSize: 'var(--fs-sm)',
+                minHeight: 'var(--touch)',
+              }}
+            />
+            <select
+              value={weightUnit}
+              onChange={(e) => setWeightUnit(e.target.value)}
+              style={{
+                padding: 'var(--sp-2) var(--sp-3)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--r)',
+                fontSize: 'var(--fs-sm)',
+                background: 'white',
+              }}
             >
-              Save Changes
+              <option value="kg">kg</option>
+              <option value="lb">lb</option>
+            </select>
+            <button
+              onClick={addWeight}
+              style={{
+                padding: 'var(--sp-2) var(--sp-4)',
+                background: '#2E7D32',
+                color: 'white',
+                border: 'none',
+                borderRadius: 'var(--r)',
+                fontWeight: 700,
+                cursor: 'pointer',
+                minHeight: 'var(--touch)',
+              }}
+            >
+              Log Weight
             </button>
           </div>
-        )}
-        
-        {!showVitalsCard && (
-          <div style={{ display: "flex", gap: 16, fontSize: "var(--fs-xs)", color: "var(--mt)" }}>
-            <span>💓 BP: {bpSys}/{bpDia}</span>
-            {(journeyType === 'pregnant' || journeyType === 'nursing') && (
-              <span>🩸 Bleeding: {bleeding}</span>
-            )}
-            {journeyType === 'pregnant' && currentWeek >= 24 && (
-              <span>👶 Movement: {fetalMovement}</span>
-            )}
-          </div>
-        )}
-      </div>
-
-      {hasEmergency && (
-        <div className="h-card" style={{ background: "var(--rdl)", border: "2px solid var(--rd)", marginBottom: "var(--gap-md)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)" }}>
-            <div style={{ fontSize: 32 }}>🚨</div>
+          
+          {babyWeight.length > 0 && (
             <div>
-              <p style={{ fontWeight: 800, color: "var(--rd)", marginBottom: 4 }}>Urgent Medical Attention Needed</p>
-              <p style={{ fontSize: "var(--fs-sm)", color: "var(--md)" }}>
-                Please check the emergency alerts above and contact your healthcare provider immediately.
+              <p style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: '#2E7D32', marginBottom: 'var(--sp-2)' }}>
+                RECENT WEIGHTS {babyWeight[0] && `(Most recent: ${babyWeight[0].weight} ${babyWeight[0].unit})`}
               </p>
-              <button 
-                onClick={() => setShowSOS(true)}
-                style={{ marginTop: 8, background: "var(--rd)", color: "#fff", border: "none", borderRadius: 20, padding: "6px 16px", cursor: "pointer" }}
+              <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+                {babyWeight.slice(0, 6).map(w => {
+                  const percentile = getWeightPercentile(w.weight, w.unit);
+                  return (
+                    <div key={w.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 'var(--fs-xs)' }}>
+                      <span style={{ color: 'var(--dp)', fontWeight: 600 }}>{w.weight} {w.unit}</span>
+                      <span style={{ color: 'var(--mt)' }}>{new Date(w.date).toLocaleDateString()}</span>
+                      {percentile && <span style={{ fontSize: 'var(--fs-2xs)', color: '#2E7D32' }}>{percentile.substring(0, 30)}</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+        
+        <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 'var(--r)', padding: 'var(--sp-2)' }}>
+          <p style={{ fontSize: 'var(--fs-2xs)', color: '#555', lineHeight: 1.5 }}>
+            💡 Newborns typically regain birth weight by day 10-14, then gain 150-200g (5-7oz) per week in first 3 months.
+          </p>
+        </div>
+      </WCard>
+
+      {/* ── IMMUNISATION TRACKER ── */}
+      <WCard style={{ background: 'linear-gradient(135deg, #E3F2FD, #E8EAF6)', border: '1px solid #90CAF944' }}>
+        <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: '#1565C0', marginBottom: 'var(--sp-3)' }}>
+          💉 Immunisation Schedule
+        </p>
+        
+        {showImmunisationInput ? (
+          <div>
+            <div style={{ marginBottom: 'var(--sp-2)' }}>
+              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', display: 'block', marginBottom: 4 }}>Next immunisation date</label>
+              <input
+                type="date"
+                value={nextImmunisation}
+                onChange={(e) => setNextImmunisation(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: 'var(--sp-2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--r)',
+                  fontSize: 'var(--fs-sm)',
+                  marginBottom: 'var(--sp-2)',
+                }}
+              />
+            </div>
+            <div style={{ marginBottom: 'var(--sp-3)' }}>
+              <label style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', display: 'block', marginBottom: 4 }}>Notes / reminders</label>
+              <textarea
+                value={immunisationNotes}
+                onChange={(e) => setImmunisationNotes(e.target.value)}
+                placeholder="e.g., Bring red book, paracetamol dosage, ask about rotavirus vaccine..."
+                rows={2}
+                style={{
+                  width: '100%',
+                  padding: 'var(--sp-2)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--r)',
+                  fontSize: 'var(--fs-sm)',
+                  resize: 'vertical',
+                }}
+              />
+            </div>
+            <button
+              onClick={saveImmunisation}
+              style={{
+                width: '100%',
+                padding: 'var(--sp-2)',
+                background: '#1565C0',
+                color: 'white',
+                border: 'none',
+                borderRadius: 'var(--r)',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Save Schedule
+            </button>
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-2)', flexWrap: 'wrap', gap: 'var(--gap-sm)' }}>
+              <div>
+                {daysUntilVaccine !== null && (
+                  <div>
+                    <p style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: daysUntilVaccine <= 7 ? '#D32F2F' : daysUntilVaccine <= 14 ? '#F57C00' : '#1565C0' }}>
+                      {daysUntilVaccine <= 0 
+                        ? '📅 Immunisation due or overdue — contact your GP' 
+                        : `📅 Next immunisation in ${daysUntilVaccine} day${daysUntilVaccine !== 1 ? 's' : ''}`
+                      }
+                    </p>
+                    <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)' }}>
+                      Date: {new Date(nextImmunisation).toLocaleDateString()}
+                    </p>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setShowImmunisationInput(true)}
+                style={{
+                  padding: 'var(--sp-1) var(--sp-3)',
+                  background: 'transparent',
+                  border: '1px solid #1565C0',
+                  borderRadius: 'var(--r)',
+                  color: '#1565C0',
+                  cursor: 'pointer',
+                  fontSize: 'var(--fs-xs)',
+                }}
               >
-                Call Emergency Services
+                Edit
               </button>
             </div>
+            {immunisationNotes && (
+              <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 'var(--r)', padding: 'var(--sp-2)', marginTop: 'var(--sp-2)' }}>
+                <p style={{ fontSize: 'var(--fs-2xs)', color: '#555' }}>📝 {immunisationNotes}</p>
+              </div>
+            )}
           </div>
+        )}
+        
+        <div style={{ marginTop: 'var(--sp-3)', background: 'rgba(255,255,255,0.5)', borderRadius: 'var(--r)', padding: 'var(--sp-2)' }}>
+          <p style={{ fontSize: 'var(--fs-2xs)', color: '#555', lineHeight: 1.5 }}>
+            🗓️ Typical schedule: 8 weeks (6-in-1, MenB, Rotavirus), 12 weeks (6-in-1 #2, Pneumococcal), 16 weeks (6-in-1 #3, MenB #2).
+          </p>
         </div>
-      )}
+      </WCard>
 
-      <div className="h-card">
-        <p className="h-slabel">HOW ARE YOU FEELING?</p>
-        <div className="h-mood-row">
-          {MOODS.map(m => (
+      {/* ── BREAST PUMP TIMER ── */}
+      <WCard style={{ background: 'linear-gradient(135deg, var(--lvl), #F8F6FE)', border: '1px solid var(--lvm)33' }}>
+        <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--lv)', marginBottom: 'var(--sp-3)' }}>
+          🫙 Breast Pump Timer
+        </p>
+
+        {pumpActive ? (
+          <div style={{ textAlign: 'center', marginBottom: 'var(--sp-4)' }}>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--lv)', fontWeight: 700, marginBottom: 4 }}>PUMPING IN PROGRESS</p>
+            <p style={{ fontSize: 'clamp(40px,10vw,56px)', fontWeight: 900, color: 'var(--lv)', lineHeight: 1 }}>
+              {fmt(pumpSecs)}
+            </p>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', marginTop: 4 }}>
+              Recommended: 15–20 min per session
+            </p>
+          </div>
+        ) : (
+          <button
+            onClick={() => { setPumpActive(true); setPumpSecs(0); }}
+            style={{ width: '100%', padding: 'var(--sp-3)', background: 'var(--lv)', color: '#fff', border: 'none', borderRadius: 'var(--r)', fontSize: 'var(--fs-md)', fontWeight: 800, cursor: 'pointer', marginBottom: 'var(--sp-3)' }}
+          >
+            ▶ Start Pumping Session
+          </button>
+        )}
+
+        {pumpActive && (
+          <button
+            onClick={stopPump}
+            style={{ width: '100%', padding: 'var(--sp-3)', background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', marginBottom: 'var(--sp-3)' }}
+          >
+            ⏹ Stop & Save
+          </button>
+        )}
+
+        <div style={{ background: 'rgba(255,255,255,0.6)', borderRadius: 'var(--r)', padding: 'var(--sp-3)' }}>
+          <p style={{ fontSize: 'var(--fs-xs)', fontWeight: 800, color: 'var(--lv)', marginBottom: 'var(--sp-2)' }}>🤖 AI PUMP TIPS</p>
+          {[
+            'Best time: 30–60 min after morning feed when supply is highest.',
+            'Pump every 2–3 hrs to signal supply if baby is not latching.',
+            'Warm compress before pumping increases output by up to 30%.',
+          ].map((tip, i) => (
+            <p key={i} style={{ fontSize: 'var(--fs-xs)', color: 'var(--md)', lineHeight: 1.6, marginBottom: 4 }}>· {tip}</p>
+          ))}
+        </div>
+
+        {pumpLog.length > 0 && (
+          <div style={{ marginTop: 'var(--sp-3)' }}>
+            <p style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--mt)', marginBottom: 'var(--sp-2)' }}>RECENT SESSIONS</p>
+            {pumpLog.slice(0, 3).map(p => (
+              <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 'var(--fs-xs)' }}>
+                <span style={{ color: 'var(--dp)', fontWeight: 600 }}>🫙 Session</span>
+                <span style={{ color: 'var(--mt)' }}>{fmt(p.duration)} · {p.time}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </WCard>
+
+      {/* ── POOP SCANNER ── */}
+      <WCard>
+        <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--dp)', marginBottom: 4 }}>
+          💩 Poop Colour Scanner
+        </p>
+        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', marginBottom: 'var(--sp-3)', lineHeight: 1.5 }}>
+          Select the closest colour to what you see. Each colour tells you something different about baby's health.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--gap-sm)', marginBottom: 'var(--sp-3)' }}>
+          {POOP_COLORS.map(c => (
             <button
-              key={m.v}
-              className={`h-mood-btn${mood?.v === m.v ? ' h-mood-btn--on' : ''}`}
-              onClick={() => setMood(m)}
+              key={c.id}
+              onClick={() => setPoopSelected(c)}
+              style={{
+                padding: 'var(--sp-2) var(--sp-3)',
+                borderRadius: 'var(--r)',
+                border: `2px solid ${poopSelected?.id === c.id ? (c.status === 'urgent' ? 'var(--rd)' : c.status === 'watch' ? 'var(--gd)' : 'var(--sg)') : 'var(--border)'}`,
+                background: poopSelected?.id === c.id ? (c.status === 'urgent' ? 'var(--rdl)' : c.status === 'watch' ? 'var(--gdl)' : 'var(--sgl)') : 'var(--warm)',
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex', alignItems: 'center', gap: 8,
+              }}
             >
-              <span className="h-mood-em">{m.emoji}</span>
+              <span style={{ fontSize: 20 }}>{c.emoji}</span>
+              <span style={{ fontSize: 'var(--fs-xs)', fontWeight: 600, color: 'var(--dp)', lineHeight: 1.3 }}>{c.label}</span>
             </button>
           ))}
         </div>
-        {mood && (
-          <p className="h-mood-fb">
-            Feeling {mood.label} today · 3 day streak 🔥
-          </p>
-        )}
-      </div>
 
-      <div className="h-two-col">
-        <div className="h-card h-prog-card">
-          <div className="h-prog-top">
-            <p className="h-slabel" style={{ margin: 0 }}>DAILY PROGRESS</p>
-            <span className="h-pct">{pct}%</span>
+        {poopSelected && (
+          <div style={{
+            borderRadius: 'var(--r)', padding: 'var(--sp-3)',
+            background: poopSelected.status === 'urgent' ? 'var(--rdl)' : poopSelected.status === 'watch' ? 'var(--gdl)' : 'var(--sgl)',
+            border: `1px solid ${poopSelected.status === 'urgent' ? 'var(--rd)' : poopSelected.status === 'watch' ? 'var(--gd)' : 'var(--sg)'}44`,
+            marginBottom: 'var(--sp-3)',
+          }}>
+            <p style={{ fontWeight: 800, fontSize: 'var(--fs-sm)', color: poopSelected.status === 'urgent' ? 'var(--rd)' : poopSelected.status === 'watch' ? 'var(--gd)' : 'var(--sg)', marginBottom: 4 }}>
+              {poopSelected.status === 'urgent' ? '🚨 Seek Medical Advice' : poopSelected.status === 'watch' ? '⚠️ Monitor Closely' : '✅ Normal'}
+            </p>
+            <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--md)', lineHeight: 1.6 }}>{poopSelected.msg}</p>
           </div>
-          <div className="h-bar-bg">
-            <div className="h-bar-fill" style={{ width: `${pct}%` }} />
+        )}
+
+        <button
+          onClick={logPoop}
+          disabled={!poopSelected}
+          style={{ width: '100%', padding: 'var(--sp-2)', background: poopSelected ? 'var(--dp)' : 'var(--border)', color: '#fff', border: 'none', borderRadius: 'var(--r)', cursor: poopSelected ? 'pointer' : 'default', fontWeight: 700 }}
+        >
+          {poopLogged ? '✓ Logged!' : 'Log This Nappy'}
+        </button>
+      </WCard>
+
+      {/* ── SLEEP PATTERN TRACKER + AI PREDICTOR ── */}
+      <WCard style={{ background: 'linear-gradient(135deg,#EEF2FF,#F8F6FE)', border: '1px solid #C7D2FE44' }}>
+        <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: '#4338CA', marginBottom: 'var(--sp-3)' }}>
+          😴 Sleep Pattern Tracker
+        </p>
+
+        {sleepActive ? (
+          <div style={{ textAlign: 'center', marginBottom: 'var(--sp-4)' }}>
+            <p style={{ fontSize: 'var(--fs-xs)', color: '#4338CA', fontWeight: 700, marginBottom: 4 }}>BABY SLEEPING NOW</p>
+            <p style={{ fontSize: 'clamp(40px,10vw,56px)', fontWeight: 900, color: '#4338CA', lineHeight: 1 }}>
+              {fmt(sleepSecs)}
+            </p>
           </div>
-          <div className="h-task-list">
-            {todayTasks.map(task => (
-              <div key={task.id} className="h-task-row">
-                <button
-                  className={`h-chk${tasks[task.id] ? ' h-chk--done' : ''}`}
-                  onClick={() => setTasks(t => ({ ...t, [task.id]: !t[task.id] }))}
-                >
-                  {tasks[task.id] && '✓'}
-                </button>
-                <span className={`h-task-lbl${tasks[task.id] ? ' h-task-lbl--done' : ''}`}>
-                  {task.title}
-                </span>
+        ) : (
+          <button
+            onClick={startSleep}
+            style={{ width: '100%', padding: 'var(--sp-3)', background: '#4338CA', color: '#fff', border: 'none', borderRadius: 'var(--r)', fontSize: 'var(--fs-md)', fontWeight: 800, cursor: 'pointer', marginBottom: 'var(--sp-3)' }}
+          >
+            😴 Baby Just Fell Asleep
+          </button>
+        )}
+
+        {sleepActive && (
+          <button
+            onClick={stopSleep}
+            style={{ width: '100%', padding: 'var(--sp-3)', background: 'var(--warm)', border: '1px solid var(--border)', borderRadius: 'var(--r)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', marginBottom: 'var(--sp-3)' }}
+          >
+            ☀️ Baby Woke Up — Stop
+          </button>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 'var(--gap-sm)', marginBottom: 'var(--sp-3)' }}>
+          {[
+            { v: `${Math.floor(totalSleepToday / 3600)}h ${Math.floor((totalSleepToday % 3600) / 60)}m`, l: 'Total today' },
+            { v: sleepLog.length ? `${Math.floor(avgSleepPerSession / 60)}m avg` : '--',                   l: 'Avg session' },
+            { v: sleepLog.length,                                                                            l: 'Sessions logged' },
+          ].map((s, i) => (
+            <div key={i} style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 'var(--r)', padding: 'var(--sp-2)', textAlign: 'center' }}>
+              <p style={{ fontWeight: 900, fontSize: 'var(--fs-md)', color: '#4338CA' }}>{s.v}</p>
+              <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mt)', marginTop: 2 }}>{s.l}</p>
+            </div>
+          ))}
+        </div>
+
+        {sleepLog.length > 0 && (
+          <div style={{ marginBottom: 'var(--sp-3)' }}>
+            <p style={{ fontSize: 'var(--fs-xs)', fontWeight: 700, color: 'var(--mt)', marginBottom: 'var(--sp-2)' }}>RECENT SLEEP SESSIONS</p>
+            {sleepLog.slice(0, 4).map(s => (
+              <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 'var(--fs-xs)' }}>
+                <span style={{ color: 'var(--dp)', fontWeight: 600 }}>{s.start} → {s.end}</span>
+                <span style={{ color: 'var(--mt)' }}>{Math.floor(s.duration / 60)}m</span>
               </div>
             ))}
           </div>
-          <button className="h-view-all">View all progress →</button>
+        )}
+
+        {/* AI Sleep Predictor Section */}
+        <div style={{ 
+          background: sleepPrediction.confidence === 'high' ? 'linear-gradient(135deg, #4338CA, #6366F1)' : 
+                     sleepPrediction.confidence === 'medium' ? 'linear-gradient(135deg, #6366F1, #818CF8)' : 
+                     'linear-gradient(135deg, #818CF8, #A5B4FC)',
+          borderRadius: 'var(--r)', 
+          padding: 'var(--sp-3)', 
+          marginBottom: 'var(--sp-3)',
+          color: 'white'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 'var(--sp-2)' }}>
+            <span style={{ fontSize: 20 }}>🤖</span>
+            <p style={{ fontWeight: 800, fontSize: 'var(--fs-sm)' }}>AI Sleep Predictor</p>
+            {sleepPrediction.confidence === 'high' && <span style={{ fontSize: 'var(--fs-2xs)', background: 'rgba(255,255,255,0.3)', padding: '2px 6px', borderRadius: 12 }}>High confidence</span>}
+            {sleepPrediction.confidence === 'medium' && <span style={{ fontSize: 'var(--fs-2xs)', background: 'rgba(255,255,255,0.3)', padding: '2px 6px', borderRadius: 12 }}>Learning...</span>}
+          </div>
+          <p style={{ fontSize: 'var(--fs-xs)', lineHeight: 1.5, marginBottom: 8 }}>{sleepPrediction.nextSleepWindow}</p>
+          <p style={{ fontSize: 'var(--fs-xs)', lineHeight: 1.5, opacity: 0.9 }}>
+            💡 Recommended wake window: {sleepPrediction.recommendedWakeWindow}
+          </p>
         </div>
 
-        <div className="h-card h-qa-card">
-          <p className="h-slabel">QUICK ACTIONS</p>
-          <div className="h-qa-grid">
-            {home.quickActions.map(a => (
-              <button key={a.id} className="h-qa-btn" onClick={() => setTab(a.id)}>
-                <span className="h-qa-em">{a.emoji}</span>
-                <span className="h-qa-lbl">{a.label}</span>
-              </button>
-            ))}
-          </div>
+        <div style={{ background: 'rgba(255,255,255,0.6)', borderRadius: 'var(--r)', padding: 'var(--sp-3)' }}>
+          <p style={{ fontSize: 'var(--fs-xs)', fontWeight: 800, color: '#4338CA', marginBottom: 'var(--sp-2)' }}>
+            💡 Week {babyWeeks} SLEEP GUIDE
+          </p>
+          {SLEEP_TIPS.slice(0, babyWeeks < 6 ? 3 : 5).map((tip, i) => (
+            <p key={i} style={{ fontSize: 'var(--fs-xs)', color: 'var(--md)', lineHeight: 1.6, marginBottom: 4 }}>· {tip}</p>
+          ))}
         </div>
-      </div>
+      </WCard>
 
-      {cfg.showAlert && home.alert && (
-        <div className="h-card h-alert">
-          <div className="h-alert-icon">
-            <AlertTriangle size={20} color="#e57c1a" strokeWidth={2} />
-          </div>
-          <div className="h-alert-body">
-            <p className="h-alert-title">{home.alert.title}</p>
-            <p className="h-alert-text">{home.alert.body}</p>
-          </div>
-          <ChevronRight size={18} color="#e57c1a" strokeWidth={2} style={{ flexShrink: 0 }} />
-        </div>
-      )}
+      {/* ── OUTFIT GUIDE ── */}
+      <WCard>
+        <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--dp)', marginBottom: 4 }}>
+          👗 Nursing Style Guide
+        </p>
+        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', marginBottom: 'var(--sp-3)' }}>
+          Stay stylish, feed with ease. You don't have to choose.
+        </p>
 
-      <div className="h-card" style={{ background: "linear-gradient(135deg, var(--lvl), #F8F6FE)" }}>
-        <p className="h-slabel">✨ PERSONALISED INSIGHT</p>
-        <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "flex-start" }}>
-          <span style={{ fontSize: 32 }}>🤖</span>
-          <div>
-            <p style={{ fontWeight: 700, marginBottom: 4 }}>
-              {journeyType === 'pregnant' && `Week ${currentWeek} - ${trimester === 1 ? 'First' : trimester === 2 ? 'Second' : 'Third'} Trimester`}
-              {journeyType === 'nursing' && `Week ${babyAgeWeeks || 1} Postpartum`}
-              {journeyType === 'ttc' && 'Fertility Tracking Active'}
-              {journeyType === 'ivf' && 'IVF Journey in Progress'}
-              {journeyType === 'menopause' && 'Menopause Support Active'}
-            </p>
-            <p style={{ fontSize: "var(--fs-sm)", color: "var(--md)" }}>
-              {journeyType === 'pregnant' && `Your baby is developing rapidly this week. Focus on ${trimester === 1 ? 'folate and rest' : trimester === 2 ? 'iron and calcium' : 'omega-3s and hydration'}.`}
-              {journeyType === 'nursing' && `Your body is still healing. Remember to rest when you can and accept help. You're doing an amazing job.`}
-              {journeyType === 'ttc' && `Track your BBT and cervical mucus daily for the most accurate ovulation prediction.`}
-              {journeyType === 'ivf' && `Stay consistent with your medications. You're doing something extraordinary.`}
-              {journeyType === 'menopause' && `Listen to your body. Some days need rest, others need movement. Both are valid.`}
-            </p>
-          </div>
+        <div style={{ display: 'flex', gap: 'var(--gap-sm)', marginBottom: 'var(--sp-3)', overflowX: 'auto', scrollbarWidth: 'none' }}>
+          {OUTFITS.map((o, i) => (
+            <button
+              key={i}
+              onClick={() => setOutfitTab(i)}
+              style={{
+                flexShrink: 0,
+                padding: '6px 14px',
+                borderRadius: 20,
+                border: `1.5px solid ${outfitTab === i ? 'var(--t)' : 'var(--border)'}`,
+                background: outfitTab === i ? 'var(--t)' : 'transparent',
+                color: outfitTab === i ? '#fff' : 'var(--mt)',
+                fontSize: 'var(--fs-xs)', fontWeight: 700, cursor: 'pointer',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {o.emoji} {o.occasion}
+            </button>
+          ))}
         </div>
-      </div>
 
-      <p className="h-slabel h-slabel--gap">NEARBY HOSPITALS</p>
-      {HOSPITALS.map((h, i) => (
-        <div key={i} className="h-card h-hosp">
-          <div className="h-hosp-icon">
-            <Hospital size={22} color="#d63a6e" strokeWidth={1.8} />
-          </div>
-          <div className="h-hosp-body">
-            <p className="h-hosp-name">{h.name}</p>
-            <p className="h-hosp-addr">{h.addr}</p>
-          </div>
-          <span className="h-open">Open</span>
-          <ChevronRight size={16} color="#ccc" strokeWidth={2} />
+        {(() => {
+          const o = OUTFITS[outfitTab];
+          return (
+            <div>
+              <div style={{ marginBottom: 'var(--sp-3)' }}>
+                {o.items.map((item, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 0', borderBottom: i < o.items.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <span style={{ fontSize: 16 }}>👚</span>
+                    <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--dp)', fontWeight: 600 }}>{item}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background: 'var(--gdl)', borderRadius: 'var(--r)', padding: 'var(--sp-3)', display: 'flex', gap: 8 }}>
+                <span style={{ fontSize: 18 }}>💡</span>
+                <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--md)', lineHeight: 1.6 }}>{o.tip}</p>
+              </div>
+            </div>
+          );
+        })()}
+
+        <div style={{ marginTop: 'var(--sp-3)', background: 'var(--sgl)', borderRadius: 'var(--r)', padding: 'var(--sp-3)' }}>
+          <p style={{ fontSize: 'var(--fs-xs)', fontWeight: 800, color: 'var(--sg)', marginBottom: 4 }}>🌟 CONFIDENCE TIP</p>
+          <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--md)', lineHeight: 1.6 }}>
+            Nursing bras with a front clasp or drop cup work under almost any outfit. Invest in 2–3 good ones — they carry your whole wardrobe.
+          </p>
         </div>
-      ))}
-      <button className="h-view-all h-view-all--ctr">View more hospitals →</button>
+      </WCard>
+
+      {/* ── MOTHER SELF-CARE ── */}
+      <WCard style={{ background: 'linear-gradient(135deg, var(--rdl), #FFF0F5)', border: '1px solid var(--rd)22' }}>
+        <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--t)', marginBottom: 'var(--sp-3)' }}>
+          💗 Don't Forget You
+        </p>
+        {[
+          { icon: '💧', title: 'Hydration', tip: 'Drink a glass of water every time you sit down to feed. You need 2.5–3L daily while nursing.' },
+          { icon: '🥗', title: 'Nutrition', tip: 'You need 400–500 extra calories. Oats, moringa, fenugreek, and fennel support milk supply.' },
+          { icon: '🧴', title: 'Nipple care', tip: 'Apply lanolin or expressed breast milk after each feed. Air-dry when possible. Seek help for persistent pain.' },
+          { icon: '🛁', title: 'Body recovery', tip: 'Sitz baths help perineal healing. Padsicles (frozen pads with aloe) ease discomfort in week 1–2.' },
+        ].map((item, i) => (
+          <div key={i} style={{ display: 'flex', gap: 'var(--gap-md)', padding: '10px 0', borderBottom: i < 3 ? '1px solid var(--border)' : 'none' }}>
+            <span style={{ fontSize: 22, flexShrink: 0 }}>{item.icon}</span>
+            <div>
+              <p style={{ fontWeight: 700, fontSize: 'var(--fs-sm)', color: 'var(--dp)', marginBottom: 2 }}>{item.title}</p>
+              <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', lineHeight: 1.6 }}>{item.tip}</p>
+            </div>
+          </div>
+        ))}
+      </WCard>
+
+      <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mt)', textAlign: 'center', padding: 'var(--sp-3)', background: 'var(--warm)', borderRadius: 'var(--r)', lineHeight: 1.6 }}>
+        ⚕️ This is general guidance, not medical advice. Always consult your midwife, GP, or lactation consultant for personal support.
+      </p>
     </div>
   );
 }
