@@ -541,7 +541,7 @@
 }
 .hm-qa-lbl {
   font-size: 16px;
-  font-weight: 400;
+  font-weight: 700;
   color: #000000;
 }
 
@@ -552,14 +552,20 @@
   border-radius: 5px;
 }
 .hm-qa-btn {
-  padding: 20px 10px;
-  border-radius: 35px;
   display: flex;
   flex-direction: column;
+  gap: 10px;
+  padding: 20px; 
+  max-width: 300px;
+  box-shadow: inset 1px 2px 2px 1px #0606060d;
+  border-radius: 40px;
+  text-align: center;
   background: #edeef2;
+  justify-content: center;
+  align-items: center;
 }
 .hm-qa-em {
-  font-size: 30px;
+  font-size: 50px;
 }
 .hm-trackers-card {
   display: flex;
