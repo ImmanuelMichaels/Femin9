@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/useApp';
 import { bloomResp } from '../../utils/helpers';
+import { saveMessage, loadChatHistory } from '../../services/chatService';
 
 const QUICK_TIPS = [
   "What to eat today?",
@@ -30,21 +31,10 @@ const CRISIS_PATTERNS = {
   ]
 };
 
-export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessages }) {
+export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessages, onUpgrade }) {
   const { userName, journeyType, getCurrentWeek, setShowSOS, subscriptionPlan } = useApp();
-  const [msgs, setMsgs] = useState(() => {
-    const saved = localStorage.getItem('chatHistory');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        return [];
-      }
-    }
-    return [
-      { role: "assistant", content: `Hi ${userName || 'mama'} 🌸 I'm Bloom, your AI companion. Ask me anything about your ${journeyType === 'pregnant' ? 'pregnancy' : journeyType === 'ttc' ? 'fertility journey' : journeyType === 'ivf' ? 'IVF treatment' : 'health'}, Nigerian foods, medications, or how you're feeling today. I understand English, Yoruba, Igbo, Hausa, and Pidgin.` }
-    ];
-  });
+  const [msgs, setMsgs] = useState([]);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [listening, setListening] = useState(false);
@@ -54,36 +44,36 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
   const inputRef = useRef(null);
   const recognitionRef = useRef(null);
 
-  // Save chat history to localStorage
+  // Load chat history from Firestore on mount
   useEffect(() => {
-    localStorage.setItem('chatHistory', JSON.stringify(msgs.slice(-50))); // Keep last 50 messages
+    const loadHistory = async () => {
+      if (!historyLoaded) {
+        const history = await loadChatHistory();
+        if (history.length > 0) {
+          setMsgs(history);
+        } else {
+          // Default welcome message
+          setMsgs([{
+            role: "assistant",
+            content: `Hi ${userName || 'mama'} 🌸 I'm Femin9, your AI companion. Ask me anything about your ${journeyType === 'pregnant' ? 'pregnancy' : journeyType === 'ttc' ? 'fertility journey' : journeyType === 'ivf' ? 'IVF treatment' : 'health'}, Nigerian foods, medications, or how you're feeling today. I understand English, Yoruba, Igbo, Hausa, and Pidgin.`
+          }]);
+        }
+        setHistoryLoaded(true);
+      }
+    };
+    loadHistory();
+  }, [historyLoaded, userName, journeyType]);
+
+  // Save chat history to localStorage as backup
+  useEffect(() => {
+    if (msgs.length > 0) {
+      localStorage.setItem('chatHistory', JSON.stringify(msgs.slice(-50)));
+    }
   }, [msgs]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs, typing]);
-
-  // Initialize speech recognition
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-NG';
-      
-      recognitionRef.current.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        setListening(false);
-        send(transcript);
-      };
-      
-      recognitionRef.current.onerror = () => {
-        setListening(false);
-      };
-    }
-  }, []);
 
   const checkForCrisis = (text) => {
     const lowerText = text.toLowerCase();
@@ -152,53 +142,7 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
     }
   };
 
-  const send = async (text) => {
-    const messageText = text || input;
-    if (!messageText.trim()) return;
-    
-    // Check message limit
-    if (isAtLimit) {
-      setMsgs(prev => [...prev, 
-        { role: "assistant", content: `🔒 You've reached your daily message limit (${remainingMessages} remaining). Upgrade to Bloom+ for unlimited messages.` }
-      ]);
-      return;
-    }
-    
-    // Check for crisis
-    const crisisDetected = checkForCrisis(messageText);
-    
-    // Add user message
-    setMsgs(prev => [...prev, { role: "user", content: messageText }]);
-    setInput("");
-    
-    // Increment message count
-    if (onMessageSent) onMessageSent();
-    
-    // Handle crisis response
-    if (crisisDetected) {
-      const crisisResponse = getCrisisResponse(crisisDetected);
-      setCrisisType(crisisDetected);
-      setShowCrisisWarning(true);
-      
-      setMsgs(prev => [...prev, 
-        { role: "assistant", content: crisisResponse.message },
-        { role: "assistant", content: crisisResponse.resources.join("\n") }
-      ]);
-      return;
-    }
-    
-    // Normal AI response
-    setTyping(true);
-    
-    // Simulate AI response (replace with actual Claude API call)
-    setTimeout(async () => {
-      setTyping(false);
-      const response = await generateResponse(messageText);
-      setMsgs(prev => [...prev, { role: "assistant", content: response }]);
-    }, 800 + Math.random() * 600);
-  };
-
-  const generateResponse = async (userMessage) => {
+  const generateResponse = useCallback(async (userMessage) => {
     const lowerMessage = userMessage.toLowerCase();
     const currentWeek = getCurrentWeek();
     
@@ -217,7 +161,82 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
     
     // Normal response with disclaimer
     return `${bloomResp(userMessage)}\n\n---\n📍 This is general information, not medical advice. Always consult your GP or midwife.`;
-  };
+  }, [getCurrentWeek, journeyType]);
+
+  const send = useCallback(async (text) => {
+    const messageText = text || input;
+    if (!messageText.trim()) return;
+    
+    // Check message limit
+    if (isAtLimit) {
+      const limitMsg = `🔒 You've reached your daily message limit (${remainingMessages} remaining). Upgrade to Femin9+ for unlimited messages.`;
+      setMsgs(prev => [...prev, { role: "assistant", content: limitMsg }]);
+      await saveMessage('assistant', limitMsg);
+      return;
+    }
+    
+    // Check for crisis
+    const crisisDetected = checkForCrisis(messageText);
+    
+    // Add user message to UI and save to Firestore
+    setMsgs(prev => [...prev, { role: "user", content: messageText }]);
+    await saveMessage('user', messageText);
+    setInput("");
+    
+    // Increment message count
+    if (onMessageSent) onMessageSent();
+    
+    // Handle crisis response
+    if (crisisDetected) {
+      const crisisResponse = getCrisisResponse(crisisDetected);
+      setCrisisType(crisisDetected);
+      setShowCrisisWarning(true);
+      
+      const responseMsg = crisisResponse.message;
+      const resourcesMsg = crisisResponse.resources.join("\n");
+      
+      setMsgs(prev => [...prev, 
+        { role: "assistant", content: responseMsg },
+        { role: "assistant", content: resourcesMsg }
+      ]);
+      
+      await saveMessage('assistant', responseMsg);
+      await saveMessage('assistant', resourcesMsg);
+      return;
+    }
+    
+    // Normal AI response
+    setTyping(true);
+    
+    setTimeout(async () => {
+      setTyping(false);
+      const response = await generateResponse(messageText);
+      setMsgs(prev => [...prev, { role: "assistant", content: response }]);
+      await saveMessage('assistant', response);
+    }, 1000);
+  }, [input, isAtLimit, remainingMessages, onMessageSent, generateResponse]);
+
+  // Initialize speech recognition (moved after send declaration)
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-NG';
+      
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setListening(false);
+        send(transcript);
+      };
+      
+      recognitionRef.current.onerror = () => {
+        setListening(false);
+      };
+    }
+  }, [send]);
 
   const handleQuickTip = (tip) => {
     send(tip);
@@ -229,6 +248,12 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
       recognitionRef.current.start();
     } else {
       alert("Speech recognition is not supported in your browser. Try Chrome or Safari.");
+    }
+  };
+
+  const handleUpgrade = () => {
+    if (onUpgrade) {
+      onUpgrade();
     }
   };
 
@@ -300,7 +325,7 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
         <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)" }}>
           <div style={{ width: "var(--icon-md)", height: "var(--icon-md)", borderRadius: "var(--r)", background: "linear-gradient(135deg,var(--t),var(--gd))", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-xl)", flexShrink: 0 }}>🌸</div>
           <div>
-            <p style={{ fontSize: "var(--fs-lg)", fontWeight: 800, color: "var(--dp)" }}>Bloom AI</p>
+            <p style={{ fontSize: "var(--fs-lg)", fontWeight: 800, color: "var(--dp)" }}>Femin9 AI</p>
             <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)" }}>
               <div style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--sg)", animation: "pu 2s infinite" }} />
               <span style={{ fontSize: "var(--fs-xs)", color: "var(--sg)", fontWeight: 700 }}>
@@ -411,41 +436,79 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
             <span style={{ fontSize: "var(--fs-sm)", color: "var(--rd)", fontWeight: 700 }}>Listening… speak now</span>
           </div>
         )}
+        
+        {/* Upgrade Banner for free users who hit limit */}
+        {isAtLimit && subscriptionPlan === 'free' && (
+          <div style={{
+            background: "linear-gradient(135deg, #FFF3E0, #FFE8D9)",
+            borderRadius: "var(--r)",
+            padding: "var(--sp-3) var(--card-p)",
+            marginBottom: "var(--sp-2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "var(--gap-md)"
+          }}>
+            <div>
+              <span style={{ fontSize: "var(--fs-sm)", fontWeight: 700, color: "#E57C1A" }}>✨ Daily limit reached</span>
+              <p style={{ fontSize: "var(--fs-2xs)", color: "#666", margin: 0 }}>Get unlimited messages with Bloom+</p>
+            </div>
+            <button
+              onClick={handleUpgrade}
+              style={{
+                background: "linear-gradient(135deg, #D63A6E, #E57C1A)",
+                border: "none",
+                borderRadius: 30,
+                padding: "6px 16px",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "white",
+                cursor: "pointer"
+              }}
+            >
+              Upgrade →
+            </button>
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: "var(--gap-sm)", alignItems: "flex-end" }}>
           <textarea 
             ref={inputRef}
             value={input} 
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder="Ask Bloom anything…" 
+            placeholder={isAtLimit ? "Daily limit reached. Upgrade to continue." : "Ask Femin9 anything…"} 
             rows={1}
+            disabled={isAtLimit}
             style={{ 
               flex: 1, 
               padding: "clamp(10px,2.5vw,13px) clamp(13px,3.2vw,17px)", 
               borderRadius: 22, 
               border: "1.5px solid var(--border)", 
-              background: "var(--warm)", 
+              background: isAtLimit ? "#f5f5f5" : "var(--warm)", 
               fontSize: "var(--fs-sm)", 
-              color: "var(--dp)", 
+              color: isAtLimit ? "#999" : "var(--dp)", 
               resize: "none", 
               outline: "none", 
               maxHeight: 90, 
               lineHeight: 1.5, 
               transition: "border-color 0.2s" 
             }}
-            onFocus={e => e.target.style.borderColor = "var(--t)"}
+            onFocus={e => e.target.style.borderColor = isAtLimit ? "#ccc" : "var(--t)"}
             onBlur={e => e.target.style.borderColor = "var(--border)"} 
           />
           <button 
             onClick={startListening} 
             className="btn-icon" 
+            disabled={isAtLimit}
             style={{ 
               background: listening ? "var(--rd)" : "var(--warm)", 
               border: "1.5px solid var(--border)",
               padding: "clamp(10px,2.5vw,13px)",
               borderRadius: 30,
-              cursor: "pointer",
-              fontSize: "var(--fs-lg)"
+              cursor: isAtLimit ? "not-allowed" : "pointer",
+              fontSize: "var(--fs-lg)",
+              opacity: isAtLimit ? 0.5 : 1
             }}
           >
             🎤
@@ -453,21 +516,23 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
           <button 
             onClick={() => send()} 
             className="btn-icon" 
+            disabled={isAtLimit}
             style={{ 
-              background: "var(--dp)", 
+              background: isAtLimit ? "#ccc" : "var(--dp)", 
               color: "#fff",
               padding: "clamp(10px,2.5vw,13px)",
               borderRadius: 30,
-              cursor: "pointer",
+              cursor: isAtLimit ? "not-allowed" : "pointer",
               border: "none",
-              fontSize: "var(--fs-lg)"
+              fontSize: "var(--fs-lg)",
+              opacity: isAtLimit ? 0.7 : 1
             }}
           >
             ➤
           </button>
         </div>
         <p style={{ fontSize: "var(--fs-2xs)", color: "var(--mt)", textAlign: "center", marginTop: "var(--sp-2)" }}>
-          Bloom is AI only. For emergencies call <strong>112</strong> or tap <strong>SOS</strong>.
+          Femin9 is AI only. For emergencies call <strong>999</strong> or tap <strong>SOS</strong>.
         </p>
       </div>
 

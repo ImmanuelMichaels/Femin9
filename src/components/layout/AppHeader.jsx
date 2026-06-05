@@ -25,11 +25,21 @@ function HelpIcon() {
   );
 }
 
-export default function AppHeader({ onNavigate }) {           // ← removed onSOS, onMenuOpen
+function CrownIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" />
+    </svg>
+  );
+}
+
+export default function AppHeader({ onNavigate, onUpgrade }) {  // ← Added onUpgrade prop
   const {
     userName,
     journeyType,
-    daysUntilRenewal,                                         // ← removed getCurrentWeek, getTrimester, babyAgeDays
+    subscriptionPlan,
+    daysUntilRenewal,
     todaysTasks,
   } = useApp();
 
@@ -49,6 +59,7 @@ export default function AppHeader({ onNavigate }) {           // ← removed onS
 
   const greeting    = getGreeting();
   const displayName = userName || (journeyType === 'menopause' ? 'Queen' : 'Mama');
+  const isPremium = subscriptionPlan === 'bloom' || subscriptionPlan === 'bloomPlus';
 
   const {
     notifications,
@@ -67,6 +78,13 @@ export default function AppHeader({ onNavigate }) {           // ← removed onS
 
   const bellRef = useRef(null);
 
+  // Handle upgrade click
+  const handleUpgradeClick = () => {
+    if (onUpgrade) {
+      onUpgrade();
+    }
+  };
+
   return (
     <div style={{
       background: '#d63a6e',
@@ -79,6 +97,9 @@ export default function AppHeader({ onNavigate }) {           // ← removed onS
         @keyframes badgePop {
           from { transform: scale(0); opacity: 0; }
           to   { transform: scale(1); opacity: 1; }
+        }
+        @keyframes shine {
+          to { background-position: 200% center; }
         }
       `}</style>
 
@@ -111,20 +132,127 @@ export default function AppHeader({ onNavigate }) {           // ← removed onS
             />
           </div>
 
-          <p style={{
-            fontFamily: 'Poppins, sans-serif',
-            fontSize: 20,
-            color: 'white',
-            margin: 0,
-            fontWeight: 500,
-            lineHeight: 1.3,
-          }}>
-            {greeting},&nbsp;<b>{displayName}</b>
-          </p>
+          <div>
+            <p style={{
+              fontFamily: 'Poppins, sans-serif',
+              fontSize: 20,
+              color: 'white',
+              margin: 0,
+              fontWeight: 500,
+              lineHeight: 1.3,
+            }}>
+              {greeting},&nbsp;<b>{displayName}</b>
+            </p>
+            
+            {/* Subscription badge */}
+            {!isPremium && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                marginTop: 2,
+              }}>
+                <span style={{
+                  fontSize: 10,
+                  color: 'rgba(255,255,255,0.7)',
+                }}>Free Plan</span>
+                <span style={{
+                  fontSize: 8,
+                  color: 'rgba(255,255,255,0.5)',
+                }}>•</span>
+                <button
+                  onClick={handleUpgradeClick}
+                  style={{
+                    background: 'rgba(255,255,255,0.2)',
+                    border: 'none',
+                    borderRadius: 12,
+                    padding: '2px 8px',
+                    fontSize: 10,
+                    color: 'white',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.3)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
+                >
+                  Upgrade
+                </button>
+              </div>
+            )}
+
+            {isPremium && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                marginTop: 2,
+              }}>
+                <span style={{
+                  fontSize: 10,
+                  color: '#FFD700',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}>
+                  <CrownIcon />
+                  {subscriptionPlan === 'bloom' ? 'Bloom' : 'Bloom+'}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* RIGHT — bell + help */}
+        {/* RIGHT — upgrade button (if free) + bell + help */}
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
+          
+          {/* Upgrade Button for free users (visible in header) */}
+          {!isPremium && (
+            <button
+              onClick={handleUpgradeClick}
+              style={{
+                background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                border: 'none',
+                borderRadius: 30,
+                padding: '8px 14px',
+                fontSize: 12,
+                fontWeight: 700,
+                color: '#333',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.transform = 'scale(1.02)';
+                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+              }}
+            >
+              <CrownIcon />
+              <span style={{ color: '#333' }}>Upgrade</span>
+            </button>
+          )}
+
+          {/* Premium indicator for paid users */}
+          {isPremium && subscriptionPlan === 'bloomPlus' && (
+            <div style={{
+              background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+              borderRadius: 30,
+              padding: '6px 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+            }}>
+              <CrownIcon />
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#333' }}>Premium</span>
+            </div>
+          )}
 
           {/* Bell */}
           <div style={{ position: 'relative' }} ref={bellRef}>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../../context/useApp';
 import { bloomResp } from '../../utils/helpers';
 import { saveMessage, loadChatHistory } from '../../services/chatService';
@@ -31,7 +31,7 @@ const CRISIS_PATTERNS = {
   ]
 };
 
-export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessages }) {
+export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessages, onUpgrade }) {
   const { userName, journeyType, getCurrentWeek, setShowSOS, subscriptionPlan } = useApp();
   const [msgs, setMsgs] = useState([]);
   const [historyLoaded, setHistoryLoaded] = useState(false);
@@ -74,28 +74,6 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [msgs, typing]);
-
-  // Initialize speech recognition
-  useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-NG';
-      
-      recognitionRef.current.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        setListening(false);
-        send(transcript);
-      };
-      
-      recognitionRef.current.onerror = () => {
-        setListening(false);
-      };
-    }
-  }, []);
 
   const checkForCrisis = (text) => {
     const lowerText = text.toLowerCase();
@@ -164,7 +142,28 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
     }
   };
 
-  const send = async (text) => {
+  const generateResponse = useCallback(async (userMessage) => {
+    const lowerMessage = userMessage.toLowerCase();
+    const currentWeek = getCurrentWeek();
+    
+    // NHS signposting for specific symptoms
+    if (lowerMessage.includes("baby not moving") || lowerMessage.includes("reduced movement")) {
+      return `⚠️ **Important:** If you're ${currentWeek}+ weeks pregnant and have noticed reduced fetal movements, please contact your maternity unit immediately. Do not wait until tomorrow.\n\n${bloomResp(userMessage)}\n\n---\n📍 This is general information, not medical advice. Always consult your midwife or GP.`;
+    }
+    
+    if (lowerMessage.includes("bleeding") && journeyType === 'pregnant') {
+      return `⚠️ **Urgent:** Any bleeding during pregnancy should be assessed. If you're experiencing heavy bleeding or pain, call 999 or go to A&E immediately.\n\n${bloomResp(userMessage)}\n\n---\n📍 This is general information, not medical advice. Always consult your midwife or GP.`;
+    }
+    
+    if (lowerMessage.includes("headache") || lowerMessage.includes("vision")) {
+      return `⚠️ Severe headache or visual changes in pregnancy can be a sign of pre-eclampsia. Please contact your midwife or GP today.\n\n${bloomResp(userMessage)}\n\n---\n📍 This is general information, not medical advice. Always consult your midwife or GP.`;
+    }
+    
+    // Normal response with disclaimer
+    return `${bloomResp(userMessage)}\n\n---\n📍 This is general information, not medical advice. Always consult your GP or midwife.`;
+  }, [getCurrentWeek, journeyType]);
+
+  const send = useCallback(async (text) => {
     const messageText = text || input;
     if (!messageText.trim()) return;
     
@@ -214,29 +213,30 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
       const response = await generateResponse(messageText);
       setMsgs(prev => [...prev, { role: "assistant", content: response }]);
       await saveMessage('assistant', response);
-    }, 800 + Math.random() * 600);
-  };
+    }, 1000);
+  }, [input, isAtLimit, remainingMessages, onMessageSent, generateResponse]);
 
-  const generateResponse = async (userMessage) => {
-    const lowerMessage = userMessage.toLowerCase();
-    const currentWeek = getCurrentWeek();
-    
-    // NHS signposting for specific symptoms
-    if (lowerMessage.includes("baby not moving") || lowerMessage.includes("reduced movement")) {
-      return `⚠️ **Important:** If you're ${currentWeek}+ weeks pregnant and have noticed reduced fetal movements, please contact your maternity unit immediately. Do not wait until tomorrow.\n\n${bloomResp(userMessage)}\n\n---\n📍 This is general information, not medical advice. Always consult your midwife or GP.`;
+  // Initialize speech recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = false;
+      recognitionRef.current.lang = 'en-NG';
+      
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setListening(false);
+        send(transcript);
+      };
+      
+      recognitionRef.current.onerror = () => {
+        setListening(false);
+      };
     }
-    
-    if (lowerMessage.includes("bleeding") && journeyType === 'pregnant') {
-      return `⚠️ **Urgent:** Any bleeding during pregnancy should be assessed. If you're experiencing heavy bleeding or pain, call 999 or go to A&E immediately.\n\n${bloomResp(userMessage)}\n\n---\n📍 This is general information, not medical advice. Always consult your midwife or GP.`;
-    }
-    
-    if (lowerMessage.includes("headache") || lowerMessage.includes("vision")) {
-      return `⚠️ Severe headache or visual changes in pregnancy can be a sign of pre-eclampsia. Please contact your midwife or GP today.\n\n${bloomResp(userMessage)}\n\n---\n📍 This is general information, not medical advice. Always consult your midwife or GP.`;
-    }
-    
-    // Normal response with disclaimer
-    return `${bloomResp(userMessage)}\n\n---\n📍 This is general information, not medical advice. Always consult your GP or midwife.`;
-  };
+  }, [send]);
 
   const handleQuickTip = (tip) => {
     send(tip);
@@ -248,6 +248,12 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
       recognitionRef.current.start();
     } else {
       alert("Speech recognition is not supported in your browser. Try Chrome or Safari.");
+    }
+  };
+
+  const handleUpgrade = () => {
+    if (onUpgrade) {
+      onUpgrade();
     }
   };
 
@@ -430,41 +436,79 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
             <span style={{ fontSize: "var(--fs-sm)", color: "var(--rd)", fontWeight: 700 }}>Listening… speak now</span>
           </div>
         )}
+        
+        {/* Upgrade Banner for free users who hit limit */}
+        {isAtLimit && subscriptionPlan === 'free' && (
+          <div style={{
+            background: "linear-gradient(135deg, #FFF3E0, #FFE8D9)",
+            borderRadius: "var(--r)",
+            padding: "var(--sp-3) var(--card-p)",
+            marginBottom: "var(--sp-2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "var(--gap-md)"
+          }}>
+            <div>
+              <span style={{ fontSize: "var(--fs-sm)", fontWeight: 700, color: "#E57C1A" }}>✨ Daily limit reached</span>
+              <p style={{ fontSize: "var(--fs-2xs)", color: "#666", margin: 0 }}>Get unlimited messages with Bloom+</p>
+            </div>
+            <button
+              onClick={handleUpgrade}
+              style={{
+                background: "linear-gradient(135deg, #D63A6E, #E57C1A)",
+                border: "none",
+                borderRadius: 30,
+                padding: "6px 16px",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "white",
+                cursor: "pointer"
+              }}
+            >
+              Upgrade →
+            </button>
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: "var(--gap-sm)", alignItems: "flex-end" }}>
           <textarea 
             ref={inputRef}
             value={input} 
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
-            placeholder="Ask Femin9 anything…" 
+            placeholder={isAtLimit ? "Daily limit reached. Upgrade to continue." : "Ask Femin9 anything…"} 
             rows={1}
+            disabled={isAtLimit}
             style={{ 
               flex: 1, 
               padding: "clamp(10px,2.5vw,13px) clamp(13px,3.2vw,17px)", 
               borderRadius: 22, 
               border: "1.5px solid var(--border)", 
-              background: "var(--warm)", 
+              background: isAtLimit ? "#f5f5f5" : "var(--warm)", 
               fontSize: "var(--fs-sm)", 
-              color: "var(--dp)", 
+              color: isAtLimit ? "#999" : "var(--dp)", 
               resize: "none", 
               outline: "none", 
               maxHeight: 90, 
               lineHeight: 1.5, 
               transition: "border-color 0.2s" 
             }}
-            onFocus={e => e.target.style.borderColor = "var(--t)"}
+            onFocus={e => e.target.style.borderColor = isAtLimit ? "#ccc" : "var(--t)"}
             onBlur={e => e.target.style.borderColor = "var(--border)"} 
           />
           <button 
             onClick={startListening} 
             className="btn-icon" 
+            disabled={isAtLimit}
             style={{ 
               background: listening ? "var(--rd)" : "var(--warm)", 
               border: "1.5px solid var(--border)",
               padding: "clamp(10px,2.5vw,13px)",
               borderRadius: 30,
-              cursor: "pointer",
-              fontSize: "var(--fs-lg)"
+              cursor: isAtLimit ? "not-allowed" : "pointer",
+              fontSize: "var(--fs-lg)",
+              opacity: isAtLimit ? 0.5 : 1
             }}
           >
             🎤
@@ -472,14 +516,16 @@ export default function AIAssistant({ onMessageSent, isAtLimit, remainingMessage
           <button 
             onClick={() => send()} 
             className="btn-icon" 
+            disabled={isAtLimit}
             style={{ 
-              background: "var(--dp)", 
+              background: isAtLimit ? "#ccc" : "var(--dp)", 
               color: "#fff",
               padding: "clamp(10px,2.5vw,13px)",
               borderRadius: 30,
-              cursor: "pointer",
+              cursor: isAtLimit ? "not-allowed" : "pointer",
               border: "none",
-              fontSize: "var(--fs-lg)"
+              fontSize: "var(--fs-lg)",
+              opacity: isAtLimit ? 0.7 : 1
             }}
           >
             ➤

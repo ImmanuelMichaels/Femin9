@@ -20,8 +20,8 @@ function SplashRoute() {
     const clearSession = async () => {
       try {
         await signOut(auth);
-      } catch (e) {
-        // Ignore errors
+      } catch {
+        // Ignore errors - user may not be logged in
       }
       localStorage.removeItem('userJourney');
       localStorage.removeItem('userConsents');

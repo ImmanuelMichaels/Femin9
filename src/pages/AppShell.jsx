@@ -5,6 +5,7 @@ import { useApp } from '../context/useApp';
 import AppHeader from '../components/layout/AppHeader';
 import BottomNav from '../components/nav/BottomNav';
 import EmergencyModal from '../components/modals/EmergencyModal';
+import SubscriptionPlans from '../components/SubscriptionPlans';
 import { BLOOM_KB } from '../data/journey';
 
 // ── Lazy loaded pages ────────────────────────────────────────────────────────
@@ -83,11 +84,11 @@ function Spinner() {
 }
 
 export default function AppShell() {
-  const { journey } = useParams();           // ← Get journey from URL
+  const { journey } = useParams();
   const { journeyType, setJourneyType, showSOS, setShowSOS } = useApp();
 
-  const [tab, setTabState] = useState('home');
   const [showEPDS, setShowEPDS] = useState(false);
+  const [showSubscription, setShowSubscription] = useState(false);
 
   // Sync URL journey with context + localStorage
   useEffect(() => {
@@ -101,11 +102,9 @@ export default function AppShell() {
     }
   }, [journey, setJourneyType]);
 
-  // Set initial tab based on journey
-  useEffect(() => {
-    const initialTab = JOURNEY_TAB_MAP[journeyType] || 'home';
-    setTabState(initialTab);
-  }, [journeyType]);
+  // Derive initial tab from journeyType (no effect needed for this)
+  const initialTab = JOURNEY_TAB_MAP[journeyType] || 'home';
+  const [tab, setTabState] = useState(initialTab);
 
   const journeyKey = JOURNEY_KEY_MAP[journeyType] ?? journeyType;
   const allowed = BLOOM_KB[journeyKey]?.tabs ?? [];
@@ -114,6 +113,16 @@ export default function AppShell() {
     if (BASE_TABS.has(id) || allowed.includes(id)) {
       setTabState(id);
     }
+  };
+
+  // Handle upgrade from anywhere in the app
+  const handleUpgrade = () => {
+    setShowSubscription(true);
+  };
+
+  // Handle subscription close
+  const handleSubscriptionClose = () => {
+    setShowSubscription(false);
   };
 
   // EPDS screening for nursing moms
@@ -145,14 +154,14 @@ export default function AppShell() {
 
   const renderPage = () => {
     switch (tab) {
-      case 'home':      return <Home setTab={handleSetTab} />;
-      case 'menu':      return <Menu setActive={handleSetTab} />;
-      case 'settings':  return <Settings />;
-      case 'insights':  return <Insights />;
-      case 'profile':   return <Profile />;
+      case 'home':      return <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'menu':      return <Menu setActive={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'settings':  return <Settings onUpgrade={handleUpgrade} />;
+      case 'insights':  return <Insights onUpgrade={handleUpgrade} />;
+      case 'profile':   return <Profile onUpgrade={handleUpgrade} />;
 
-      case 'chat':      return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><Chat /></div>;
-      case 'assistant': return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><AIAssistant /></div>;
+      case 'chat':      return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><Chat onUpgrade={handleUpgrade} /></div>;
+      case 'assistant': return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><AIAssistant onUpgrade={handleUpgrade} /></div>;
 
       case 'kicks':     return <Kicks />;
       case 'nutrition': return <Nutrition />;
@@ -170,15 +179,17 @@ export default function AppShell() {
       case 'menstrual': return <ComingSoon name="Menstrual Tracker" />;
       case 'menopause': return <Menopause />;
 
-      default:          return <Home setTab={handleSetTab} />;
+      default:          return <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
     }
   };
 
   return (
     <div className="app-page">
       <div className="app-frame fu">
+        {/* Emergency SOS Modal */}
         {showSOS && <EmergencyModal onClose={() => setShowSOS(false)} />}
 
+        {/* EPDS Screening Modal (Postpartum Depression) */}
         {showEPDS && (
           <div style={{
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 2000,
@@ -195,7 +206,52 @@ export default function AppShell() {
           </div>
         )}
 
-        <AppHeader onSOS={() => setShowSOS(true)} />
+        {/* Subscription Modal */}
+        {showSubscription && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 2001,
+            overflow: 'auto',
+            background: 'linear-gradient(135deg, #FCE8EF 0%, #FFF0F5 100%)'
+          }}>
+            <button
+              onClick={handleSubscriptionClose}
+              style={{
+                position: 'fixed',
+                top: 20,
+                right: 20,
+                background: 'white',
+                border: 'none',
+                fontSize: 24,
+                cursor: 'pointer',
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                zIndex: 2002,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ✕
+            </button>
+            <Suspense fallback={<Spinner />}>
+              <SubscriptionPlans onClose={handleSubscriptionClose} onUpgrade={() => {
+                handleSubscriptionClose();
+                setTimeout(() => {
+                  alert('✨ Thank you for upgrading! Your new features are now available.');
+                }, 300);
+              }} />
+            </Suspense>
+          </div>
+        )}
+
+        <AppHeader onSOS={() => setShowSOS(true)} onUpgrade={handleUpgrade} />
 
         <div
           className="scroll-area fu"

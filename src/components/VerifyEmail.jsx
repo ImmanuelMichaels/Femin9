@@ -1,25 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { auth } from '../config/firebase';
 import { sendEmailVerification } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 
 export default function VerifyEmail() {
-  const [sent, setSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (user && !user.emailVerified) {
-      sendVerificationEmail();
-    }
-  }, []);
-
-  const sendVerificationEmail = async () => {
+  const sendVerificationEmail = useCallback(async () => {
     const user = auth.currentUser;
     if (user) {
       await sendEmailVerification(user);
-      setSent(true);
       setCountdown(60);
       const timer = setInterval(() => {
         setCountdown(prev => {
@@ -31,16 +22,32 @@ export default function VerifyEmail() {
         });
       }, 1000);
     }
-  };
+  }, []);
 
-  const checkVerification = async () => {
-    await auth.currentUser.reload();
-    if (auth.currentUser.emailVerified) {
-      navigate('/onboarding');
-    } else {
-      alert('Email not verified yet. Check your inbox or spam folder.');
+  const checkVerification = useCallback(async () => {
+    const user = auth.currentUser;
+    if (user) {
+      await user.reload();
+      if (user.emailVerified) {
+        navigate('/onboarding');
+      } else {
+        alert('Email not verified yet. Check your inbox or spam folder.');
+      }
     }
-  };
+  }, [navigate]);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (user && !user.emailVerified) {
+      // Use setTimeout to move state update out of the effect body
+      const timer = setTimeout(() => {
+        sendVerificationEmail();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [sendVerificationEmail]);
+
+  const userEmail = auth.currentUser?.email;
 
   return (
     <div style={{ 
@@ -55,7 +62,7 @@ export default function VerifyEmail() {
       <div style={{ fontSize: 48, marginBottom: 16 }}>📧</div>
       <h2>Verify Your Email</h2>
       <p>We've sent a verification link to</p>
-      <p><strong>{auth.currentUser?.email}</strong></p>
+      <p><strong>{userEmail}</strong></p>
       <p style={{ fontSize: 14, color: '#666', marginTop: 16 }}>
         Click the link in the email to verify your account.
       </p>
