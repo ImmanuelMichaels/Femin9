@@ -1,8 +1,3 @@
-/* ─────────────────────────────────────────────────────────────────────────────
-   src/data/homeConfig.js
-   Single source of truth for every journey's Home dashboard.
-   Import this in Home.jsx — never hardcode journey content in the component.
-───────────────────────────────────────────────────────────────────────────── */
 
 export const JOURNEY_META = {
   pregnant: {
@@ -236,7 +231,7 @@ export const MOM_CONFIG = {
   heroTitle: "Baby is 8 weeks old — you're both thriving",
   heroBody:  'At 8 weeks, babies begin social smiling. Feed on demand — your supply is building. You need 400–500 extra calories daily while breastfeeding.',
   heroBg:    'linear-gradient(135deg,#e6f5ee,#f5fdf8)',
-  heroIllo:  '/nursing.png',
+  heroIllo:  '/mum.png',
 
   stats: [
     { icon: '🍼', label: 'Feeds Today',    value: '6',         sub: 'Last: 1hr ago' },

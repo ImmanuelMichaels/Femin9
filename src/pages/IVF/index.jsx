@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/useApp';
-import GlowCard from '../../components/GlowCard';
-// import './ivfjourney.css';
+import './ivfjourney.css';
 
 /* ─────────────────────────────────────────────────────────
    DATA
@@ -172,75 +171,11 @@ const CONTACTS = [
    SVG ICON COMPONENTS
 ───────────────────────────────────────────────────────── */
 
-function HomeIcon({ active }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-      stroke={active ? "#C96A10" : "#B0A4BC"} strokeWidth="1.8"
-      strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-      <polyline points="9 22 9 12 15 12 15 22" />
-    </svg>
-  );
-}
-
-function JourneyIcon({ active }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-      stroke={active ? "#C96A10" : "#B0A4BC"} strokeWidth="1.8"
-      strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <polyline points="12 6 12 12 16 14" />
-    </svg>
-  );
-}
-
-function MedIcon({ active }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-      stroke={active ? "#C96A10" : "#B0A4BC"} strokeWidth="1.8"
-      strokeLinecap="round" strokeLinejoin="round">
-      <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z" />
-      <line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" />
-    </svg>
-  );
-}
-
-function InsightIcon({ active }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-      stroke={active ? "#C96A10" : "#B0A4BC"} strokeWidth="1.8"
-      strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-  );
-}
-
-function ProfileIcon({ active }) {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-      stroke={active ? "#C96A10" : "#B0A4BC"} strokeWidth="1.8"
-      strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-      <circle cx="12" cy="7" r="4" />
-    </svg>
-  );
-}
-
 function CheckIcon() {
   return (
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
       stroke="#fff" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
-function BellIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </svg>
   );
 }
@@ -272,25 +207,11 @@ function SectionHeader({ label, title, subtitle, accent }) {
    HERO SECTION
 ───────────────────────────────────────────────────────── */
 
-function HeroSection({ userName, stage, progress }) {
+function HeroSection({ stage, progress }) {
   return (
     <section className="hero">
       <div className="hero-blob blob-a" />
       <div className="hero-blob blob-b" />
-
-      <div className="hero-top-bar">
-        <div className="hero-identity">
-          <div className="hero-avatar">{userName?.charAt(0) || 'S'}</div>
-          <div>
-            <p className="hero-hello">Good morning, {userName || 'Sophie'} 🌸</p>
-            <p className="hero-meta">{new Date().toLocaleDateString('en-NG', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-          </div>
-        </div>
-        <button className="hero-bell" aria-label="Notifications">
-          <BellIcon />
-          <span className="bell-dot" />
-        </button>
-      </div>
 
       <div className="hero-main-card">
         <div className="hero-card-row">
@@ -806,7 +727,8 @@ function ContactSection() {
         </div>
         <p className="doctor-note-body">
           "Sophie — your follicle response was remarkable and the lab team is extremely pleased
-          with your blastocyst development. Rest well, stay hydrated, and we will see you Tuesday          for your transfer. This looks very promising."
+          with your blastocyst development. Rest well, stay hydrated, and we will see you Tuesday
+          for your transfer. This looks very promising."
         </p>
         <p className="doctor-note-sig">— Dr. Sarah Patel, Reproductive Endocrinologist</p>
       </div>
@@ -815,46 +737,11 @@ function ContactSection() {
 }
 
 /* ─────────────────────────────────────────────────────────
-   BOTTOM NAVIGATION
-───────────────────────────────────────────────────────── */
-
-const NAV_ITEMS = [
-  { id: "home", label: "Home", icon: HomeIcon },
-  { id: "journey", label: "Journey", icon: JourneyIcon },
-  { id: "meds", label: "Medications", icon: MedIcon },
-  { id: "insights", label: "Insights", icon: InsightIcon },
-  { id: "profile", label: "Profile", icon: ProfileIcon },
-];
-
-function BottomNav({ active, setActive }) {
-  return (
-    <nav className="bottom-nav" role="navigation" aria-label="Main navigation">
-      {NAV_ITEMS.map(item => {
-        const isActive = active === item.id;
-        const IconCmp = item.icon;
-        return (
-          <button
-            key={item.id}
-            className={`nav-btn ${isActive ? "nav-btn-active" : ""}`}
-            onClick={() => setActive(item.id)}
-            aria-current={isActive ? "page" : undefined}>
-            <IconCmp active={isActive} />
-            <span className="nav-label">{item.label}</span>
-            {isActive && <span className="nav-pip" />}
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
-
-/* ─────────────────────────────────────────────────────────
    ROOT COMPONENT
 ───────────────────────────────────────────────────────── */
 
-export default function IVFJourney() {
+export default function IVFJourney({ activeTab = "home" }) {
   const { userName } = useApp();
-  const [activeTab, setActiveTab] = useState("home");
   const [stages] = useState(() => {
     const saved = localStorage.getItem('ivf_stages');
     return saved ? JSON.parse(saved) : TIMELINE_STAGES;
@@ -886,9 +773,7 @@ export default function IVFJourney() {
         return (
           <>
             <HeroSection userName={userName} stage={currentStage} progress={progress} />
-            <GlowCard journeyType="ivf" />
             <IVFTimeline stages={stages} />
-            <div className="nav-spacer" />
           </>
         );
       case 'journey':
@@ -897,22 +782,17 @@ export default function IVFJourney() {
             <IVFTimeline stages={stages} />
             <ScanSection scans={SCANS} />
             <EmbryoSection embryos={EMBRYOS} />
-            <div className="nav-spacer" />
           </>
         );
       case 'meds':
         return (
-          <>
-            <MedicationSection medications={medications} onMedicationUpdate={setMedications} />
-            <div className="nav-spacer" />
-          </>
+          <MedicationSection medications={medications} onMedicationUpdate={setMedications} />
         );
       case 'insights':
         return (
           <>
             <TwoWeekWait />
             <AIInsightsSection />
-            <div className="nav-spacer" />
           </>
         );
       case 'profile':
@@ -920,18 +800,18 @@ export default function IVFJourney() {
           <>
             <PartnerSection />
             <ContactSection />
-            <div className="nav-spacer" />
           </>
         );
       default:
-        return null;
+        return (
+          <HeroSection userName={userName} stage={currentStage} progress={progress} />
+        );
     }
   };
 
   return (
     <div className="ivf-root">
       {renderContent()}
-      <BottomNav active={activeTab} setActive={setActiveTab} />
     </div>
   );
 }

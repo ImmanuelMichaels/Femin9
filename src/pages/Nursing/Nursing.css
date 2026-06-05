@@ -4,6 +4,76 @@
 .feeding-card {
   display: flex;
   flex-direction: column;
-  padding: var(--sp-4);
+  padding: 10px;
   font-family: 'Poppins', sans-serif;
+  margin-bottom: 20px;
+}
+.weight-card {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+.immunisation-card {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+.feeding-card {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+.poop-card {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+.sleep-card {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+.outfit-card {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+
+{/* ── OUTFIT GUIDE ── */}
+.outfit-card {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 20px;
+  margin-bottom: 20px;
+}
+
+ {/* ── MOTHER SELF-CARE ── */}
+ .self-care-card {
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  gap: 10px;
 }

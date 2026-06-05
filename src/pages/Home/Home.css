@@ -85,7 +85,7 @@
 /* ── Section label ── */
 .hm-section {
   background: #ffffff;
-
+  margin-bottom: 10px !important;
 }
 .h-slabel {
   font-size: 11px;

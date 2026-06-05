@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { WCard, SectionTitle, Tag } from '../../components/ui';
+import { SectionTitle, Tag } from '../../components/ui';
 import { useApp } from '../../context/useApp';
 import './Nursing.css';
 
@@ -350,9 +350,9 @@ export default function Nursing() {
       </div>
 
       {/* ── BABY WEIGHT TRACKER ── */}
-      <WCard style={{ background: 'linear-gradient(135deg, #E8F5E9, #F1F8E9)', border: '1px solid #A5D6A744' }}>
+      <div className='weight-card' style={{ display: 'flex', flexDirection: 'column', background: 'linear-gradient(135deg, #E8F5E9, #F1F8E9)', border: '1px solid #A5D6A744' }}>
         <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: '#2E7D32', marginBottom: 'var(--sp-3)' }}>
-          ⚖️ Baby Weight Tracker
+          Baby Weight Tracker ⚖️ 
         </p>
         
         <div style={{ marginBottom: 'var(--sp-3)' }}>
@@ -429,10 +429,10 @@ export default function Nursing() {
             💡 Newborns typically regain birth weight by day 10-14, then gain 150-200g (5-7oz) per week in first 3 months.
           </p>
         </div>
-      </WCard>
+      </div>
 
       {/* ── IMMUNISATION TRACKER ── */}
-      <WCard style={{ background: 'linear-gradient(135deg, #E3F2FD, #E8EAF6)', border: '1px solid #90CAF944' }}>
+      <div className='immunisation-card' style={{ background: 'linear-gradient(135deg, #E3F2FD, #E8EAF6)', border: '1px solid #90CAF944' }}>
         <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: '#1565C0', marginBottom: 'var(--sp-3)' }}>
           Immunisation Schedule 💉
         </p>
@@ -490,7 +490,7 @@ export default function Nursing() {
           </div>
         ) : (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-2)', flexWrap: 'wrap', gap: 'var(--gap-sm)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-2)', flexWrap: 'wrap', gap: 'var(--gap-sm)', flexDirection: 'column' }}>
               <div>
                 {daysUntilVaccine !== null && (
                   <div>
@@ -523,7 +523,7 @@ export default function Nursing() {
             </div>
             {immunisationNotes && (
               <div style={{ background: 'rgba(255,255,255,0.7)', borderRadius: 'var(--r)', padding: 'var(--sp-2)', marginTop: 'var(--sp-2)' }}>
-                <p style={{ fontSize: 'var(--fs-2xs)', color: '#555' }}>📝 {immunisationNotes}</p>
+                <p style={{ fontSize: '13px', color: '#555' }}>📝 {immunisationNotes}</p>
               </div>
             )}
           </div>
@@ -534,12 +534,12 @@ export default function Nursing() {
             🗓️ Typical schedule: 8 weeks (6-in-1, MenB, Rotavirus), 12 weeks (6-in-1 #2, Pneumococcal), 16 weeks (6-in-1 #3, MenB #2).
           </p>
         </div>
-      </WCard>
+      </div>
 
       {/* ── BREAST PUMP TIMER ── */}
-      <WCard style={{ background: 'linear-gradient(135deg, var(--lvl), #F8F6FE)', border: '1px solid var(--lvm)33' }}>
+      <div className='feeding-card' style={{ background: 'linear-gradient(135deg, var(--lvl), #F8F6FE)', border: '1px solid var(--lvm)33' }}>
         <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--lv)', marginBottom: 'var(--sp-3)' }}>
-          🫙 Breast Pump Timer
+         Breast Pump Timer  🫙 
         </p>
 
         {pumpActive ? (
@@ -592,10 +592,10 @@ export default function Nursing() {
             ))}
           </div>
         )}
-      </WCard>
+      </div>
 
       {/* ── POOP SCANNER ── */}
-      <WCard>
+      <div className='poop-card' style={{ background: 'linear-gradient(135deg, #FFF3E0, #FFF8E1)', border: '1px solid #FFCC8033' }}>
         <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--dp)', marginBottom: 4 }}>
           💩 Poop Colour Scanner
         </p>
@@ -641,14 +641,14 @@ export default function Nursing() {
         <button
           onClick={logPoop}
           disabled={!poopSelected}
-          style={{ width: '100%', padding: 'var(--sp-2)', background: poopSelected ? 'var(--dp)' : 'var(--border)', color: '#fff', border: 'none', borderRadius: 'var(--r)', cursor: poopSelected ? 'pointer' : 'default', fontWeight: 700 }}
+          style={{ width: '100%', padding: 'var(--sp-2)', background: poopSelected ? 'var(--dp)' : '#898682', color: '#fff', border: 'none', borderRadius: 'var(--r)', cursor: poopSelected ? 'pointer' : 'default', fontWeight: 700 }}
         >
           {poopLogged ? '✓ Logged!' : 'Log This Nappy'}
         </button>
-      </WCard>
+      </div>
 
       {/* ── SLEEP PATTERN TRACKER + AI PREDICTOR ── */}
-      <WCard style={{ background: 'linear-gradient(135deg,#EEF2FF,#F8F6FE)', border: '1px solid #C7D2FE44' }}>
+      <div className='sleep-card' style={{ background: 'linear-gradient(135deg,#EEF2FF,#F8F6FE)', border: '1px solid #C7D2FE44' }}>
         <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: '#4338CA', marginBottom: 'var(--sp-3)' }}>
           😴 Sleep Pattern Tracker
         </p>
@@ -733,10 +733,10 @@ export default function Nursing() {
             <p key={i} style={{ fontSize: 'var(--fs-xs)', color: 'var(--md)', lineHeight: 1.6, marginBottom: 4 }}>· {tip}</p>
           ))}
         </div>
-      </WCard>
+      </div>
 
       {/* ── OUTFIT GUIDE ── */}
-      <WCard>
+      <div className='outfit-card' style={{ background: '#fff', border: '1px solid var(--sg)33' }}>
         <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--dp)', marginBottom: 4 }}>
           👗 Nursing Style Guide
         </p>
@@ -744,7 +744,7 @@ export default function Nursing() {
           Stay stylish, feed with ease. You don't have to choose.
         </p>
 
-        <div style={{ display: 'flex', gap: 'var(--gap-sm)', marginBottom: 'var(--sp-3)', overflowX: 'auto', scrollbarWidth: 'none' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '10px', marginBottom: 'var(--sp-3)', overflowX: 'auto', scrollbarWidth: 'none' }}>
           {OUTFITS.map((o, i) => (
             <button
               key={i}
@@ -791,10 +791,10 @@ export default function Nursing() {
             Nursing bras with a front clasp or drop cup work under almost any outfit. Invest in 2–3 good ones — they carry your whole wardrobe.
           </p>
         </div>
-      </WCard>
+      </div>
 
       {/* ── MOTHER SELF-CARE ── */}
-      <WCard style={{ background: 'linear-gradient(135deg, var(--rdl), #FFF0F5)', border: '1px solid var(--rd)22' }}>
+      <div className='self-care-card' style={{ background: 'linear-gradient(135deg, var(--rdl), #FFF0F5)', border: '1px solid var(--rd)22' }}>
         <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--t)', marginBottom: 'var(--sp-3)' }}>
           💗 Don't Forget You
         </p>
@@ -812,9 +812,9 @@ export default function Nursing() {
             </div>
           </div>
         ))}
-      </WCard>
+      </div>
 
-      <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mt)', textAlign: 'center', padding: 'var(--sp-3)', background: 'var(--warm)', borderRadius: 'var(--r)', lineHeight: 1.6 }}>
+      <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mt)', textAlign: 'center', padding: 'var(--sp-3)', borderRadius: 'var(--r)', lineHeight: 1.6 }}>
         ⚕️ This is general guidance, not medical advice. Always consult your midwife, GP, or lactation consultant for personal support.
       </p>
     </div>

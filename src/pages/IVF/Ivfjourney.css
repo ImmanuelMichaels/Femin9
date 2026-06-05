@@ -1,4 +1,6 @@
-
+:root{
+  font-family: 'Poppins', sans-serif;
+}
 ───────────────────────────────────────────────────────── */
 .section-header {
   margin-bottom: 20px;
@@ -121,7 +123,7 @@
   z-index: 1;
   background: rgba(255,255,255,0.72);
   /* backdrop-filter: blur(14px); */
-  border-radius: var(--r-xl);
+  border-radius: 20px;
   padding: 22px 20px 18px;
   box-shadow: var(--shadow-md);
   margin-bottom: 16px;
@@ -1167,3 +1169,5 @@
   .embryo-card.embryo-open { grid-column: span 2; }
   .insights-grid { grid-template-columns: repeat(4, 1fr); }
 }
+
+
