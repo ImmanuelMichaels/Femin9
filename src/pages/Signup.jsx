@@ -1,6 +1,9 @@
 import { useState, useCallback, useEffect, createContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/useApp';
+import { auth, db } from '../config/firebase';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 import './Signup.css';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
@@ -129,7 +132,6 @@ export default function Signup() {
   const [animOut,   setAnimOut] = useState(false);
   const [success,   setSuccess] = useState(false);
 
-  // Clear localStorage when component mounts
   useEffect(() => {
     localStorage.removeItem('userAuth');
     localStorage.removeItem('userName');
@@ -153,8 +155,8 @@ export default function Signup() {
 
   const touch = (field) => setTouch((p) => ({ ...p, [field]: true }));
 
-  // ── Submit ──────────────────────────────────────────────────────────────────
-  const handleSubmit = useCallback(() => {
+  // ── Email Sign Up ──────────────────────────────────────────────────────────────────
+  const handleSubmit = useCallback(async () => {
     if (!formReady) {
       setTouch({ name: true, email: true, password: true, confirm: true });
       return;
@@ -162,38 +164,95 @@ export default function Signup() {
 
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      // Persist basics
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
+      await updateProfile(user, { displayName: name.trim().split(' ')[0] });
+      
+      await setDoc(doc(db, 'users', user.uid), {
+        name: name.trim(),
+        email: email,
+        createdAt: new Date(),
+        journeyType: 'pregnant',
+        culture: null,
+        messageCount: 0,
+        plan: 'free'
+      });
+      
       const firstName = name.trim().split(' ')[0];
-      localStorage.setItem('userAuth',  'true');
-      localStorage.setItem('userName',  firstName);
       localStorage.setItem('userEmail', email);
+      localStorage.setItem('userName', firstName);
       if (setUserName) setUserName(firstName);
-
+      
       setLoading(false);
       setSuccess(true);
-
-      // Brief success moment then navigate to onboarding
+      
       setTimeout(() => {
         setAnimOut(true);
         setTimeout(() => navigate('/verify-email'), 380);
       }, 1400);
-    }, 1200);
-  }, [formReady, name, email, navigate, setUserName]);
+      
+    } catch (error) {
+      console.error('Signup error:', error);
+      let errorMessage = 'Account creation failed. ';
+      
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          errorMessage += 'An account already exists with this email.';
+          break;
+        case 'auth/weak-password':
+          errorMessage += 'Password is too weak.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage += 'Invalid email format.';
+          break;
+        default:
+          errorMessage += error.message;
+      }
+      
+      alert(errorMessage);
+      setLoading(false);
+    }
+  }, [formReady, name, email, password, navigate, setUserName]);
 
-  // ── Quick social sign-up ────────────────────────────────────────────────────
-  const handleSocial = () => {
+  // ── Social Sign Up ────────────────────────────────────────────────────────────────────
+  const handleSocial = async () => {
     setLoading(true);
-    setTimeout(() => {
-      localStorage.setItem('userAuth', 'true');
+    const provider = new GoogleAuthProvider();
+    
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (!userDoc.exists()) {
+        await setDoc(doc(db, 'users', user.uid), {
+          name: user.displayName || user.email.split('@')[0],
+          email: user.email,
+          createdAt: new Date(),
+          journeyType: 'pregnant',
+          messageCount: 0,
+          plan: 'free'
+        });
+      }
+      
+      localStorage.setItem('userEmail', user.email);
+      localStorage.setItem('userName', user.displayName || user.email.split('@')[0]);
+      
       setLoading(false);
       setSuccess(true);
+      
       setTimeout(() => {
         setAnimOut(true);
         setTimeout(() => navigate('/onboarding'), 380);
       }, 1400);
-    }, 800);
+      
+    } catch (error) {
+      console.error('Social signup error:', error);
+      alert('Sign up failed. Please try again.');
+      setLoading(false);
+    }
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────

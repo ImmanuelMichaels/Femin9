@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/useApp';
+import { auth, db } from '../config/firebase';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import './Login.css';
 
 const GoogleG = () => (
@@ -61,7 +64,6 @@ export default function Login() {
   const [animOut, setAnimOut] = useState(false);
   const [focused, setFocused] = useState(null);
 
-  // Clear previous session on login page
   useEffect(() => {
     localStorage.removeItem('userAuth');
     localStorage.removeItem('userName');
@@ -70,35 +72,81 @@ export default function Login() {
 
   const ready = email.trim() && password.trim();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!ready) return;
 
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-
-      // Save authentication
-      localStorage.setItem('userAuth', 'true');
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+      
       localStorage.setItem('userEmail', email);
-
-      // Get user's chosen journey
-      const savedJourney = localStorage.getItem('userJourney') || 'pregnant';
-      const savedCulture = localStorage.getItem('userCulture');
-
-      // Sync with context
+      
+      // Get user data from Firestore
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      const userData = userDoc.data();
+      
+      const savedJourney = userData?.journeyType || localStorage.getItem('userJourney') || 'pregnant';
+      const savedCulture = userData?.culture || localStorage.getItem('userCulture');
+      
       setJourneyType(savedJourney);
       if (savedCulture) setCulture(savedCulture);
-
-      // Trigger exit animation
+      
       setAnimOut(true);
-
-      // Redirect to journey-specific homepage
+      
       setTimeout(() => {
         navigate(`/app/${savedJourney}`);
       }, 450);
-    }, 1100);
+      
+    } catch (error) {
+      console.error('Login error:', error);
+      let errorMessage = 'Sign in failed. ';
+      
+      switch (error.code) {
+        case 'auth/user-not-found':
+          errorMessage += 'No account found with this email.';
+          break;
+        case 'auth/wrong-password':
+          errorMessage += 'Incorrect password.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage += 'Invalid email format.';
+          break;
+        default:
+          errorMessage += error.message;
+      }
+      
+      alert(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    const provider = new GoogleAuthProvider();
+    
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      localStorage.setItem('userEmail', user.email);
+      localStorage.setItem('userName', user.displayName || user.email.split('@')[0]);
+      
+      const savedJourney = localStorage.getItem('userJourney') || 'pregnant';
+      navigate(`/app/${savedJourney}`);
+      
+    } catch (error) {
+      console.error('Google login error:', error);
+      alert('Google sign in failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePhoneLogin = () => {
+    navigate('/phone-auth');
   };
 
   return (
@@ -177,12 +225,12 @@ export default function Login() {
         </div>
 
         {/* Social Logins */}
-        <button className="lg-social" onClick={handleLogin}>
+        <button className="lg-social" onClick={handleGoogleLogin}>
           <GoogleG />
           <span>Continue with Google</span>
         </button>
 
-        <button className="lg-social" onClick={handleLogin}>
+        <button className="lg-social" onClick={handlePhoneLogin}>
           <PhoneIcon />
           <span>Continue with Phone</span>
         </button>

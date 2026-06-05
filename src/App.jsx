@@ -1,6 +1,8 @@
 // src/App.jsx
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
+import { auth } from './config/firebase';
 import Splash from './pages/Splash';
 import Onboarding from './pages/Onboarding';
 import Consent from './pages/Consent';
@@ -15,7 +17,20 @@ function SplashRoute() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    localStorage.removeItem('userJourney');
+    const clearSession = async () => {
+      try {
+        await signOut(auth);
+      } catch (e) {
+        // Ignore errors
+      }
+      localStorage.removeItem('userJourney');
+      localStorage.removeItem('userConsents');
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('userName');
+    };
+    
+    clearSession();
+    
     const timer = setTimeout(() => navigate('/onboarding'), 2000);
     return () => clearTimeout(timer);
   }, [navigate]);
@@ -24,13 +39,42 @@ function SplashRoute() {
 }
 
 function ProtectedApp() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const savedJourney = localStorage.getItem('userJourney');
   const hasConsents = localStorage.getItem('userConsents');
-  const isLoggedIn = localStorage.getItem('userAuth');
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '1.1rem',
+        color: '#666'
+      }}>
+        Loading your journey...
+      </div>
+    );
+  }
 
   if (!savedJourney) return <Navigate to="/onboarding" replace />;
   if (!hasConsents) return <Navigate to="/consent" replace />;
-  if (!isLoggedIn) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/login" replace />;
+
+  // Optional: Require email verification
+  if (!user.emailVerified) {
+    return <Navigate to="/verify-email" replace />;
+  }
 
   return <AppShell />;
 }
