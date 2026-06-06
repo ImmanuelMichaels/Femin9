@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { SectionTitle, Tag } from '../../components/ui';
+import { SectionTitle } from '../../components/ui';
 import { useApp } from '../../context/useApp';
 import './Nursing.css';
 
