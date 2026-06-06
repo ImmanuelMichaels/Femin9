@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { WCard, SectionTitle, Button } from '../components/ui';
 import { useApp } from '../context/useApp';
 import { useNavigate } from 'react-router-dom';
-import { auth, db, storage } from '../firebase';
+import { auth, db, storage } from '../context/firebase';
 import { updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
