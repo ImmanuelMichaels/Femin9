@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useCallback, useRef } from 'react';
-import { auth, db } from './firebase';
+import { auth, db } from '../context/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 
@@ -212,7 +212,7 @@ export function AppProvider({ children }) {
     notificationsEnabled, setNotificationsEnabled,
     clearUserData,
     logout,
-    loadFromFirestore,  // ← Now only one definition
+    loadFromFirestore, 
     isSyncing,
   };
 
