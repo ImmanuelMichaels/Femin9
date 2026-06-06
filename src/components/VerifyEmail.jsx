@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { auth } from '../config/firebase';
+import { auth } from '../context/firebase';
 import { sendEmailVerification } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 

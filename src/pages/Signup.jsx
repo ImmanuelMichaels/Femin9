@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/useApp';
-import { auth, db } from '../config/firebase';
+import { auth, db } from '../context/firebase';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import './Signup.css';

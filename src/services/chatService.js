@@ -1,5 +1,5 @@
 // src/services/chatService.js
-import { db, auth } from '../config/firebase';
+import { db, auth } from '../context/firebase';
 import { collection, addDoc, query, where, orderBy, getDocs, limit } from 'firebase/firestore';
 
 export async function saveMessage(role, content) {

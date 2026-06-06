@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { auth } from './config/firebase';
+import { auth } from './context/firebase';
 import Splash from './pages/Splash';
 import Onboarding from './pages/Onboarding';
 import Consent from './pages/Consent';

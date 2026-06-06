@@ -1,4 +1,7 @@
-import { createContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useState, useEffect, useCallback, useRef } from 'react';
+import { auth, db } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 export const AppContext = createContext(null);
 
@@ -34,42 +37,102 @@ export function AppProvider({ children }) {
   const [subscriptionPlan, setSubscriptionPlan] = useState(
     () => localStorage.getItem('subscriptionPlan') || 'free'
   );
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    () => localStorage.getItem('notificationsEnabled') === 'true'
+  );
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  useEffect(() => {
-    if (journeyType) localStorage.setItem('userJourney', journeyType);
-  }, [journeyType]);
+  // Use a ref to track syncing inside the callback to avoid stale closure
+  const isSyncingRef = useRef(false);
 
-  useEffect(() => {
-    localStorage.setItem('userName', userName);
-  }, [userName]);
+  // localStorage saves
+  useEffect(() => { if (journeyType) localStorage.setItem('userJourney', journeyType); }, [journeyType]);
+  useEffect(() => { localStorage.setItem('userName', userName); }, [userName]);
+  useEffect(() => { localStorage.setItem('userCulture', culture); }, [culture]);
+  useEffect(() => { if (edd) localStorage.setItem('edd', edd); }, [edd]);
+  useEffect(() => { localStorage.setItem('babyAgeDays', babyAgeDays); }, [babyAgeDays]);
+  useEffect(() => { localStorage.setItem('cycleLength', cycleLength); }, [cycleLength]);
+  useEffect(() => { localStorage.setItem('periodLength', periodLength); }, [periodLength]);
+  useEffect(() => { if (lastPeriodStart) localStorage.setItem('lastPeriodStart', lastPeriodStart); }, [lastPeriodStart]);
+  useEffect(() => { localStorage.setItem('subscriptionPlan', subscriptionPlan); }, [subscriptionPlan]);
+  useEffect(() => { localStorage.setItem('notificationsEnabled', notificationsEnabled); }, [notificationsEnabled]);
 
-  useEffect(() => {
-    localStorage.setItem('userCulture', culture);
-  }, [culture]);
+  const syncToFirestore = useCallback(async (data) => {
+    const user = auth.currentUser;
+    if (!user || isSyncingRef.current) return;
+    isSyncingRef.current = true;
+    setIsSyncing(true);
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, {
+        appData: data,
+        lastSync: new Date().toISOString(),
+      }, { merge: true });
+    } catch (err) {
+      console.error('Sync error:', err);
+    } finally {
+      isSyncingRef.current = false;
+      setIsSyncing(false);
+    }
+  }, []);
 
-  useEffect(() => {
-    if (edd) localStorage.setItem('edd', edd);
-  }, [edd]);
+  // ONLY ONE loadFromFirestore DEFINITION - KEEP THIS ONE
+  const loadFromFirestore = useCallback(async () => {
+    const user = auth.currentUser;
+    if (!user) return null;
+    setIsSyncing(true);
+    try {
+      const userRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(userRef);
+      if (docSnap.exists() && docSnap.data().appData) {
+        const data = docSnap.data().appData;
+        if (data.journeyType)   setJourneyType(data.journeyType);
+        if (data.userName)      setUserName(data.userName);
+        if (data.culture)       setCulture(data.culture);
+        if (data.edd)           setEdd(data.edd);
+        if (data.babyAgeDays)   setBabyAgeDays(data.babyAgeDays);
+        if (data.cycleLength)   setCycleLength(data.cycleLength);
+        if (data.periodLength)  setPeriodLength(data.periodLength);
+        if (data.lastPeriodStart) setLastPeriodStart(data.lastPeriodStart);
+        if (data.subscriptionPlan) setSubscriptionPlan(data.subscriptionPlan);
+        if (data.notificationsEnabled !== undefined) setNotificationsEnabled(data.notificationsEnabled);
+        return data;
+      }
+    } catch (err) {
+      console.error('Load error:', err);
+    } finally {
+      setIsSyncing(false);
+    }
+    return null;
+  }, []);
 
+  // Call loadFromFirestore on auth state change
   useEffect(() => {
-    localStorage.setItem('babyAgeDays', babyAgeDays);
-  }, [babyAgeDays]);
+    const unsub = onAuthStateChanged(auth, (user) => {
+      if (user) loadFromFirestore();
+    });
+    return () => unsub();
+  }, [loadFromFirestore]);
 
+  // Auto-sync — only runs when a user is actually logged in
   useEffect(() => {
-    localStorage.setItem('cycleLength', cycleLength);
-  }, [cycleLength]);
+    const user = auth.currentUser;
+    if (!user) return;
 
-  useEffect(() => {
-    localStorage.setItem('periodLength', periodLength);
-  }, [periodLength]);
+    const timeout = setTimeout(() => {
+      syncToFirestore({
+        journeyType, userName, culture, edd, babyAgeDays,
+        cycleLength, periodLength, lastPeriodStart,
+        subscriptionPlan, notificationsEnabled,
+      });
+    }, 1000);
 
-  useEffect(() => {
-    if (lastPeriodStart) localStorage.setItem('lastPeriodStart', lastPeriodStart);
-  }, [lastPeriodStart]);
-
-  useEffect(() => {
-    localStorage.setItem('subscriptionPlan', subscriptionPlan);
-  }, [subscriptionPlan]);
+    return () => clearTimeout(timeout);
+  }, [
+    journeyType, userName, culture, edd, babyAgeDays,
+    cycleLength, periodLength, lastPeriodStart,
+    subscriptionPlan, notificationsEnabled, syncToFirestore,
+  ]);
 
   const getCurrentWeek = useCallback(() => {
     if (journeyType !== 'pregnant') return null;
@@ -97,7 +160,7 @@ export function AppProvider({ children }) {
     }
   }, [subscriptionPlan]);
 
-  const clearUserData = useCallback(() => {
+  const clearUserData = useCallback(async () => {
     setJourneyType(null);
     setUserName('');
     setCulture('west_central_african');
@@ -107,17 +170,29 @@ export function AppProvider({ children }) {
     setPeriodLength(5);
     setLastPeriodStart('');
     setSubscriptionPlan('free');
+    setNotificationsEnabled(false);
 
-    const userAuth     = localStorage.getItem('userAuth');
+    const userAuth = localStorage.getItem('userAuth');
     const userConsents = localStorage.getItem('userConsents');
     localStorage.clear();
-    if (userAuth)     localStorage.setItem('userAuth', userAuth);
+    if (userAuth) localStorage.setItem('userAuth', userAuth);
     if (userConsents) localStorage.setItem('userConsents', userConsents);
+
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, { appData: null, lastSync: new Date().toISOString() }, { merge: true });
+      } catch (err) {
+        console.error('Firestore clear error:', err);
+      }
+    }
   }, []);
 
-  const logout = useCallback(() => {
-    clearUserData();
+  const logout = useCallback(async () => {
+    await clearUserData();
     localStorage.removeItem('userAuth');
+    auth.signOut();
   }, [clearUserData]);
 
   const value = {
@@ -134,8 +209,11 @@ export function AppProvider({ children }) {
     lastPeriodStart,  setLastPeriodStart,
     subscriptionPlan, setSubscriptionPlan,
     getAiMessageLimit,
+    notificationsEnabled, setNotificationsEnabled,
     clearUserData,
     logout,
+    loadFromFirestore,  // ← Now only one definition
+    isSyncing,
   };
 
   return (

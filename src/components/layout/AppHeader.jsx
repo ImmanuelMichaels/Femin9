@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/useApp';
 import { useNotifications } from '../../hooks/useNotifications';
 import NotificationPanel from '../../pages/notifications/NotificationPanel';
+import { auth } from '../../context/firebase';
 
 function NotificationIcon() {
   return (
@@ -34,7 +35,7 @@ function CrownIcon() {
   );
 }
 
-export default function AppHeader({ onNavigate, onUpgrade }) {  // ← Added onUpgrade prop
+export default function AppHeader({ onNavigate, onUpgrade }) {
   const {
     userName,
     journeyType,
@@ -44,10 +45,34 @@ export default function AppHeader({ onNavigate, onUpgrade }) {  // ← Added onU
   } = useApp();
 
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [profileImage, setProfileImage] = useState(null);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Load profile image from Firebase Auth or localStorage
+  useEffect(() => {
+    const loadProfileImage = () => {
+      const user = auth.currentUser;
+      if (user?.photoURL) {
+        setProfileImage(user.photoURL);
+      } else {
+        const saved = localStorage.getItem('profileImage');
+        if (saved) setProfileImage(saved);
+      }
+    };
+    loadProfileImage();
+    
+    // Listen for auth state changes
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user?.photoURL) {
+        setProfileImage(user.photoURL);
+      }
+    });
+    
+    return () => unsubscribe();
   }, []);
 
   const getGreeting = () => {
@@ -55,6 +80,13 @@ export default function AppHeader({ onNavigate, onUpgrade }) {  // ← Added onU
     if (hour < 12) return 'Good morning';
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
+  };
+
+  const getInitials = () => {
+    if (userName) return userName.charAt(0).toUpperCase();
+    const user = auth.currentUser;
+    if (user?.displayName) return user.displayName.charAt(0).toUpperCase();
+    return 'M';
   };
 
   const greeting    = getGreeting();
@@ -78,7 +110,6 @@ export default function AppHeader({ onNavigate, onUpgrade }) {  // ← Added onU
 
   const bellRef = useRef(null);
 
-  // Handle upgrade click
   const handleUpgradeClick = () => {
     if (onUpgrade) {
       onUpgrade();
@@ -112,6 +143,7 @@ export default function AppHeader({ onNavigate, onUpgrade }) {  // ← Added onU
 
         {/* LEFT — avatar + greeting */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Profile Picture - DYNAMIC with fallback */}
           <div style={{
             background: 'rgba(255,255,255,0.2)',
             borderRadius: 10,
@@ -124,12 +156,28 @@ export default function AppHeader({ onNavigate, onUpgrade }) {  // ← Added onU
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <img
-              src="/profile.png"
-              alt="Profile"
-              loading="lazy"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
+            {profileImage ? (
+              <img
+                src={profileImage}
+                alt="Profile"
+                loading="lazy"
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            ) : (
+              <div style={{
+                width: '100%',
+                height: '100%',
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1))',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 24,
+                fontWeight: 700,
+                color: 'white',
+              }}>
+                {getInitials()}
+              </div>
+            )}
           </div>
 
           <div>

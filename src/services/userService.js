@@ -1,5 +1,5 @@
 // src/services/userService.js
-import { db, auth } from '../config/firebase';
+import { db, auth } from '../context/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 export async function getUserProfile() {

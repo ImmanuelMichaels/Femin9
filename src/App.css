@@ -109,6 +109,21 @@
     }
   }
 
+  /* Dark Mode Styles */
+body.dark-mode {
+  --bg: #1a1a2e;
+  --card: #16213e;
+  --dp: #e2e2e2;
+  --mt: #a0a0a0;
+  --border: #2a2a4a;
+  --warm: #1a1a3e;
+}
+
+body.dark-mode .hm-card {
+  background: var(--card);
+  border-color: var(--border);
+}
+
   @media (max-width: 1024px) {
     margin-top: 20px;
     flex-wrap: wrap;

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useApp } from '../context/useApp';
-import { auth, db } from '../config/firebase';
+import { auth, db } from '../context/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 
 const PLANS = {

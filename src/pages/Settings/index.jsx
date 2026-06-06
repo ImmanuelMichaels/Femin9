@@ -1,26 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { WCard } from '../../components/ui';
 import { useApp } from '../../context/useApp';
+import { auth, db } from '../../firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { updateProfile } from 'firebase/auth';
 
-const Toggle = ({ value, onChange, label, desc, color = "var(--sg)" }) => (
-  <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)", padding: "var(--sp-4) 0", borderBottom: "1px solid var(--border)" }}>
+const Toggle = ({ value, onChange, label, desc, color = "var(--sg)", disabled = false }) => (
+  <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)", padding: "var(--sp-4) 0", borderBottom: "1px solid var(--border)", opacity: disabled ? 0.5 : 1 }}>
     <div style={{ flex: 1 }}>
       <p style={{ fontSize: "var(--fs-base)", fontWeight: 700, color: "var(--dp)", marginBottom: 2 }}>{label}</p>
       {desc && <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>{desc}</p>}
     </div>
-    <button onClick={() => onChange(!value)} style={{
-      width: "clamp(44px,11vw,54px)", height: "clamp(24px,6vw,30px)",
-      borderRadius: 30, border: "none", cursor: "pointer",
-      background: value ? color : "var(--border2)",
-      position: "relative", flexShrink: 0, transition: "background 0.25s"
-    }}>
+    <button 
+      onClick={() => !disabled && onChange(!value)} 
+      disabled={disabled}
+      style={{
+        width: "clamp(44px,11vw,54px)", 
+        height: "clamp(24px,6vw,30px)",
+        borderRadius: 30, 
+        border: "none", 
+        cursor: disabled ? "not-allowed" : "pointer",
+        background: value ? color : "var(--border2)",
+        position: "relative", 
+        flexShrink: 0, 
+        transition: "background 0.25s"
+      }}
+    >
       <div style={{
-        position: "absolute", top: "50%", transform: "translateY(-50%)",
+        position: "absolute", 
+        top: "50%", 
+        transform: "translateY(-50%)",
         left: value ? "calc(100% - clamp(22px,5.5vw,27px))" : "3px",
-        width: "clamp(18px,4.5vw,24px)", height: "clamp(18px,4.5vw,24px)",
-        borderRadius: "50%", background: "#fff",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.18)", transition: "left 0.25s"
+        width: "clamp(18px,4.5vw,24px)", 
+        height: "clamp(18px,4.5vw,24px)",
+        borderRadius: "50%", 
+        background: "#fff",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.18)", 
+        transition: "left 0.25s"
       }} />
     </button>
   </div>
@@ -30,14 +47,17 @@ export default function Settings() {
   const navigate = useNavigate();
   const { 
     userName, 
+    setUserName,
     journeyType, 
     culture,
     getCurrentWeek,
     getTrimester,
     subscriptionPlan,
+    setSubscriptionPlan,
     clearUserData,
     notificationsEnabled,
-    setNotificationsEnabled
+    setNotificationsEnabled,
+    loadFromFirestore
   } = useApp();
   
   // Local state
@@ -49,6 +69,18 @@ export default function Settings() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [upgrading, setUpgrading] = useState(false);
+  
+  // Apply dark mode to body
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+      document.body.style.backgroundColor = '#1a1a2e';
+    } else {
+      document.body.classList.remove('dark-mode');
+      document.body.style.backgroundColor = '';
+    }
+  }, [darkMode]);
   
   // Get journey-specific display info
   const getJourneyDisplay = () => {
@@ -56,7 +88,10 @@ export default function Settings() {
       case 'pregnant': {
         const week = getCurrentWeek();
         const trimester = getTrimester();
-        return `Week ${week} · ${trimester}${trimester === 1 ? 'st' : trimester === 2 ? 'nd' : 'rd'} Trimester`;
+        if (week && trimester) {
+          return `Week ${week} · ${trimester}${trimester === 1 ? 'st' : trimester === 2 ? 'nd' : 'rd'} Trimester`;
+        }
+        return 'Pregnancy Journey';
       }
       case 'conceive': {
         return 'Trying to Conceive';
@@ -79,89 +114,190 @@ export default function Settings() {
   };
   
   // Save notification preferences
-  const handleNotificationsChange = (value) => {
+  const handleNotificationsChange = async (value) => {
     setNotifications(value);
     setNotificationsEnabled(value);
     localStorage.setItem('notificationsEnabled', value);
+    
+    // Request permission if enabling notifications
+    if (value && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        await Notification.requestPermission();
+      }
+    }
+    
+    // Save to Firestore
+    const user = auth.currentUser;
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, { notificationsEnabled: value }, { merge: true });
+    }
+  };
+  
+  // Save kick alerts preference
+  const handleKickAlertsChange = async (value) => {
+    setKickAlerts(value);
+    localStorage.setItem('kickAlerts', value);
+    
+    const user = auth.currentUser;
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, { kickAlerts: value }, { merge: true });
+    }
+  };
+  
+  // Save BP reminders preference
+  const handleBpRemindersChange = async (value) => {
+    setBpReminders(value);
+    localStorage.setItem('bpReminders', value);
+    
+    const user = auth.currentUser;
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, { bpReminders: value }, { merge: true });
+    }
   };
   
   // Save language preference
-  const handleLanguageChange = (newLang) => {
+  const handleLanguageChange = async (newLang) => {
     setLang(newLang);
     localStorage.setItem('appLanguage', newLang);
-    // In a real app, you'd trigger i18n change here
+    
+    const user = auth.currentUser;
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      await setDoc(userRef, { language: newLang }, { merge: true });
+    }
+    
+    // Trigger i18n change if implemented
+    // You would dispatch a custom event or use a context here
+  };
+  
+  // Handle upgrade
+  const handleUpgrade = async () => {
+    setUpgrading(true);
+    // Simulate payment flow
+    alert('Upgrade to Bloom for £6.99/month or Bloom+ for £12.99/month');
+    // In production, integrate with Stripe/Paystack here
+    setUpgrading(false);
   };
   
   // GDPR Data Export (Right to Portability)
   const handleExportData = async () => {
     setExporting(true);
     
-    // Collect all user data
-    const userData = {
-      exportDate: new Date().toISOString(),
-      user: {
-        name: userName,
-        journeyType: journeyType,
-        culture: culture,
-        subscriptionPlan: subscriptionPlan,
-      },
-      healthData: {
-        vitals: JSON.parse(localStorage.getItem('vitalsHistory') || '[]'),
-        symptoms: JSON.parse(localStorage.getItem('symptomsHistory') || '[]'),
-        cycleData: {
-          cycleLength: localStorage.getItem('cycleLength'),
-          periodLength: localStorage.getItem('periodLength'),
-          lastPeriodStart: localStorage.getItem('lastPeriodStart'),
-          cycleHistory: JSON.parse(localStorage.getItem('cycleHistory') || '[]'),
+    try {
+      const user = auth.currentUser;
+      const userId = user?.uid || 'anonymous';
+      
+      // Collect all user data
+      const userData = {
+        exportDate: new Date().toISOString(),
+        user: {
+          uid: userId,
+          email: user?.email,
+          name: userName,
+          journeyType: journeyType,
+          culture: culture,
+          subscriptionPlan: subscriptionPlan,
         },
-        pregnancyData: {
-          edd: localStorage.getItem('edd'),
-          babyNumber: localStorage.getItem('babyNumber'),
+        healthData: {
+          vitals: JSON.parse(localStorage.getItem('vitalsHistory') || '[]'),
+          symptoms: JSON.parse(localStorage.getItem('symptomsHistory') || '[]'),
+          cycleData: {
+            cycleLength: localStorage.getItem('cycleLength'),
+            periodLength: localStorage.getItem('periodLength'),
+            lastPeriodStart: localStorage.getItem('lastPeriodStart'),
+            cycleHistory: JSON.parse(localStorage.getItem('cycleHistory') || '[]'),
+          },
+          pregnancyData: {
+            edd: localStorage.getItem('edd'),
+            babyNumber: localStorage.getItem('babyNumber'),
+          },
+          postpartumData: {
+            babyBirthDate: localStorage.getItem('babyBirthDate'),
+            babyAgeDays: localStorage.getItem('babyAgeDays'),
+            feedingMethod: localStorage.getItem('feedingMethod'),
+          },
+          intercourseLogs: JSON.parse(localStorage.getItem('intercourseLog') || '[]'),
+          lhLogs: JSON.parse(localStorage.getItem('lhLogs') || '[]'),
+          bbtLogs: JSON.parse(localStorage.getItem('bbtLogs') || '[]'),
+          nursingFeeds: JSON.parse(localStorage.getItem('nursingFeedLog') || '[]'),
+          nursingPump: JSON.parse(localStorage.getItem('nursingPumpLog') || '[]'),
+          nursingSleep: JSON.parse(localStorage.getItem('nursingSleepLog') || '[]'),
+          menopauseSymptoms: JSON.parse(localStorage.getItem('menopauseSymptoms') || '{}'),
+          menopauseChecklist: JSON.parse(localStorage.getItem('menopauseChecklist') || '[]'),
         },
-        postpartumData: {
-          babyBirthDate: localStorage.getItem('babyBirthDate'),
-          babyAgeDays: localStorage.getItem('babyAgeDays'),
-          feedingMethod: localStorage.getItem('feedingMethod'),
+        consents: JSON.parse(localStorage.getItem('userConsents') || '{}'),
+        appPreferences: {
+          language: lang,
+          notificationsEnabled: notifications,
+          kickAlerts: kickAlerts,
+          bpReminders: bpReminders,
+          darkMode: darkMode,
         },
-        intercourseLogs: JSON.parse(localStorage.getItem('intercourseLog') || '[]'),
-        lhLogs: JSON.parse(localStorage.getItem('lhLogs') || '[]'),
-        bbtLogs: JSON.parse(localStorage.getItem('bbtLogs') || '[]'),
-      },
-      consents: JSON.parse(localStorage.getItem('userConsents') || '{}'),
-      appPreferences: {
-        language: lang,
-        notificationsEnabled: notifications,
-        kickAlerts: kickAlerts,
-        bpReminders: bpReminders,
-        darkMode: darkMode,
-      }
-    };
-    
-    // Create JSON file and download
-    const dataStr = JSON.stringify(userData, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = `femin9_export_${new Date().toISOString().split('T')[0]}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-    
-    setExporting(false);
-    
-    // Show success message
-    alert('Your data has been exported successfully. The file has been downloaded.');
+        chatHistory: JSON.parse(localStorage.getItem('chatHistory') || '[]'),
+      };
+      
+      // Create JSON file and download
+      const dataStr = JSON.stringify(userData, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+      const exportFileDefaultName = `femin9_export_${new Date().toISOString().split('T')[0]}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+      
+      alert('✅ Your data has been exported successfully. The file has been downloaded.');
+    } catch (err) {
+      console.error('Export error:', err);
+      alert('❌ Failed to export data. Please try again.');
+    } finally {
+      setExporting(false);
+    }
   };
   
   // GDPR Account Deletion (Right to Erasure)
-  const handleDeleteAccount = () => {
-    clearUserData();
-    navigate('/login');
+  const handleDeleteAccount = async () => {
+    const user = auth.currentUser;
+    
+    try {
+      // Delete Firestore user document
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, { deleted: true, deletedAt: new Date().toISOString() });
+        
+        // Delete user from Firebase Auth
+        await user.delete();
+      }
+      
+      // Clear all local storage
+      clearUserData();
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      navigate('/login');
+    } catch (err) {
+      console.error('Delete account error:', err);
+      alert('Failed to delete account. Please sign in again and retry.');
+    }
   };
   
   // Manage consents
   const handleManageConsents = () => {
     setShowPrivacyModal(true);
+  };
+  
+  // Save consent preferences
+  const saveConsents = (consents) => {
+    localStorage.setItem('userConsents', JSON.stringify(consents));
+    // Optionally sync to Firestore
+    const user = auth.currentUser;
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      setDoc(userRef, { consents }, { merge: true });
+    }
   };
   
   // Get journey icon
@@ -236,15 +372,39 @@ export default function Settings() {
       {/* Notifications Section */}
       <WCard style={{ marginBottom: "var(--gap-md)" }}>
         <p style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: "var(--mt)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: "var(--sp-1)" }}>Notifications</p>
-        <Toggle value={notifications} onChange={handleNotificationsChange} label="Push Notifications" desc="Daily wellness reminders and alerts" color="var(--sg)" />
-        <Toggle value={kickAlerts} onChange={setKickAlerts} label="Kick Count Reminders" desc="Alert when kick session is due" color="var(--lv)" />
-        <Toggle value={bpReminders} onChange={setBpReminders} label="BP Log Reminders" desc="Evening reminder to log blood pressure" color="var(--rd)" />
+        <Toggle 
+          value={notifications} 
+          onChange={handleNotificationsChange} 
+          label="Push Notifications" 
+          desc="Daily wellness reminders and alerts" 
+          color="var(--sg)" 
+        />
+        <Toggle 
+          value={kickAlerts} 
+          onChange={handleKickAlertsChange} 
+          label="Kick Count Reminders" 
+          desc="Alert when kick session is due" 
+          color="var(--lv)" 
+        />
+        <Toggle 
+          value={bpReminders} 
+          onChange={handleBpRemindersChange} 
+          label="BP Log Reminders" 
+          desc="Evening reminder to log blood pressure" 
+          color="var(--rd)" 
+        />
       </WCard>
 
       {/* Appearance Section */}
       <WCard style={{ marginBottom: "var(--gap-md)" }}>
         <p style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: "var(--mt)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: "var(--sp-1)" }}>Appearance</p>
-        <Toggle value={darkMode} onChange={setDarkMode} label="Dark Mode" desc="Coming soon — save your eyes at night" color="var(--dp)" />
+        <Toggle 
+          value={darkMode} 
+          onChange={setDarkMode} 
+          label="Dark Mode" 
+          desc="Dark theme for the app" 
+          color="var(--dp)" 
+        />
       </WCard>
 
       {/* Privacy Centre - GDPR Required */}
@@ -341,20 +501,25 @@ export default function Settings() {
             </p>
             <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>
               {subscriptionPlan === 'free' ? 'Free tier · 10 AI messages/day' : 
-               subscriptionPlan === 'bloom' ? '£6.99/month · 50 AI messages/day' : 
-               '£12.99/month · Unlimited AI messages'}
+               subscriptionPlan === 'bloom' ? '£6.99/month · 50 AI messages/day · PDF exports' : 
+               '£12.99/month · Unlimited AI messages · Priority support'}
             </p>
           </div>
-          <button style={{ 
-            background: "var(--dp)", 
-            color: "#fff", 
-            border: "none", 
-            borderRadius: "var(--r)", 
-            padding: "var(--sp-2) var(--sp-4)", 
-            cursor: "pointer",
-            fontWeight: 600
-          }}>
-            {subscriptionPlan === 'free' ? 'Upgrade' : 'Manage'}
+          <button 
+            onClick={handleUpgrade}
+            disabled={upgrading}
+            style={{ 
+              background: "var(--dp)", 
+              color: "#fff", 
+              border: "none", 
+              borderRadius: "var(--r)", 
+              padding: "var(--sp-2) var(--sp-4)", 
+              cursor: upgrading ? "not-allowed" : "pointer",
+              fontWeight: 600,
+              opacity: upgrading ? 0.6 : 1
+            }}
+          >
+            {upgrading ? 'Processing...' : (subscriptionPlan === 'free' ? 'Upgrade' : 'Manage')}
           </button>
         </div>
       </WCard>
@@ -364,10 +529,10 @@ export default function Settings() {
         <p style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: "var(--mt)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: "var(--sp-3)" }}>About</p>
         {[
           ["Version","1.0.0 (Beta)"],
-          ["Region","Nigeria + UK"],
-          ["Data","Stored securely on-device"],
-          ["ICO Registration","ZB123456"],
-          ["Support","support@mamabloom.app"],
+          ["Region","UK + Nigeria"],
+          ["Data","Encrypted & GDPR Compliant"],
+          ["ICO Registration","Pending (Month 5)"],
+          ["Support","support@femin9.com"],
           ["Privacy Policy","View Policy"],
           ["Terms of Service","View Terms"]
         ].map(([l,v]) => (
@@ -524,6 +689,7 @@ export default function Settings() {
                       const consents = JSON.parse(localStorage.getItem('userConsents') || '{}');
                       consents[item.id] = val;
                       localStorage.setItem('userConsents', JSON.stringify(consents));
+                      saveConsents(consents);
                     }} 
                     label="" 
                   />

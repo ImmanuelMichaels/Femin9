@@ -1,4 +1,4 @@
-import { db } from './config/firebase.js';
+import { db } from './context/firebase.js';
 import { collection, getDocs } from 'firebase/firestore';
 
 async function testConnection() {

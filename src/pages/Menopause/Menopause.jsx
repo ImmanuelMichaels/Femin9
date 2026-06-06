@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
-  Thermometer, Moon, Sun, Wind, Brain, Heart,
-  Shirt, ChevronRight, ChevronDown, CheckCircle2,
-  Circle, Droplets, Activity, Zap, Coffee, Smile,
-  AlertTriangle, Flame, Snowflake, CloudRain, Star
+  Thermometer, Moon, Wind, Heart,
+  Shirt, ChevronDown, CheckCircle2,
+  Circle, Droplets, Activity, Flame, Star
 } from 'lucide-react';
 import './Menopause.css';
+import { useApp } from '../../context/useApp';
 
 /* ─────────────────────────────────────────────────────────────────────────────
    MENOPAUSE STAGE DEFINITIONS
@@ -48,7 +48,7 @@ const SYMPTOMS = [
   { id: 'brainFog',      emoji: '🌫️', label: 'Brain Fog',      key: 'brainFog'   },
   { id: 'jointPain',     emoji: '🦴', label: 'Joint Aches',    key: 'jointPain'  },
   { id: 'anxiety',       emoji: '😰', label: 'Anxiety',        key: 'anxiety'    },
-  { id: 'fatigue',       emoji: '🪫',  label: 'Fatigue',        key: 'fatigue'    },
+  { id: 'fatigue',       emoji: '🪫', label: 'Fatigue',        key: 'fatigue'    },
 ];
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -192,7 +192,7 @@ function SymptomSeverity({ symptom, value, onChange, accent }) {
             style={{
               background: l <= value ? levelColors[value] : '#E2E8F0',
               transform: l === value ? 'scale(1.25)' : 'scale(1)',
-              boxShadow: l === value ? `0 0 0 2px ${levelColors[value]}44` : 'none',
+              boxShadow: l === value ? `0 0 0 2px ${accent}44` : 'none',
             }}
             onClick={() => onChange(l)}
           />
@@ -317,38 +317,97 @@ function WellnessRing({ pct, accent, label }) {
    MAIN COMPONENT
 ───────────────────────────────────────────────────────────────────────────── */
 export default function Menopause({ setTab }) {
-  const [stage, setStage]       = useState('perimenopause');
-  const [symptoms, setSymptoms] = useState({
-    hotFlash: 2, nightSweat: 1, mood: 1,
-    sleep: 2, brainFog: 0, jointPain: 1, anxiety: 1, fatigue: 2,
+  const { setShowSOS } = useApp();
+
+  // ─── PERSISTED STATE (localStorage) ───
+  const [stage, setStage] = useState(() => {
+    const saved = localStorage.getItem('menopauseStage');
+    return saved || 'perimenopause';
   });
-  const [mood, setMood]         = useState(null);
-  const [checklist, setChecklist] = useState([
-    { id: 'water',   label: '💧 Drink 8 glasses of water',          done: false },
-    { id: 'walk',    label: '🚶‍♀️ 20-min gentle walk',                done: false },
-    { id: 'calcium', label: '🥛 Take calcium supplement',           done: false },
-    { id: 'screen',  label: '📵 No screens 1hr before bed',         done: false },
-    { id: 'journal', label: '📓 3-minute gratitude journal',        done: false },
-    { id: 'breath',  label: '🌬️ 4-7-8 breathing (5 rounds)',        done: false },
-  ]);
-  const [showAllTips, setShowAllTips] = useState(false);
-  const [tempLog, setTempLog] = useState([36.4, 36.8, 37.1, 36.9, 37.4, 36.7, 36.5]);
 
-  const meta    = STAGES[stage];
+  const [symptoms, setSymptoms] = useState(() => {
+    const saved = localStorage.getItem('menopauseSymptoms');
+    return saved ? JSON.parse(saved) : {
+      hotFlash: 2, nightSweat: 1, mood: 1,
+      sleep: 2, brainFog: 0, jointPain: 1, anxiety: 1, fatigue: 2,
+    };
+  });
+
+  const [mood, setMood] = useState(() => {
+    const saved = localStorage.getItem('menopauseMood');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [checklist, setChecklist] = useState(() => {
+    const saved = localStorage.getItem('menopauseChecklist');
+    return saved ? JSON.parse(saved) : [
+      { id: 'water',   label: '💧 Drink 8 glasses of water',          done: false },
+      { id: 'walk',    label: '🚶‍♀️ 20-min gentle walk',                done: false },
+      { id: 'calcium', label: '🥛 Take calcium supplement',           done: false },
+      { id: 'screen',  label: '📵 No screens 1hr before bed',         done: false },
+      { id: 'journal', label: '📓 3-minute gratitude journal',        done: false },
+      { id: 'breath',  label: '🌬️ 4-7-8 breathing (5 rounds)',        done: false },
+    ];
+  });
+
+  const [showAllTips, setShowAllTips] = useState(() => {
+    const saved = localStorage.getItem('menopauseShowAllTips');
+    return saved === 'true';
+  });
+
+  const [tempLog, setTempLog] = useState(() => {
+    const saved = localStorage.getItem('menopauseTempLog');
+    return saved ? JSON.parse(saved) : [36.4, 36.8, 37.1, 36.9, 37.4, 36.7, 36.5];
+  });
+
+  // ─── DERIVED STATE ───
+  const meta = STAGES[stage] || STAGES.perimenopause;
   const clothing = getClothingAdvice(symptoms);
-
-  const done    = checklist.filter(c => c.done).length;
-  const pct     = Math.round((done / checklist.length) * 100);
+  const done = checklist.filter(c => c.done).length;
+  const pct = Math.round((done / checklist.length) * 100);
   const visibleTips = showAllTips ? MENTAL_TIPS : MENTAL_TIPS.slice(0, 2);
-
   const totalSymptomLoad = Object.values(symptoms).reduce((a, b) => a + b, 0);
   const wellnessPct = Math.max(10, 100 - Math.round((totalSymptomLoad / (SYMPTOMS.length * 3)) * 100));
 
-  const updateSymptom = (key, val) =>
-    setSymptoms(prev => ({ ...prev, [key]: val }));
+  // ─── SAVE TO LOCALSTORAGE WHEN STATE CHANGES ───
+  useEffect(() => {
+    localStorage.setItem('menopauseStage', stage);
+  }, [stage]);
 
-  const toggleCheck = (id) =>
+  useEffect(() => {
+    localStorage.setItem('menopauseSymptoms', JSON.stringify(symptoms));
+  }, [symptoms]);
+
+  useEffect(() => {
+    if (mood) localStorage.setItem('menopauseMood', JSON.stringify(mood));
+  }, [mood]);
+
+  useEffect(() => {
+    localStorage.setItem('menopauseChecklist', JSON.stringify(checklist));
+  }, [checklist]);
+
+  useEffect(() => {
+    localStorage.setItem('menopauseShowAllTips', showAllTips);
+  }, [showAllTips]);
+
+  useEffect(() => {
+    localStorage.setItem('menopauseTempLog', JSON.stringify(tempLog));
+  }, [tempLog]);
+
+  // ─── HANDLERS ───
+  const updateSymptom = (key, val) => {
+    setSymptoms(prev => ({ ...prev, [key]: val }));
+  };
+
+  const toggleCheck = (id) => {
     setChecklist(prev => prev.map(c => c.id === id ? { ...c, done: !c.done } : c));
+  };
+
+  const addTemperature = (newTemp) => {
+    if (newTemp >= 35 && newTemp <= 42) {
+      setTempLog(prev => [...prev.slice(-6), newTemp]);
+    }
+  };
 
   const MOODS = [
     { emoji: '🌸', label: 'Grounded' },
@@ -397,9 +456,9 @@ export default function Menopause({ setTab }) {
       {/* ── Stats Row ── */}
       <div className="mn-stats-row">
         <StatPill icon={<Thermometer size={16} />} value="36.7°" label="Avg Temp"  accent={meta.accent} />
-        <StatPill icon={<Flame        size={16} />} value={`${symptoms.hotFlash}/3`}  label="Hot Flashes" accent="#E07B39" />
-        <StatPill icon={<Moon        size={16} />} value="5.8h" label="Sleep"     accent="#5B6ABF" />
-        <StatPill icon={<Droplets    size={16} />} value="6/8"  label="Hydration" accent="#3A8A6E" />
+        <StatPill icon={<Flame size={16} />} value={`${symptoms.hotFlash}/3`}  label="Hot Flashes" accent="#E07B39" />
+        <StatPill icon={<Moon size={16} />} value="5.8h" label="Sleep"     accent="#5B6ABF" />
+        <StatPill icon={<Droplets size={16} />} value="6/8"  label="Hydration" accent="#3A8A6E" />
       </div>
 
       {/* ── Clothing Badge ── */}
@@ -497,6 +556,21 @@ export default function Menopause({ setTab }) {
             );
           })}
         </div>
+        <div className="mn-temp-input-row">
+          <input
+            type="number"
+            step="0.1"
+            min="35"
+            max="42"
+            className="mn-temp-input"
+            placeholder="Log today's temp (°C)"
+            onBlur={e => {
+              const val = parseFloat(e.target.value);
+              if (val >= 35 && val <= 42) addTemperature(val);
+              e.target.value = '';
+            }}
+          />
+        </div>
         <div className="mn-temp-legend">
           <span className="mn-leg-dot" style={{ background: '#E05252' }} /> Elevated (≥37.2°)
           <span className="mn-leg-dot" style={{ background: meta.accent, marginLeft: 16 }} /> Normal
@@ -565,6 +639,13 @@ export default function Menopause({ setTab }) {
             </p>
           </div>
         </div>
+        <button
+          className="mn-ask-bloom-btn"
+          style={{ background: meta.accent, color: '#fff', border: 'none', borderRadius: 20, padding: '8px 18px', cursor: 'pointer', fontSize: 13, marginTop: 10 }}
+          onClick={() => setTab('chat')}
+        >
+          💬 Ask Bloom AI
+        </button>
       </div>
 
       {/* ── Mental Health Tips ── */}
@@ -682,9 +763,10 @@ export default function Menopause({ setTab }) {
             🏥 NHS 111
           </button>
           <button
+            onClick={() => setShowSOS(true)}
             style={{ background: '#3A8A6E', color: '#fff', border: 'none', borderRadius: 20, padding: '8px 16px', cursor: 'pointer', fontSize: 14 }}
           >
-            💬 Chat with AI
+            🆘 SOS
           </button>
         </div>
       </div>
