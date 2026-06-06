@@ -57,7 +57,7 @@
   margin-bottom: 20px;
 }
 
-{/* ── OUTFIT GUIDE ── */}
+/* ── OUTFIT GUIDE ── */
 .outfit-card {
   display: flex;
   flex-direction: column;
@@ -67,7 +67,7 @@
   margin-bottom: 20px;
 }
 
- {/* ── MOTHER SELF-CARE ── */}
+ /* ── MOTHER SELF-CARE ── */
  .self-care-card {
   display: flex;
   flex-direction: column;

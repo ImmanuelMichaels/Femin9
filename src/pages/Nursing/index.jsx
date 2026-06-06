@@ -735,7 +735,7 @@ export default function Nursing() {
         </div>
       </div>
 
-      {/* ── OUTFIT GUIDE ── */}
+      /* ── OUTFIT GUIDE ── */
       <div className='outfit-card' style={{ background: '#fff', border: '1px solid var(--sg)33' }}>
         <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--dp)', marginBottom: 4 }}>
           👗 Nursing Style Guide
@@ -793,7 +793,7 @@ export default function Nursing() {
         </div>
       </div>
 
-      {/* ── MOTHER SELF-CARE ── */}
+      /* ── MOTHER SELF-CARE ── */
       <div className='self-care-card' style={{ background: 'linear-gradient(135deg, var(--rdl), #FFF0F5)', border: '1px solid var(--rd)22' }}>
         <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--t)', marginBottom: 'var(--sp-3)' }}>
           💗 Don't Forget You
