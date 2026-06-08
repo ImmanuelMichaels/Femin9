@@ -1,4 +1,3 @@
-// src/pages/AppShell.jsx
 import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { useApp } from '../context/useApp';
