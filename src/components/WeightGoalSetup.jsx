@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { WCard, SectionTitle } from '../../components/ui';
+import { WCard, SectionTitle } from '../components/ui';
 
 export default function WeightGoalSetup({ onComplete, onSkip }) {
   const [startWeight, setStartWeight] = useState('');

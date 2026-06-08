@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/useApp';
-import './ivfjourney.css';
+import './IVFJourney.css';
 
 /* ─────────────────HELPERS─────────────────────────────── */
 
