@@ -42,10 +42,34 @@ export function AppProvider({ children }) {
   );
   const [isSyncing, setIsSyncing] = useState(false);
 
-  // Use a ref to track syncing inside the callback to avoid stale closure
+  const [babyNumber, setBabyNumber] = useState(
+    () => localStorage.getItem('babyNumber') || ''
+  );
+  const [babyBirthDate, setBabyBirthDate] = useState(
+    () => localStorage.getItem('babyBirthDate') || ''
+  );
+  const [treatmentType, setTreatmentType] = useState(
+    () => localStorage.getItem('treatmentType') || ''
+  );
+  const [ivfCycleNumber, setIvfCycleNumber] = useState(
+    () => localStorage.getItem('ivfCycleNumber') || ''
+  );
+  const [menopauseStage, setMenopauseStage] = useState(
+    () => localStorage.getItem('menopauseStage') || ''
+  );
+  const [menopauseSymptoms, setMenopauseSymptoms] = useState(() => {
+    try {
+      const saved = localStorage.getItem('menopauseSymptoms');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [feedingMethod, setFeedingMethod] = useState(
+    () => localStorage.getItem('feedingMethod') || ''
+  );
+
   const isSyncingRef = useRef(false);
 
-  // localStorage saves
+  // ── localStorage persistence ──────────────────────────────────────────────
   useEffect(() => { if (journeyType) localStorage.setItem('userJourney', journeyType); }, [journeyType]);
   useEffect(() => { localStorage.setItem('userName', userName); }, [userName]);
   useEffect(() => { localStorage.setItem('userCulture', culture); }, [culture]);
@@ -56,7 +80,15 @@ export function AppProvider({ children }) {
   useEffect(() => { if (lastPeriodStart) localStorage.setItem('lastPeriodStart', lastPeriodStart); }, [lastPeriodStart]);
   useEffect(() => { localStorage.setItem('subscriptionPlan', subscriptionPlan); }, [subscriptionPlan]);
   useEffect(() => { localStorage.setItem('notificationsEnabled', notificationsEnabled); }, [notificationsEnabled]);
+  useEffect(() => { if (babyNumber) localStorage.setItem('babyNumber', babyNumber); }, [babyNumber]);
+  useEffect(() => { if (babyBirthDate) localStorage.setItem('babyBirthDate', babyBirthDate); }, [babyBirthDate]);
+  useEffect(() => { if (treatmentType) localStorage.setItem('treatmentType', treatmentType); }, [treatmentType]);
+  useEffect(() => { if (ivfCycleNumber) localStorage.setItem('ivfCycleNumber', ivfCycleNumber); }, [ivfCycleNumber]);
+  useEffect(() => { if (menopauseStage) localStorage.setItem('menopauseStage', menopauseStage); }, [menopauseStage]);
+  useEffect(() => { localStorage.setItem('menopauseSymptoms', JSON.stringify(menopauseSymptoms)); }, [menopauseSymptoms]);
+  useEffect(() => { if (feedingMethod) localStorage.setItem('feedingMethod', feedingMethod); }, [feedingMethod]);
 
+  // ── Firestore sync ────────────────────────────────────────────────────────
   const syncToFirestore = useCallback(async (data) => {
     const user = auth.currentUser;
     if (!user || isSyncingRef.current) return;
@@ -65,7 +97,11 @@ export function AppProvider({ children }) {
     try {
       const userRef = doc(db, 'users', user.uid);
       await setDoc(userRef, {
-        appData: data,
+        appData: {
+          ...data,
+          // Always stamp local write time so we can compare on load
+          localUpdatedAt: new Date().toISOString(),
+        },
         lastSync: new Date().toISOString(),
       }, { merge: true });
     } catch (err) {
@@ -76,7 +112,16 @@ export function AppProvider({ children }) {
     }
   }, []);
 
-  // ONLY ONE loadFromFirestore DEFINITION - KEEP THIS ONE
+  /**
+   * Load from Firestore — but only apply fields that are OLDER than what
+   * localStorage already has. We compare timestamps:
+   *
+   *   localStorage key 'localUpdatedAt' = when user last wrote data locally
+   *   Firestore field  'localUpdatedAt' = the timestamp we stamped on last sync
+   *
+   * If Firestore timestamp < local timestamp → local data is newer → skip that field.
+   * If no local timestamp exists (new install) → Firestore wins (restoring account).
+   */
   const loadFromFirestore = useCallback(async () => {
     const user = auth.currentUser;
     if (!user) return null;
@@ -84,29 +129,53 @@ export function AppProvider({ children }) {
     try {
       const userRef = doc(db, 'users', user.uid);
       const docSnap = await getDoc(userRef);
-      if (docSnap.exists() && docSnap.data().appData) {
-        const data = docSnap.data().appData;
-        if (data.journeyType)   setJourneyType(data.journeyType);
-        if (data.userName)      setUserName(data.userName);
-        if (data.culture)       setCulture(data.culture);
-        if (data.edd)           setEdd(data.edd);
-        if (data.babyAgeDays)   setBabyAgeDays(data.babyAgeDays);
-        if (data.cycleLength)   setCycleLength(data.cycleLength);
-        if (data.periodLength)  setPeriodLength(data.periodLength);
-        if (data.lastPeriodStart) setLastPeriodStart(data.lastPeriodStart);
-        if (data.subscriptionPlan) setSubscriptionPlan(data.subscriptionPlan);
-        if (data.notificationsEnabled !== undefined) setNotificationsEnabled(data.notificationsEnabled);
-        return data;
+      if (!docSnap.exists() || !docSnap.data().appData) return null;
+
+      const data = docSnap.data().appData;
+
+      // Compare timestamps: local wins if it's newer
+      const localTs    = localStorage.getItem('localUpdatedAt');
+      const firestoreTs = data.localUpdatedAt;
+
+      // If local has a timestamp and it's newer than or equal to Firestore → don't overwrite
+      const localIsNewer = localTs && firestoreTs && localTs >= firestoreTs;
+
+      if (localIsNewer) {
+        // Local data is current (e.g. user just completed onboarding).
+        // Don't overwrite anything — but still sync local state up to Firestore.
+        console.info('[AppContext] Local data is newer than Firestore — skipping restore');
+        return null;
       }
+
+      // Firestore is newer (e.g. user logged in on a different device) — restore it
+      if (data.journeyType)           setJourneyType(data.journeyType);
+      if (data.userName)              setUserName(data.userName);
+      if (data.culture)               setCulture(data.culture);
+      if (data.edd)                   setEdd(data.edd);
+      if (data.babyAgeDays)           setBabyAgeDays(data.babyAgeDays);
+      if (data.cycleLength)           setCycleLength(data.cycleLength);
+      if (data.periodLength)          setPeriodLength(data.periodLength);
+      if (data.lastPeriodStart)       setLastPeriodStart(data.lastPeriodStart);
+      if (data.subscriptionPlan)      setSubscriptionPlan(data.subscriptionPlan);
+      if (data.notificationsEnabled !== undefined) setNotificationsEnabled(data.notificationsEnabled);
+      if (data.babyNumber)            setBabyNumber(data.babyNumber);
+      if (data.babyBirthDate)         setBabyBirthDate(data.babyBirthDate);
+      if (data.treatmentType)         setTreatmentType(data.treatmentType);
+      if (data.ivfCycleNumber)        setIvfCycleNumber(data.ivfCycleNumber);
+      if (data.menopauseStage)        setMenopauseStage(data.menopauseStage);
+      if (data.menopauseSymptoms)     setMenopauseSymptoms(data.menopauseSymptoms);
+      if (data.feedingMethod)         setFeedingMethod(data.feedingMethod);
+
+      return data;
     } catch (err) {
       console.error('Load error:', err);
+      return null;
     } finally {
       setIsSyncing(false);
     }
-    return null;
   }, []);
 
-  // Call loadFromFirestore on auth state change
+  // ── Auth state change → load from Firestore ───────────────────────────────
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) loadFromFirestore();
@@ -114,16 +183,22 @@ export function AppProvider({ children }) {
     return () => unsub();
   }, [loadFromFirestore]);
 
-  // Auto-sync — only runs when a user is actually logged in
+  // ── Debounced auto-sync (only when logged in) ─────────────────────────────
   useEffect(() => {
     const user = auth.currentUser;
     if (!user) return;
+
+    // Stamp local update time whenever state changes
+    const now = new Date().toISOString();
+    localStorage.setItem('localUpdatedAt', now);
 
     const timeout = setTimeout(() => {
       syncToFirestore({
         journeyType, userName, culture, edd, babyAgeDays,
         cycleLength, periodLength, lastPeriodStart,
         subscriptionPlan, notificationsEnabled,
+        babyNumber, babyBirthDate, treatmentType,
+        ivfCycleNumber, menopauseStage, menopauseSymptoms, feedingMethod,
       });
     }, 1000);
 
@@ -132,8 +207,11 @@ export function AppProvider({ children }) {
     journeyType, userName, culture, edd, babyAgeDays,
     cycleLength, periodLength, lastPeriodStart,
     subscriptionPlan, notificationsEnabled, syncToFirestore,
+    babyNumber, babyBirthDate, treatmentType,
+    ivfCycleNumber, menopauseStage, menopauseSymptoms, feedingMethod,
   ]);
 
+  // ── Derived helpers ───────────────────────────────────────────────────────
   const getCurrentWeek = useCallback(() => {
     if (journeyType !== 'pregnant') return null;
     if (edd) {
@@ -171,6 +249,13 @@ export function AppProvider({ children }) {
     setLastPeriodStart('');
     setSubscriptionPlan('free');
     setNotificationsEnabled(false);
+    setBabyNumber('');
+    setBabyBirthDate('');
+    setTreatmentType('');
+    setIvfCycleNumber('');
+    setMenopauseStage('');
+    setMenopauseSymptoms([]);
+    setFeedingMethod('');
 
     const userAuth = localStorage.getItem('userAuth');
     const userConsents = localStorage.getItem('userConsents');
@@ -212,8 +297,15 @@ export function AppProvider({ children }) {
     notificationsEnabled, setNotificationsEnabled,
     clearUserData,
     logout,
-    loadFromFirestore, 
+    loadFromFirestore,
     isSyncing,
+    babyNumber,        setBabyNumber,
+    babyBirthDate,     setBabyBirthDate,
+    treatmentType,     setTreatmentType,
+    ivfCycleNumber,    setIvfCycleNumber,
+    menopauseStage,    setMenopauseStage,
+    menopauseSymptoms, setMenopauseSymptoms,
+    feedingMethod,     setFeedingMethod,
   };
 
   return (

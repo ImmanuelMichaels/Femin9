@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronRight } from 'lucide-react';
 import { WCard } from '../../components/ui';
 import { useApp } from '../../context/useApp';
 import { auth, db, storage } from '../../context/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import WeightGoalSetup from '../../components/WeightGoalSetup';
 
 const Toggle = ({ value, onChange, label, desc, color = "var(--sg)", disabled = false }) => (
   <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)", padding: "var(--sp-4) 0", borderBottom: "1px solid var(--border)", opacity: disabled ? 0.5 : 1 }}>
@@ -54,7 +56,7 @@ export default function Settings() {
     getCurrentWeek,
     getTrimester,
     subscriptionPlan,
-    setSubscriptionPlan,  // ← Make sure this exists in AppContext
+    setSubscriptionPlan,
     clearUserData,
     notificationsEnabled,
     setNotificationsEnabled,
@@ -68,6 +70,7 @@ export default function Settings() {
   const [bpReminders, setBpReminders] = useState(() => localStorage.getItem('bpReminders') !== 'false');
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showWeightGoals, setShowWeightGoals] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   
@@ -208,18 +211,6 @@ export default function Settings() {
       }
       case 'menopause': return 'Menopause Support';
       default: return 'Health Journey';
-    }
-  };
-  
-  // Get journey icon - DEFINED HERE
-  const getJourneyIcon = () => {
-    switch(journeyType) {
-      case 'pregnant': return '';
-      case 'conceive': return '';
-      case 'ivf': return '';
-      case 'mom': return '';
-      case 'menopause': return '';
-      default: return '👩';
     }
   };
   
@@ -521,6 +512,33 @@ export default function Settings() {
         </button>
       </WCard>
 
+      {/* Health Section with Weight Goals */}
+      <WCard style={{ marginBottom: "var(--gap-md)" }}>
+        <p style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: "var(--mt)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: "var(--sp-3)" }}>Health</p>
+        
+        <button 
+          onClick={() => setShowWeightGoals(true)} 
+          style={{
+            width: "100%",
+            padding: "var(--sp-3)",
+            background: "var(--lvl)",
+            border: "1px solid var(--border)",
+            borderRadius: "var(--r)",
+            fontSize: "var(--fs-sm)",
+            fontWeight: 600,
+            color: "var(--dp)",
+            cursor: "pointer",
+            textAlign: "left",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between"
+          }}
+        >
+          <span>⚖️ Weight Goals</span>
+          <ChevronRight size={16} color="var(--mt)" />
+        </button>
+      </WCard>
+
       {/* Language Section */}
       <WCard style={{ marginBottom: "var(--gap-md)" }}>
         <p style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: "var(--mt)", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: "var(--sp-3)" }}>Language</p>
@@ -599,6 +617,11 @@ export default function Settings() {
 
       {/* Sign Out Button */}
       <button onClick={() => navigate('/login')} style={{ width: "100%", padding: "var(--sp-4)", background: "var(--rdl)", border: "1.5px solid var(--rdm)44", borderRadius: "var(--r2)", color: "var(--rd)", fontSize: "var(--fs-md)", fontWeight: 800, cursor: "pointer", minHeight: "var(--touch)" }}>Sign Out</button>
+
+      {/* Weight Goals Modal */}
+      {showWeightGoals && (
+        <WeightGoalSetup onComplete={() => setShowWeightGoals(false)} onSkip={() => setShowWeightGoals(false)} />
+      )}
 
       {/* Delete Account Confirmation Modal */}
       {showDeleteConfirm && (

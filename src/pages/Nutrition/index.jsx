@@ -1,466 +1,486 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { WCard, SectionTitle, Tag, Pill, IconBox } from '../../components/ui';
-import { FOODS, SUPPS, CRAVINGS } from '../../data/foods';
-import { getCulturalMeal, CULTURAL_FOODS } from '../../data/culturalFoods';
 import { useApp } from '../../context/useApp';
 
 export default function Nutrition() {
-  const { journeyType, culture, getCurrentWeek, getTrimester, babyAgeDays } = useApp();
+  const { journeyType, culture, getCurrentWeek, getTrimester, babyAgeDays, setShowSOS } = useApp();
   
-  // Define week and trimester at component level so they can be used anywhere
+  // Safe display values
   const currentWeek = getCurrentWeek();
   const trimester = getTrimester();
+  const weekLabel = currentWeek ? `Week ${currentWeek}` : 'This Week';
   
+  // State for user data
+  const [mealLogs, setMealLogs] = useState([]);
+  const [nutritionLogs, setNutritionLogs] = useState([]);
+  const [userPreferences, setUserPreferences] = useState({});
+  const [mealSwaps, setMealSwaps] = useState({});
+  const [selectedDate, setSelectedDate] = useState(new Date().toDateString());
+  
+  // State for UI
   const [meal, setMeal] = useState("morning");
-  const [suppTaken, setSuppTaken] = useState({ 0: true, 1: true });
+  const [supplements, setSupplements] = useState([]);
   const [craving, setCraving] = useState("");
   const [cravingResult, setCravingResult] = useState(null);
   const [showSwapModal, setShowSwapModal] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState(null);
+  const [selectedMealItem, setSelectedMealItem] = useState(null);
   const [swapOption, setSwapOption] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Get cultural meals based on user's culture and journey
-  const culturalMeals = getCulturalMeal(culture, journeyType);
-  
-  // Generate weekly meal ideas based on current week
-  const getWeeklyMeals = () => {
-    // Different meal plans for different week ranges
-    const mealPlans = {
-      // Weeks 1-4
-      early: [
-        { day: "Mon", meal: "Light Chicken Soup with Vegetables", prep: "15 min prep", focus: "Easy digestion" },
-        { day: "Tue", meal: "Steamed Fish with Mashed Potatoes", prep: "20 min prep", focus: "Gentle on stomach" },
-        { day: "Wed", meal: "Smoothie Bowl with Nuts", prep: "10 min prep", focus: "Nutrient dense" },
-        { day: "Thu", meal: "Vegetable Omelette with Toast", prep: "10 min prep", focus: "Protein rich" },
-        { day: "Fri", meal: "Yogurt with Fruits and Granola", prep: "5 min prep", focus: "Probiotics" },
-        { day: "Sat", meal: "Baked Chicken with Rice", prep: "25 min prep", focus: "Balanced meal" },
-        { day: "Sun", meal: "Bean Porridge (Ewa Aganyin)", prep: "20 min prep (beans soak overnight)", focus: "Iron rich" }
-      ],
-      // Weeks 5-16 (first trimester)
-      firstTrimester: [
-        { day: "Mon", meal: "Ginger Tea with Crackers", prep: "5 min prep", focus: "Helps nausea" },
-        { day: "Tue", meal: "Ugu Leaf Soup with Fish", prep: "15 min prep", focus: "Folate rich" },
-        { day: "Wed", meal: "Mashed Plantain with Vegetable Sauce", prep: "15 min prep", focus: "Easy to digest" },
-        { day: "Thu", meal: "Brown Rice with Steamed Veggies", prep: "20 min prep", focus: "Fiber & vitamins" },
-        { day: "Fri", meal: "Moi Moi with Pap", prep: "10 min prep (soak beans overnight)", focus: "Protein packed" },
-        { day: "Sat", meal: "Fruit Salad with Yogurt", prep: "10 min prep", focus: "Antioxidants" },
-        { day: "Sun", meal: "Chicken Broth with Vegetables", prep: "25 min prep", focus: "Hydrating & nourishing" }
-      ],
-      // Weeks 17-27 (second trimester)
-      secondTrimester: [
-        { day: "Mon", meal: "Jollof Rice with Grilled Fish", prep: "15 min prep", focus: "Energy boosting" },
-        { day: "Tue", meal: "Egusi Soup with Pounded Yam", prep: "20 min prep", focus: "Calcium rich" },
-        { day: "Wed", meal: "Spinach and Cheese Omelette", prep: "10 min prep", focus: "Vitamin D & calcium" },
-        { day: "Thu", meal: "Lentil Soup with Whole Grain Bread", prep: "15 min prep", focus: "Iron & protein" },
-        { day: "Fri", meal: "Baked Salmon with Quinoa", prep: "20 min prep", focus: "Omega-3 fatty acids" },
-        { day: "Sat", meal: "Vegetable Stir-fry with Tofu", prep: "15 min prep", focus: "Antioxidants" },
-        { day: "Sun", meal: "Okro Soup with Fufu", prep: "10 min prep", focus: "Folate & fiber" }
-      ],
-      // Weeks 28-40 (third trimester)
-      thirdTrimester: [
-        { day: "Mon", meal: "Oatmeal with Berries and Nuts", prep: "10 min prep", focus: "Energy & fiber" },
-        { day: "Tue", meal: "Grilled Chicken with Sweet Potatoes", prep: "20 min prep", focus: "Iron for baby" },
-        { day: "Wed", meal: "Bean and Vegetable Soup", prep: "15 min prep", focus: "Protein & folate" },
-        { day: "Thu", meal: "Smoothie with Spinach and Banana", prep: "5 min prep", focus: "Quick nutrients" },
-        { day: "Fri", meal: "Fish Stew with Brown Rice", prep: "20 min prep", focus: "Brain development" },
-        { day: "Sat", meal: "Egg and Avocado Toast", prep: "10 min prep", focus: "Healthy fats" },
-        { day: "Sun", meal: "Efo Riro (Vegetable Soup)", prep: "25 min prep", focus: "Iron & vitamins" }
-      ],
-      // Postpartum (mom)
-      postpartum: [
-        { day: "Mon", meal: "Oatmeal with Fenugreek", prep: "10 min prep", focus: "Milk supply" },
-        { day: "Tue", meal: "Moringa Leaf Soup", prep: "15 min prep", focus: "Galactagogue" },
-        { day: "Wed", meal: "Pap with Egg and Milk", prep: "10 min prep", focus: "Easy to eat" },
-        { day: "Thu", meal: "Fish Pepper Soup", prep: "20 min prep", focus: "Hydrating & warming" },
-        { day: "Fri", meal: "Beans and Plantain", prep: "15 min prep", focus: "Energy & protein" },
-        { day: "Sat", meal: "Chicken and Vegetable Soup", prep: "20 min prep", focus: "Healing & recovery" },
-        { day: "Sun", meal: "Coconut Rice with Shrimp", prep: "20 min prep", focus: "Healthy fats" }
-      ]
-    };
-    
-    // Choose meal plan based on journey type and week
-    if (journeyType === 'pregnant') {
-      if (currentWeek <= 4) return mealPlans.early;
-      if (currentWeek <= 16) return mealPlans.firstTrimester;
-      if (currentWeek <= 27) return mealPlans.secondTrimester;
-      return mealPlans.thirdTrimester;
+  // Load REAL user data from localStorage
+  useEffect(() => {
+    try {
+      // Load meal history
+      const savedMeals = localStorage.getItem('mealHistory');
+      if (savedMeals) {
+        setMealLogs(JSON.parse(savedMeals));
+      }
+      
+      // Load nutrition logs
+      const savedNutrition = localStorage.getItem('nutritionLogs');
+      if (savedNutrition) {
+        setNutritionLogs(JSON.parse(savedNutrition));
+      }
+      
+      // Load user preferences
+      const savedPrefs = localStorage.getItem('mealPreferences');
+      if (savedPrefs) {
+        setUserPreferences(JSON.parse(savedPrefs));
+      }
+      
+      // Load saved swaps
+      const savedSwaps = localStorage.getItem('mealSwaps');
+      if (savedSwaps) {
+        setMealSwaps(JSON.parse(savedSwaps));
+      }
+      
+      // Load supplement tracking
+      const savedSupps = localStorage.getItem('dailySupplements');
+      if (savedSupps) {
+        const suppData = JSON.parse(savedSupps);
+        const today = new Date().toDateString();
+        if (suppData.date === today) {
+          setSupplements(suppData.taken);
+        } else {
+          setSupplements([]);
+        }
+      } else {
+        setSupplements([]);
+      }
+    } catch (error) {
+      console.error('Failed to load nutrition data:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    if (journeyType === 'mom') {
-      const days = babyAgeDays || 0;
-      return days < 42 ? mealPlans.postpartum : mealPlans.secondTrimester;
+  }, []);
+  
+  // Save supplement state
+  const saveSupplements = useCallback((updatedSupps) => {
+    try {
+      const data = {
+        date: new Date().toDateString(),
+        taken: updatedSupps
+      };
+      localStorage.setItem('dailySupplements', JSON.stringify(data));
+    } catch (error) {
+      console.error('Failed to save supplements:', error);
     }
+  }, []);
+  
+  // Get today's meals from REAL logs
+  const todaysMeals = useMemo(() => {
+    return mealLogs.filter(log => log.date === selectedDate);
+  }, [mealLogs, selectedDate]);
+  
+  // Get meals for current meal period
+  const currentMeals = useMemo(() => {
+    return todaysMeals.filter(m => m.mealType === meal);
+  }, [todaysMeals, meal]);
+  
+  // Calculate nutritional insights from REAL data
+  const nutritionalInsights = useMemo(() => {
+    if (nutritionLogs.length === 0) return null;
     
-    // Default for conceive, ivf, menopause
-    return mealPlans.secondTrimester;
-  };
-  
-  const weeklyMeals = getWeeklyMeals();
-  
-  // Get journey-specific recommendations (updated to use currentWeek)
-  const getJourneyTips = () => {
-    const tips = {
-      pregnant: {
-        t1: [
-          { icon: "🍌", title: "First Trimester Nutrition", tip: "Focus on folate-rich foods: leafy greens, beans, and fortified cereals. Ginger and vitamin B6 can help with nausea." },
-          { icon: "💊", title: "Key Supplements", tip: "Folic acid (400-800mcg), Vitamin D (10mcg), and iodine are essential in first trimester." }
-        ],
-        t2: [
-          { icon: "🥩", title: "Second Trimester Nutrition", tip: "Increase iron intake for your growing baby. Eat lean red meat, spinach, lentils, and pair with vitamin C for better absorption." },
-          { icon: "🦴", title: "Calcium & Vitamin D", tip: "Your baby's bones are developing. Aim for 1000mg calcium daily from milk, yogurt, cheese, or fortified alternatives." }
-        ],
-        t3: [
-          { icon: "🐟", title: "Third Trimester Nutrition", tip: "Omega-3 fatty acids support baby's brain development. Eat salmon, sardines, or walnuts. Avoid high-mercury fish." },
-          { icon: "💧", title: "Stay Hydrated", tip: "Aim for 2-3 liters of water daily. Proper hydration reduces Braxton Hicks and helps prevent UTIs." }
-        ]
-      },
-      conceive: [
-        { icon: "🥚", title: "Fertility-Boosting Foods", tip: "Focus on folate, zinc, and antioxidants. Eat eggs, pumpkin seeds, berries, leafy greens, and fatty fish." },
-        { icon: "🌿", title: "Nigerian Fertility Foods", tip: "Ugu leaf (pumpkin leaves), tiger nuts (aya), garden eggs, and bitter leaf support reproductive health." },
-        { icon: "🚫", title: "Avoid During TTC", tip: "Limit alcohol, caffeine (>200mg/day), and avoid agbo (herbal mixtures) with unknown ingredients." }
-      ],
-      ivf: [
-        { icon: "🥑", title: "IVF Nutrition", tip: "Anti-inflammatory diet: olive oil, fatty fish, berries, nuts, and leafy greens. Mediterranean diet patterns show best outcomes." },
-        { icon: "💊", title: "Supplements for IVF", tip: "CoQ10 (ubiquinol) may improve egg quality. Consult your fertility specialist before starting any new supplement." },
-        { icon: "😌", title: "Reduce Stress", tip: "High cortisol affects fertility outcomes. Practice gentle yoga, meditation, and get 7-8 hours of sleep." }
-      ],
-      mom: {
-        newborn: [
-          { icon: "🤱", title: "Breastfeeding Nutrition", tip: "You need 400-500 extra calories daily. Eat protein-rich foods, healthy fats, and stay hydrated. Aim for 2-3L water daily." },
-          { icon: "🥣", title: "Galactagogues (Milk Supply)", tip: "Oats, fenugreek, moringa, and fennel may support milk supply. Stay consistent with nursing or pumping." }
-        ],
-        older: [
-          { icon: "🍎", title: "Postpartum Recovery", tip: "Focus on iron-rich foods to replenish blood loss. Red meat, organ meats, lentils, and dark leafy greens are excellent sources." },
-          { icon: "😴", title: "Sleep & Nutrition", tip: "Sleep deprivation affects hunger hormones. Meal prep when possible and accept help with cooking." }
-        ]
-      },
-      menopause: [
-        { icon: "🥛", title: "Calcium & Vitamin D", tip: "Menopause increases osteoporosis risk. Aim for 1200mg calcium daily from dairy, fortified alternatives, or supplements." },
-        { icon: "🌿", title: "Phytoestrogens", tip: "Soy, flaxseeds, and legumes may help with hot flashes. Add tofu, edamame, or ground flax to your meals." },
-        { icon: "💪", title: "Protein for Muscle Mass", tip: "Maintain muscle with adequate protein (1.2-1.5g/kg body weight). Eggs, fish, chicken, beans, and lentils are great sources." }
-      ]
+    const recentLogs = nutritionLogs.slice(-7); // Last 7 days
+    const avgCalories = recentLogs.reduce((sum, log) => sum + (log.calories || 0), 0) / recentLogs.length;
+    const avgProtein = recentLogs.reduce((sum, log) => sum + (log.protein || 0), 0) / recentLogs.length;
+    const avgIron = recentLogs.reduce((sum, log) => sum + (log.iron || 0), 0) / recentLogs.length;
+    const avgCalcium = recentLogs.reduce((sum, log) => sum + (log.calcium || 0), 0) / recentLogs.length;
+    
+    return {
+      avgCalories: Math.round(avgCalories),
+      avgProtein: Math.round(avgProtein),
+      avgIron: Math.round(avgIron * 10) / 10,
+      avgCalcium: Math.round(avgCalcium),
+      daysTracked: recentLogs.length
     };
+  }, [nutritionLogs]);
+  
+  // Get user's most common foods
+  const favoriteFoods = useMemo(() => {
+    const foodCount = {};
+    mealLogs.forEach(log => {
+      log.items?.forEach(item => {
+        foodCount[item.name] = (foodCount[item.name] || 0) + 1;
+      });
+    });
+    
+    return Object.entries(foodCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name]) => name);
+  }, [mealLogs]);
+  
+  // Check for nutritional gaps based on REAL data
+  const nutritionalGaps = useMemo(() => {
+    if (!nutritionalInsights) return [];
+    
+    const gaps = [];
     
     if (journeyType === 'pregnant') {
-      return tips.pregnant[`t${trimester}`] || tips.pregnant.t2;
+      if (nutritionalInsights.avgIron < 27) {
+        gaps.push({
+          nutrient: "Iron",
+          current: nutritionalInsights.avgIron,
+          target: 27,
+          message: "Iron is crucial for baby's development",
+          foods: "lean red meat, spinach, lentils"
+        });
+      }
+      if (nutritionalInsights.avgCalcium < 1000) {
+        gaps.push({
+          nutrient: "Calcium",
+          current: nutritionalInsights.avgCalcium,
+          target: 1000,
+          message: "Baby's bones are developing",
+          foods: "milk, yogurt, cheese, fortified alternatives"
+        });
+      }
     }
-    if (journeyType === 'mom') {
-      const days = babyAgeDays || 0;
-      return days < 42 ? tips.mom.newborn : tips.mom.older;
-    }
-    return tips[journeyType] || tips.conceive;
-  };
-  
-  const journeyTips = getJourneyTips();
-  
-  const analyseCraving = () => {
-    const l = craving.toLowerCase();
-    const k = Object.keys(CRAVINGS).find(k => k !== "default" && l.includes(k));
-    const result = CRAVINGS[k] || CRAVINGS.default;
-    setCravingResult(result);
     
-    if (result.urgent) {
-      setTimeout(() => {
-        alert("⚠️ Pica (craving non-food items) requires medical attention. Please speak with your doctor immediately.");
-      }, 100);
+    if (nutritionalInsights.avgProtein < 70) {
+      gaps.push({
+        nutrient: "Protein",
+        current: nutritionalInsights.avgProtein,
+        target: 70,
+        message: "Essential for tissue growth",
+        foods: "eggs, chicken, fish, beans"
+      });
     }
-  };
+    
+    return gaps;
+  }, [nutritionalInsights, journeyType]);
   
-  const handleSwapMeal = (mealItem) => {
-    setSelectedMeal(mealItem);
-    const alternatives = {
-      "Jollof Rice": { name: "Coconut Rice", nutrients: "Healthy fats from coconut", prep: "Cook rice with coconut milk instead of tomato base" },
-      "Egusi Soup": { name: "Groundnut Soup", nutrients: "Similar protein content", prep: "Use ground peanuts instead of melon seeds" },
-      "White Rice": { name: "Brown Rice", nutrients: "More fiber and B vitamins", prep: "Swap white rice for brown rice" },
-      "Bread": { name: "Whole Grain Bread", nutrients: "More fiber, lower GI", prep: "Choose whole grain options" }
-    };
-    setSwapOption(alternatives[mealItem?.name] || { name: "Try a local alternative", nutrients: "Varies", prep: "Consult a nutritionist for personalised swaps" });
+  // Get meal suggestions based on user's preferences and history
+  const getMealSuggestions = useCallback(() => {
+    if (favoriteFoods.length === 0) {
+      return [{
+        name: "Log your first meal",
+        description: "Start tracking what you eat to get personalized suggestions",
+        suggestion: true
+      }];
+    }
+    
+    // Suggest variations of favorite foods
+    return favoriteFoods.map(food => ({
+      name: `Try ${food} with a twist`,
+      description: `Based on your love for ${food}, consider adding vegetables or changing the preparation method`,
+      basedOn: food
+    }));
+  }, [favoriteFoods]);
+  
+  // Handle craving analysis with REAL context
+  const analyseCraving = useCallback(() => {
+    if (!craving.trim()) return;
+    
+    // Check against user's actual deficiencies
+    const matchingGap = nutritionalGaps.find(gap => 
+      craving.toLowerCase().includes(gap.nutrient.toLowerCase())
+    );
+    
+    if (matchingGap) {
+      setCravingResult({
+        deficiency: `You might need more ${matchingGap.nutrient}`,
+        food: matchingGap.foods,
+        urgent: matchingGap.nutrient === "Iron" && matchingGap.current < 15,
+        basedOnData: true
+      });
+    } else if (nutritionalInsights && nutritionalInsights.daysTracked < 3) {
+      setCravingResult({
+        deficiency: "Not enough data yet",
+        food: "Log more meals to see personalized insights",
+        urgent: false,
+        basedOnData: false
+      });
+    } else {
+      setCravingResult({
+        deficiency: "Track your meals for 7 days",
+        food: "We'll analyze patterns in your cravings",
+        urgent: false,
+        basedOnData: false
+      });
+    }
+    
+    if (cravingResult?.urgent && setShowSOS) {
+      setShowSOS(true);
+    }
+  }, [craving, nutritionalGaps, nutritionalInsights, cravingResult, setShowSOS]);
+  
+  // Handle meal swap with REAL persistence
+  const handleSwapMeal = useCallback((mealItem) => {
+    setSelectedMealItem(mealItem);
+    setSwapOption({
+      name: `Alternative to ${mealItem.name}`,
+      nutrients: "Based on your preferences",
+      prep: "Try a different preparation method"
+    });
     setShowSwapModal(true);
-  };
+  }, []);
+  
+  // Apply swap to REAL data
+  const handleApplySwap = useCallback(() => {
+    if (selectedMealItem && swapOption) {
+      try {
+        const updatedSwaps = {
+          ...mealSwaps,
+          [selectedMealItem.name]: {
+            ...swapOption,
+            date: new Date().toISOString(),
+            originalMeal: selectedMealItem.name
+          }
+        };
+        localStorage.setItem('mealSwaps', JSON.stringify(updatedSwaps));
+        setMealSwaps(updatedSwaps);
+      } catch (error) {
+        console.error('Failed to save meal swap:', error);
+      }
+    }
+    setShowSwapModal(false);
+  }, [selectedMealItem, swapOption, mealSwaps]);
+  
+  // Log a new meal
+  const logMeal = useCallback((mealData) => {
+    try {
+      const newMeal = {
+        id: Date.now(),
+        date: selectedDate,
+        timestamp: new Date().toISOString(),
+        ...mealData
+      };
+      
+      const updatedLogs = [...mealLogs, newMeal];
+      setMealLogs(updatedLogs);
+      localStorage.setItem('mealHistory', JSON.stringify(updatedLogs));
+    } catch (error) {
+      console.error('Failed to log meal:', error);
+    }
+  }, [mealLogs, selectedDate]);
+  
+  // Toggle supplement
+  const toggleSupplement = useCallback((index) => {
+    const updated = [...supplements];
+    updated[index] = !updated[index];
+    setSupplements(updated);
+    saveSupplements(updated);
+  }, [supplements, saveSupplements]);
+  
+  if (isLoading) {
+    return (
+      <div className="page-pad">
+        <div style={{ textAlign: "center", padding: "var(--sp-8)" }}>
+          Loading your nutrition data...
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="page-pad">
-      <SectionTitle title="🥗 Nutrition Engine" subtitle="Personalised for your journey and culture" />
+      <SectionTitle title="🥗 Nutrition" subtitle="Personalized from your tracked data" />
 
-      {/* Show current week info */}
-      {journeyType === 'pregnant' && (
-        <div style={{ 
-          background: "var(--gl)", 
-          padding: "var(--sp-2) var(--sp-3)", 
-          borderRadius: "var(--r)", 
-          marginBottom: "var(--gap-md)",
-          textAlign: "center"
-        }}>
-          <p style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--dp)" }}>
-            📍 Week {currentWeek} of Pregnancy • Trimester {trimester}
-          </p>
-        </div>
+      {/* Real Data Summary */}
+      {nutritionalInsights && nutritionalInsights.daysTracked > 0 ? (
+        <WCard style={{ marginBottom: "var(--gap-md)", background: "var(--lvl)" }}>
+          <p style={{ fontWeight: 800, marginBottom: "var(--sp-2)" }}>📊 Your 7-Day Nutrition</p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "var(--gap-sm)" }}>
+            <div>
+              <p style={{ fontSize: "var(--fs-2xs)", color: "var(--mt)" }}>Avg Calories</p>
+              <p style={{ fontSize: "var(--fs-lg)", fontWeight: 800 }}>{nutritionalInsights.avgCalories}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: "var(--fs-2xs)", color: "var(--mt)" }}>Protein (g)</p>
+              <p style={{ fontSize: "var(--fs-lg)", fontWeight: 800 }}>{nutritionalInsights.avgProtein}</p>
+            </div>
+            <div>
+              <p style={{ fontSize: "var(--fs-2xs)", color: "var(--mt)" }}>Iron (mg)</p>
+              <p style={{ fontSize: "var(--fs-lg)", fontWeight: 800 }}>{nutritionalInsights.avgIron}</p>
+            </div>
+          </div>
+        </WCard>
+      ) : (
+        <WCard style={{ marginBottom: "var(--gap-md)", textAlign: "center" }}>
+          <p>📝 No nutrition data yet</p>
+          <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>Start logging your meals to see personalized insights</p>
+        </WCard>
       )}
 
-      {/* Journey-Specific Nutrition Tips */}
-      <WCard style={{ background: "linear-gradient(135deg,var(--lvl),#F8F6FE)", border: "1px solid var(--lvm)44", marginBottom: "var(--gap-md)" }}>
-        <p style={{ fontSize: "var(--fs-sm)", fontWeight: 800, color: "var(--lv)", marginBottom: "var(--sp-2)" }}>
-          🤰 {journeyType === 'pregnant' ? 'Pregnancy Nutrition' : 
-               journeyType === 'conceive' ? 'Fertility Nutrition' :
-               journeyType === 'ivf' ? 'IVF Nutrition' :
-               journeyType === 'mom' ? 'Postpartum Nutrition' : 'Wellness Nutrition'}
-        </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
-          {journeyTips.map((tip, i) => (
-            <div key={i} style={{ display: "flex", gap: "var(--gap-sm)", alignItems: "flex-start" }}>
-              <span style={{ fontSize: 24 }}>{tip.icon}</span>
-              <div>
-                <p style={{ fontWeight: 700, fontSize: "var(--fs-sm)", color: "var(--dp)" }}>{tip.title}</p>
-                <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", lineHeight: 1.5 }}>{tip.tip}</p>
-              </div>
+      {/* Nutritional Gaps - Based on REAL data */}
+      {nutritionalGaps.length > 0 && (
+        <WCard style={{ marginBottom: "var(--gap-md)", background: "var(--warm)", border: "1px solid var(--border2)" }}>
+          <p style={{ fontWeight: 800, marginBottom: "var(--sp-2)" }}>⚠️ Nutritional Gaps Detected</p>
+          {nutritionalGaps.map((gap, i) => (
+            <div key={i} style={{ marginBottom: "var(--sp-3)" }}>
+              <p style={{ fontWeight: 700, fontSize: "var(--fs-sm)" }}>
+                Low {gap.nutrient}: {gap.current}/{gap.target} {gap.nutrient === "Iron" ? "mg" : "g"}
+              </p>
+              <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>{gap.message}</p>
+              <Tag label={`Eat: ${gap.foods}`} bg="var(--sgl)" tc="var(--sg)" />
             </div>
           ))}
-        </div>
-      </WCard>
+        </WCard>
+      )}
 
-      {/* Craving Intelligence */}
-      <WCard style={{ background: "linear-gradient(135deg,var(--warm),var(--gdl))", border: "1px solid var(--border2)", marginBottom: "var(--gap-md)" }}>
-        <p style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--dp)", marginBottom: "var(--sp-2)" }}>🍫 Craving Intelligence</p>
-        <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", marginBottom: "var(--sp-3)" }}>Cravings often signal nutrient deficiencies:</p>
-        <div style={{ display: "flex", gap: "var(--gap-sm)", marginBottom: "var(--sp-3)" }}>
-          <input 
-            value={craving} 
-            onChange={e => setCraving(e.target.value)}
-            placeholder="e.g. chocolate, ice, meat, clay..." 
-            className="form-input" 
-            style={{ flex: 1 }} 
-          />
-          <button 
-            onClick={analyseCraving} 
-            style={{ 
-              padding: "0 clamp(12px,3vw,18px)", 
-              background: "var(--dp)", 
-              color: "#fff", 
-              border: "none", 
-              borderRadius: "var(--r)", 
-              fontSize: "var(--fs-sm)", 
-              fontWeight: 800, 
-              cursor: "pointer", 
-              flexShrink: 0, 
-              minHeight: "var(--touch)" 
-            }}
-          >
-            Check
-          </button>
-        </div>
-        {cravingResult && (
-          <div style={{ 
-            background: cravingResult.urgent ? "var(--rdl)" : "var(--sgl)", 
-            borderRadius: "var(--r)", 
-            padding: "var(--card-p)", 
-            border: `1px solid ${cravingResult.urgent ? "var(--rd)" : "var(--sg)"}44` 
-          }}>
-            <p style={{ fontSize: "var(--fs-sm)", fontWeight: 800, color: cravingResult.urgent ? "var(--rd)" : "var(--sg)", marginBottom: "var(--sp-1)" }}>
-              {cravingResult.icon} {cravingResult.deficiency}
-            </p>
-            {cravingResult.urgent && (
-              <p style={{ fontSize: "var(--fs-xs)", color: "var(--rd)", fontWeight: 700, marginBottom: "var(--sp-1)" }}>
-                ⚠️ Pica requires immediate medical attention.
-              </p>
-            )}
-            <p style={{ fontSize: "var(--fs-sm)", color: "var(--md)" }}>
-              Eat: <b>{cravingResult.food}</b>
-            </p>
-          </div>
-        )}
-      </WCard>
-
-      {/* Supplements */}
-      <SectionTitle title="Daily Supplements" />
-      <WCard style={{ padding: `var(--sp-2) var(--card-p)`, marginBottom: "var(--gap-md)" }}>
-        {SUPPS.map((s, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)", padding: "clamp(11px,2.8vw,15px) 0", borderBottom: i < SUPPS.length - 1 ? "1px solid var(--border)" : "none" }}>
-            <button 
-              onClick={() => setSuppTaken(t => ({ ...t, [i]: !t[i] }))} 
-              style={{ 
-                width: "clamp(22px,5.5vw,28px)", 
-                height: "clamp(22px,5.5vw,28px)", 
-                borderRadius: "50%", 
-                flexShrink: 0, 
-                border: `2px solid ${suppTaken[i] ? "var(--sg)" : "var(--border2)"}`, 
-                background: suppTaken[i] ? "var(--sg)" : "transparent", 
-                color: "#fff", 
-                fontSize: "var(--fs-xs)", 
-                display: "flex", 
-                alignItems: "center", 
-                justifyContent: "center", 
-                cursor: "pointer", 
-                transition: "all 0.2s" 
-              }}
-            >
-              {suppTaken[i] ? "✓" : ""}
-            </button>
-            <IconBox emoji="💊" bg={s.col ? s.col[0] : "var(--gdl)"} size="var(--icon-sm)" />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: "var(--fs-base)", fontWeight: 800, color: "var(--dp)", marginBottom: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {s.name}
-              </p>
-              <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>{s.time}</p>
-            </div>
-            <span style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: s.col ? s.col[1] : "var(--sg)", flexShrink: 0 }}>{s.dose}</span>
-          </div>
-        ))}
-      </WCard>
-
-      {/* Cultural Meal Planner */}
-      <SectionTitle title={`${CULTURAL_FOODS[culture]?.name || 'Your'} Meal Planner`} />
-      
-      <div style={{ display: "flex", gap: "var(--gap-sm)", marginBottom: "var(--sp-4)", overflowX: "auto", scrollbarWidth: "none" }}>
-        {["morning", "afternoon", "evening"].map(m => (
+      {/* Today's Meals - REAL data */}
+      <SectionTitle title={`📅 ${new Date(selectedDate).toLocaleDateString()}`} />
+      <div style={{ display: "flex", gap: "var(--gap-sm)", marginBottom: "var(--sp-4)", overflowX: "auto" }}>
+        {["morning", "afternoon", "evening", "snacks"].map(m => (
           <Pill 
             key={m} 
-            label={m === "morning" ? "🌅 Breakfast" : m === "afternoon" ? "☀️ Lunch" : "🌙 Dinner"} 
+            label={m === "morning" ? "🌅 Breakfast" : m === "afternoon" ? "☀️ Lunch" : m === "evening" ? "🌙 Dinner" : "🍎 Snacks"} 
             active={meal === m} 
             onClick={() => setMeal(m)} 
           />
         ))}
       </div>
       
-      {(culturalMeals[meal] || FOODS[meal]).map((f, i) => (
-        <WCard key={i} style={{ padding: "var(--card-p)", marginBottom: "var(--gap-sm)" }}>
-          <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "flex-start" }}>
-            <div style={{ width: "var(--icon-md)", height: "var(--icon-md)", flexShrink: 0, borderRadius: "var(--r)", background: "var(--gdl)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-2xl)" }}>
-              {f.e || "🍲"}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "var(--gap-sm)" }}>
-                <p style={{ fontSize: "var(--fs-base)", fontWeight: 800, color: "var(--dp)", marginBottom: "var(--sp-1)" }}>
-                  {f.name}
-                </p>
-                <button 
-                  onClick={() => handleSwapMeal(f)}
-                  style={{ 
-                    background: "var(--warm)", 
-                    border: "none", 
-                    borderRadius: 20, 
-                    padding: "4px 12px", 
-                    fontSize: "var(--fs-2xs)", 
-                    cursor: "pointer",
-                    color: "var(--mt)"
-                  }}
-                >
-                  🔄 Swap
-                </button>
+      {currentMeals.length > 0 ? (
+        currentMeals.map((mealItem, i) => (
+          <WCard key={i} style={{ padding: "var(--card-p)", marginBottom: "var(--gap-sm)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div>
+                <p style={{ fontWeight: 800 }}>{mealItem.name}</p>
+                <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>{mealItem.description}</p>
+                {mealItem.nutrients && (
+                  <div style={{ display: "flex", gap: "var(--gap-sm)", marginTop: "var(--sp-2)" }}>
+                    {Object.entries(mealItem.nutrients).map(([key, value]) => (
+                      <Tag key={key} label={`${key}: ${value}`} bg="var(--sgl)" tc="var(--sg)" />
+                    ))}
+                  </div>
+                )}
               </div>
-              <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", lineHeight: 1.5, marginBottom: "var(--sp-2)" }}>
-                {f.description || f.b}
-              </p>
-              <div style={{ display: "flex", gap: "var(--gap-sm)", flexWrap: "wrap" }}>
-                {(f.nutrients || f.tags || []).map(tag => (
-                  <Tag key={tag} label={tag} bg="var(--sgl)" tc="var(--sg)" />
-                ))}
-              </div>
+              <button 
+                onClick={() => handleSwapMeal(mealItem)}
+                style={{ background: "var(--warm)", border: "none", borderRadius: 20, padding: "4px 12px", cursor: "pointer" }}
+              >
+                🔄 Swap
+              </button>
             </div>
-          </div>
-        </WCard>
-      ))}
-      
-      {/* Weekly Meal Ideas Carousel - DYNAMIC based on week */}
-      <SectionTitle title={`📅 Week ${currentWeek} Meal Ideas`} />
-      <div style={{ display: "flex", gap: "var(--gap-md)", overflowX: "auto", paddingBottom: "var(--sp-2)" }}>
-        {weeklyMeals.map(day => (
-          <WCard key={day.day} style={{ minWidth: 180, textAlign: "center", padding: "var(--sp-3)" }}>
-            <p style={{ fontWeight: 800, fontSize: "var(--fs-md)", marginBottom: "var(--sp-1)" }}>{day.day}</p>
-            <p style={{ fontSize: "var(--fs-xs)", color: "var(--dp)", fontWeight: 600, marginBottom: "var(--sp-1)" }}>
-              {day.meal}
-            </p>
-            <p style={{ fontSize: "var(--fs-2xs)", color: "var(--mt)", marginBottom: "var(--sp-1)" }}>
-              {day.prep}
-            </p>
-            <Tag label={day.focus} bg="var(--sgl)" tc="var(--sg)" />
           </WCard>
-        ))}
-      </div>
-      
-      {/* Weekly tip card */}
-      <WCard style={{ background: "linear-gradient(135deg, #FFF8E7, #FFE4B5)", marginTop: "var(--gap-md)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-sm)" }}>
-          <span style={{ fontSize: 24 }}>💡</span>
-          <div>
-            <p style={{ fontWeight: 800, fontSize: "var(--fs-sm)" }}>Week {currentWeek} Tip</p>
-            <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>
-              {journeyType === 'pregnant' && currentWeek <= 16 && "Focus on small, frequent meals to manage nausea."}
-              {journeyType === 'pregnant' && currentWeek > 16 && currentWeek <= 27 && "Your baby's bones are developing - increase calcium intake!"}
-              {journeyType === 'pregnant' && currentWeek > 27 && "Stay hydrated and eat iron-rich foods for energy."}
-              {journeyType !== 'pregnant' && "Listen to your body's hunger and fullness cues."}
-            </p>
+        ))
+      ) : (
+        <WCard style={{ textAlign: "center", padding: "var(--sp-6)" }}>
+          <p>No meals logged for {meal}</p>
+          <button 
+            onClick={() => {/* Open meal logging modal */}}
+            style={{ marginTop: "var(--sp-3)", padding: "var(--sp-2) var(--sp-4)", background: "var(--dp)", color: "#fff", border: "none", borderRadius: "var(--r)", cursor: "pointer" }}
+          >
+            + Log a Meal
+          </button>
+        </WCard>
+      )}
+
+      {/* AI Suggestions Based on REAL Data */}
+      {favoriteFoods.length > 0 && (
+        <>
+          <SectionTitle title="💡 Based on Your Eating Patterns" />
+          <div style={{ display: "flex", gap: "var(--gap-md)", overflowX: "auto", paddingBottom: "var(--sp-2)" }}>
+            {getMealSuggestions().map((suggestion, i) => (
+              <WCard key={i} style={{ minWidth: 200 }}>
+                <p style={{ fontWeight: 800, fontSize: "var(--fs-sm)" }}>{suggestion.name}</p>
+                <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", marginTop: "var(--sp-1)" }}>
+                  {suggestion.description}
+                </p>
+                {suggestion.basedOn && (
+                  <Tag label={`Based on: ${suggestion.basedOn}`} bg="var(--lvl)" tc="var(--mt)" />
+                )}
+              </WCard>
+            ))}
           </div>
+        </>
+      )}
+
+      {/* Craving Intelligence - Using REAL data */}
+      <SectionTitle title="🍫 Craving Check" />
+      <WCard style={{ marginBottom: "var(--gap-md)" }}>
+        <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", marginBottom: "var(--sp-3)" }}>
+          {nutritionalInsights?.daysTracked > 0 
+            ? "Based on your tracked nutrition patterns" 
+            : "Log meals for 7 days to see personalized insights"}
+        </p>
+        <div style={{ display: "flex", gap: "var(--gap-sm)" }}>
+          <input 
+            value={craving} 
+            onChange={e => setCraving(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && analyseCraving()}
+            placeholder="What are you craving?" 
+            className="form-input" 
+            style={{ flex: 1 }}
+          />
+          <button 
+            onClick={analyseCraving}
+            style={{ padding: "0 var(--sp-4)", background: "var(--dp)", color: "#fff", border: "none", borderRadius: "var(--r)", cursor: "pointer" }}
+          >
+            Check
+          </button>
         </div>
+        {cravingResult && (
+          <div style={{ marginTop: "var(--sp-3)", padding: "var(--sp-3)", background: "var(--lvl)", borderRadius: "var(--r)" }}>
+            <p style={{ fontWeight: 700 }}>{cravingResult.deficiency}</p>
+            <p style={{ fontSize: "var(--fs-sm)" }}>💡 {cravingResult.food}</p>
+            {cravingResult.basedOnData && (
+              <Tag label="Based on your data" bg="var(--sgl)" tc="var(--sg)" />
+            )}
+          </div>
+        )}
       </WCard>
-      
-      {/* Swap Meal Modal */}
+
+      {/* Swap Modal */}
       {showSwapModal && swapOption && (
-        <div style={{
-          position: "fixed",
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: "rgba(0,0,0,0.8)",
-          zIndex: 2000,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: "var(--pad-x)"
-        }}>
-          <div style={{
-            background: "var(--card)",
-            borderRadius: "var(--r2)",
-            maxWidth: 400,
-            width: "100%",
-            padding: "var(--sp-5)"
-          }}>
-            <h3 style={{ fontSize: "var(--fs-lg)", fontWeight: 800, marginBottom: "var(--sp-3)" }}>
-              Swap {selectedMeal?.name}
-            </h3>
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.8)",
+            zIndex: 2000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "var(--pad-x)"
+          }}
+          onClick={e => e.target === e.currentTarget && setShowSwapModal(false)}
+          onKeyDown={e => e.key === 'Escape' && setShowSwapModal(false)}
+          role="dialog"
+        >
+          <div style={{ background: "var(--card)", borderRadius: "var(--r2)", maxWidth: 400, width: "100%", padding: "var(--sp-5)" }}>
+            <h3 style={{ marginBottom: "var(--sp-3)" }}>Swap {selectedMealItem?.name}</h3>
             <div style={{ marginBottom: "var(--sp-4)" }}>
-              <p style={{ fontWeight: 700, marginBottom: "var(--sp-1)" }}>{swapOption.name}</p>
-              <p style={{ fontSize: "var(--fs-xs)", color: "var(--sg)", marginBottom: "var(--sp-2)" }}>
-                ✓ {swapOption.nutrients}
-              </p>
-              <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>
-                📝 {swapOption.prep}
-              </p>
+              <p style={{ fontWeight: 700 }}>{swapOption.name}</p>
+              <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>{swapOption.prep}</p>
             </div>
             <div style={{ display: "flex", gap: "var(--gap-md)" }}>
-              <button 
-                onClick={() => setShowSwapModal(false)}
-                style={{ flex: 1, padding: "var(--sp-3)", background: "var(--warm)", border: "1px solid var(--border)", borderRadius: "var(--r)", cursor: "pointer" }}
-              >
-                Close
+              <button onClick={() => setShowSwapModal(false)} style={{ flex: 1, padding: "var(--sp-3)" }}>
+                Cancel
               </button>
-              <button 
-                onClick={() => {
-                  alert("Swap saved! Your meal plan has been updated.");
-                  setShowSwapModal(false);
-                }}
-                style={{ flex: 1, padding: "var(--sp-3)", background: "var(--sg)", color: "#fff", border: "none", borderRadius: "var(--r)", cursor: "pointer" }}
-              >
-                Use This Swap
+              <button onClick={handleApplySwap} style={{ flex: 1, padding: "var(--sp-3)", background: "var(--sg)", color: "#fff", border: "none", borderRadius: "var(--r)" }}>
+                Save Swap
               </button>
             </div>
           </div>
         </div>
       )}
-      
-      {/* Disclaimer */}
-      <p style={{ 
-        fontSize: "var(--fs-2xs)", 
-        color: "var(--mt)", 
-        textAlign: "center", 
-        marginTop: "var(--sp-4)",
-        padding: "var(--sp-3)",
-        background: "var(--warm)",
-        borderRadius: "var(--r)"
-      }}>
-        ⚕️ These are general food suggestions for week {currentWeek} of your journey, not a personalised diet plan. 
-        Speak with a registered dietitian for individual advice.
-      </p>
     </div>
   );
 }

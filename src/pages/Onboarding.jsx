@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useApp } from '../context/useApp' 
+import { useApp } from '../context/useApp';
 import './Onboarding.css';
 
 /* ── per-card config ── */
@@ -208,13 +208,14 @@ export default function Onboarding() {
   const navigate = useNavigate();
   
   // Step management
-  const [step, setStep] = useState(1); // 1=Journey, 2=Culture, 3=Personalisation
+  const [step, setStep] = useState(1);
   const [selectedJourney, setSelectedJourney] = useState(null);
   const [selectedCulture, setSelectedCulture] = useState('west_central_african');
   const [personalisation, setPersonalisation] = useState({});
   const [loading, setLoading] = useState(false);
   const [userName, setLocalName] = useState('');
   const [clickedCard, setClickedCard] = useState(null);
+  const [error, setError] = useState(null);
   
   const personalisationQuestions = selectedJourney 
     ? getPersonalisationQuestions(selectedJourney) 
@@ -226,8 +227,8 @@ export default function Onboarding() {
   
   const handleJourneySelect = (id) => {
     setClickedCard(id);
+    setError(null);
     
-    // Add pop animation class
     setTimeout(() => {
       setSelectedJourney(id);
       setClickedCard(null);
@@ -237,61 +238,72 @@ export default function Onboarding() {
   
   const handleCultureSelect = (cultureId) => {
     setSelectedCulture(cultureId);
+    setError(null);
   };
   
   const handlePersonalisationChange = (id, value) => {
     setPersonalisation(prev => ({ ...prev, [id]: value }));
+    setError(null);
   };
   
   const handleComplete = async () => {
+    // Validate required fields
+    if (!userName.trim()) {
+      setError('Please enter your name to continue.');
+      return;
+    }
+    
     setLoading(true);
+    setError(null);
     
-    // Save all data to context (context effects will handle localStorage automatically)
-    setJourneyType(selectedJourney);
-    setCulture(selectedCulture);
-    if (userName) setUserName(userName);
-    
-    // Journey-specific data - set in context (effects will persist)
-    if (selectedJourney === 'pregnant') {
-      if (personalisation.edd) setEdd(personalisation.edd);
-      if (personalisation.babyNumber) setBabyNumber(personalisation.babyNumber);
-    }
-    
-    if (selectedJourney === 'mom') {
-      if (personalisation.babyBirthDate) {
-        const birthDate = new Date(personalisation.babyBirthDate);
-        const today = new Date();
-        const daysOld = Math.floor((today - birthDate) / (1000 * 60 * 60 * 24));
-        setBabyAgeDays(daysOld);
-        setBabyBirthDate(personalisation.babyBirthDate);
+    try {
+      // Save all data to context
+      setJourneyType(selectedJourney);
+      setCulture(selectedCulture);
+      if (userName) setUserName(userName);
+      
+      // Journey-specific data
+      if (selectedJourney === 'pregnant') {
+        if (personalisation.edd) setEdd(personalisation.edd);
+        if (personalisation.babyNumber) setBabyNumber(personalisation.babyNumber);
       }
-      if (personalisation.feedingMethod) setFeedingMethod(personalisation.feedingMethod);
-    }
-    
-    if (selectedJourney === 'conceive') {
-      if (personalisation.cycleLength) setCycleLength(personalisation.cycleLength);
-      if (personalisation.periodLength) setPeriodLength(personalisation.periodLength);
-    }
-    
-    if (selectedJourney === 'ivf') {
-      if (personalisation.treatmentType) setTreatmentType(personalisation.treatmentType);
-      if (personalisation.cycleNumber) setIvfCycleNumber(personalisation.cycleNumber);
-    }
-    
-    if (selectedJourney === 'menopause') {
-      if (personalisation.stage) setMenopauseStage(personalisation.stage);
-      if (personalisation.symptoms) setMenopauseSymptoms(personalisation.symptoms);
-    }
-    
-    // Save journey to localStorage
-    localStorage.setItem('userJourney', selectedJourney);
-    
-    // Check existing session and navigate accordingly
-    const hasConsents = localStorage.getItem('userConsents');
-    const isLoggedIn = localStorage.getItem('userAuth');
-    
-    // Simulate API call delay
-    setTimeout(() => {
+      
+      if (selectedJourney === 'mom') {
+        if (personalisation.babyBirthDate) {
+          const birthDate = new Date(personalisation.babyBirthDate);
+          const today = new Date();
+          const daysOld = Math.floor((today - birthDate) / (1000 * 60 * 60 * 24));
+          setBabyAgeDays(daysOld);
+          setBabyBirthDate(personalisation.babyBirthDate);
+        }
+        if (personalisation.feedingMethod) setFeedingMethod(personalisation.feedingMethod);
+      }
+      
+      if (selectedJourney === 'conceive') {
+        if (personalisation.cycleLength) setCycleLength(personalisation.cycleLength);
+        if (personalisation.periodLength) setPeriodLength(personalisation.periodLength);
+      }
+      
+      if (selectedJourney === 'ivf') {
+        if (personalisation.treatmentType) setTreatmentType(personalisation.treatmentType);
+        if (personalisation.cycleNumber) setIvfCycleNumber(personalisation.cycleNumber);
+      }
+      
+      if (selectedJourney === 'menopause') {
+        if (personalisation.stage) setMenopauseStage(personalisation.stage);
+        if (personalisation.symptoms) setMenopauseSymptoms(personalisation.symptoms);
+      }
+      
+      // Save journey to localStorage
+      localStorage.setItem('userJourney', selectedJourney);
+      
+      // Check existing session and navigate accordingly
+      const hasConsents = localStorage.getItem('userConsents');
+      const isLoggedIn = localStorage.getItem('userAuth');
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       setLoading(false);
       
       if (hasConsents && isLoggedIn) {
@@ -301,12 +313,17 @@ export default function Onboarding() {
       } else {
         navigate('/consent');
       }
-    }, 800);
+    } catch (err) {
+      console.error('Onboarding complete error:', err);
+      setError('Something went wrong. Please check your connection and try again.');
+      setLoading(false);
+    }
   };
   
   const handleBack = () => {
     if (step > 1) {
       setStep(step - 1);
+      setError(null);
     }
   };
   
@@ -465,10 +482,25 @@ export default function Onboarding() {
         This helps us give you the most relevant support.
       </p>
       
+      {/* Error message */}
+      {error && (
+        <div style={{
+          background: 'var(--rdl)',
+          color: 'var(--rd)',
+          padding: 'var(--sp-3)',
+          borderRadius: 'var(--r)',
+          marginBottom: 24,
+          fontSize: 'var(--fs-sm)',
+          textAlign: 'center'
+        }}>
+          ⚠️ {error}
+        </div>
+      )}
+      
       {/* Name input */}
       <div style={{ marginBottom: 24 }}>
         <label style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--dp)', display: 'block', marginBottom: 8 }}>
-          What should we call you?
+          What should we call you? <span style={{ color: 'var(--rd)' }}>*</span>
         </label>
         <input
           type="text"
@@ -479,7 +511,7 @@ export default function Onboarding() {
             width: '100%',
             padding: 'var(--sp-3)',
             borderRadius: 'var(--r)',
-            border: '1px solid var(--border)',
+            border: `1px solid ${error && !userName ? 'var(--rd)' : 'var(--border)'}`,
             fontSize: 'var(--fs-base)',
             background: 'var(--bg)'
           }}
@@ -632,26 +664,16 @@ export default function Onboarding() {
           to { transform: rotate(360deg); }
         }
         
-        /* Pop animation for journey cards */
         .ob-card-pop {
           animation: pop 0.3s cubic-bezier(0.34, 1.2, 0.64, 1) forwards !important;
         }
         
         @keyframes pop {
-          0% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.1);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
-          }
-          100% {
-            transform: scale(0.98);
-            opacity: 0.8;
-          }
+          0% { transform: scale(1); }
+          50% { transform: scale(1.1); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15); }
+          100% { transform: scale(0.98); opacity: 0.8; }
         }
         
-        /* Hover effect for cards */
         .ob-card {
           transition: transform 0.2s ease, box-shadow 0.2s ease !important;
         }

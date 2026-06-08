@@ -1,4 +1,155 @@
 
+:root {
+  font-family: 'Poppins', sans-serif;
+}
+:root {
+  --primary: #D63384;
+  --primary-light: #FCE7F3;
+  --secondary: #7C3AED;
+
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #3B82F6;
+
+  --bg: #FAFAFC;
+  --surface: #FFFFFF;
+
+  --text-primary: #1E1B2E;
+  --text-secondary: #6B7280;
+
+  --border: #F1F5F9;
+
+  --shadow:
+    0 10px 25px rgba(15,23,42,.05),
+    0 4px 12px rgba(15,23,42,.04);
+
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+}
+
+.hm-section {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  align-items: center;
+}
+
+/* card style */
+.card {
+  background: white;
+  border-radius: 24px;
+  padding: 20px;
+  border: 1px solid #f1f5f9;
+  box-shadow: var(--shadow);
+  transition: .3s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.greeting {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.name {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.featureCard {
+  background: white;
+  border-radius: 24px;
+  padding: 24px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.featureIcon {
+  width: 64px;
+  height: 64px;
+  margin: auto;
+  margin-bottom: 16px;
+  background: #fdf2f8;
+  border-radius: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sectionTitle {
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #7c3aed;
+  margin-bottom: 14px;
+}
+
+.journeyBanner {
+  background: linear-gradient(
+    135deg,
+    #D63384,
+    #7C3AED
+  );
+
+  color: white;
+  border-radius: 28px;
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.bottomNav {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+
+  background: rgba(255,255,255,.9);
+  backdrop-filter: blur(20px);
+
+  border-radius: 24px;
+  padding: 14px;
+
+  display: flex;
+  justify-content: space-around;
+
+  box-shadow:
+    0 8px 30px rgba(0,0,0,.08);
+}
 .hero {
   position: relative;
 

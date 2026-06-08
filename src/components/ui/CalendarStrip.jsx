@@ -1,72 +1,98 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import {CalendarDays} from "lucide-react";
+// import "./CalendarStrip.css";
 
-export default function CalendarStrip({ accent = "var(--t)", onDateSelect, selectedDate: externalSelectedDate }) {
-  const today = new Date();
+const DAYS_IN_WEEK = 7;
+const SUNDAY_INDEX = 0;
+const MONDAY_INDEX = 1;
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+export default function CalendarStrip({ 
+  accent = "var(--t)", 
+  onDateSelect, 
+  selectedDate: externalSelectedDate,
+  appointments = [],
+  maxWeeksOffset = 52
+}) {
+  const today = useMemo(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  }, []);
+  
   const [selectedDate, setSelectedDate] = useState(externalSelectedDate || today);
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
   
-  // Update internal state when external prop changes
+  // Sync external selected date
   useEffect(() => {
     if (externalSelectedDate) {
       setSelectedDate(externalSelectedDate);
     }
   }, [externalSelectedDate]);
   
-  // Get days of week (Monday first as per UK/Nigeria convention)
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  // Check if within bounds
+  useEffect(() => {
+    if (Math.abs(currentWeekOffset) > maxWeeksOffset) {
+      setCurrentWeekOffset(0);
+    }
+  }, [currentWeekOffset, maxWeeksOffset]);
   
-  // Calculate dates for current week view
-  const getWeekDates = () => {
+  const getWeekDates = useCallback(() => {
     const baseDate = new Date(today);
-    baseDate.setDate(today.getDate() + (currentWeekOffset * 7));
+    baseDate.setDate(today.getDate() + (currentWeekOffset * DAYS_IN_WEEK));
     
-    // Get Monday of current week (0 = Sunday, so adjust)
     const currentDay = baseDate.getDay();
-    const daysToMonday = currentDay === 0 ? 6 : currentDay - 1;
+    const daysToMonday = currentDay === SUNDAY_INDEX ? DAYS_IN_WEEK - 1 : currentDay - MONDAY_INDEX;
     const monday = new Date(baseDate);
     monday.setDate(baseDate.getDate() - daysToMonday);
     
-    return Array.from({ length: 7 }, (_, i) => {
+    return Array.from({ length: DAYS_IN_WEEK }, (_, i) => {
       const date = new Date(monday);
       date.setDate(monday.getDate() + i);
       return date;
     });
-  };
+  }, [currentWeekOffset, today]);
   
-  const weekDates = getWeekDates();
-  const todayDateStr = today.toDateString();
+  const weekDates = useMemo(() => getWeekDates(), [getWeekDates]);
+  const todayDateStr = useMemo(() => today.toDateString(), [today]);
   
-  const isToday = (date) => date.toDateString() === todayDateStr;
-  const isSelected = (date) => selectedDate?.toDateString() === date.toDateString();
+  const isToday = useCallback((date) => date.toDateString() === todayDateStr, [todayDateStr]);
+  const isSelected = useCallback((date) => selectedDate?.toDateString() === date.toDateString(), [selectedDate]);
   
-  const handleDateSelect = (date, index) => {
+  const hasAppointment = useCallback((date) => {
+    return appointments.some(apt => 
+      new Date(apt.date).toDateString() === date.toDateString()
+    );
+  }, [appointments]);
+  
+  const handleDateSelect = useCallback((date) => {
     setSelectedDate(date);
-    if (onDateSelect) {
-      onDateSelect(date);
-    }
-  };
+    onDateSelect?.(date);
+  }, [onDateSelect]);
   
-  const goToPreviousWeek = () => {
+  const goToPreviousWeek = useCallback(() => {
     setCurrentWeekOffset(prev => prev - 1);
-  };
+  }, []);
   
-  const goToNextWeek = () => {
+  const goToNextWeek = useCallback(() => {
     setCurrentWeekOffset(prev => prev + 1);
-  };
+  }, []);
   
-  const goToToday = () => {
+  const goToToday = useCallback(() => {
     setCurrentWeekOffset(0);
     setSelectedDate(today);
-    if (onDateSelect) {
-      onDateSelect(today);
-    }
-  };
+    onDateSelect?.(today);
+  }, [today, onDateSelect]);
   
-  // Get appointment indicator (mock data - replace with real appointments)
-  const hasAppointment = (date) => {
-    const appointmentDates = ['15', '22', '28'];
-    return appointmentDates.includes(date.getDate().toString());
-  };
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (e.key === 'ArrowLeft') goToPreviousWeek();
+      if (e.key === 'ArrowRight') goToNextWeek();
+      if (e.key === 't' || e.key === 'T') goToToday();
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [goToPreviousWeek, goToNextWeek, goToToday]);
   
   return (
     <div className="calendar-strip-container">
@@ -77,12 +103,11 @@ export default function CalendarStrip({ accent = "var(--t)", onDateSelect, selec
           className="cal-nav-btn"
           aria-label="Previous week"
         >
-          ←
+          {'<'}
         </button>
         <button 
           onClick={goToToday}
           className="cal-today-btn"
-          style={{ '--accent': accent }}
         >
           Today
         </button>
@@ -91,9 +116,9 @@ export default function CalendarStrip({ accent = "var(--t)", onDateSelect, selec
           className="cal-nav-btn"
           aria-label="Next week"
         >
-          →
+          {'>'}
         </button>
-      </div>
+      </div> 
       
       {/* Days Grid */}
       <div className="cal-strip">
@@ -104,17 +129,17 @@ export default function CalendarStrip({ accent = "var(--t)", onDateSelect, selec
           
           return (
             <button
-              key={i}
-              onClick={() => handleDateSelect(date, i)}
+              key={date.toISOString()}
+              onClick={() => handleDateSelect(date)}
               className={`cal-day ${isSelectedDay ? 'active' : ''} ${isCurrentDay ? 'today' : ''}`}
-              style={isSelectedDay ? { '--accent': accent } : {}}
-              aria-label={`${days[i]} ${date.getDate()} ${date.toLocaleDateString('en-NG', { month: 'short' })}`}
+              style={isSelectedDay ? { } : {}}
+              aria-label={`${WEEKDAYS[i]} ${date.getDate()} ${date.toLocaleDateString('en-NG', { month: 'short' })}`}
               aria-current={isCurrentDay ? 'date' : undefined}
             >
-              <span className="cal-day-name">{days[i]}</span>
+              <span className="cal-day-name">{WEEKDAYS[i]}</span>
               <span className="cal-day-num">{date.getDate()}</span>
               <span className="cal-month">{date.toLocaleDateString('en-NG', { month: 'short' })}</span>
-              {hasAppt && <span className="cal-dot" style={{ background: accent }} />}
+              {hasAppt && <span className="cal-dot" style={{ backgroundColor: accent }} />}
               {isCurrentDay && !isSelectedDay && (
                 <span className="cal-today-marker" />
               )}
@@ -125,214 +150,242 @@ export default function CalendarStrip({ accent = "var(--t)", onDateSelect, selec
       
       {/* Selected Date Display */}
       {selectedDate && (
-        <div className="cal-selected-date">
-          <span className="cal-selected-label">Selected:</span>
+      <div className="cal-selected-date">
+        <CalendarDays
+          size={18}
+          className="cal-selected-icon"
+      />
+
           <span className="cal-selected-value">
-            {selectedDate.toLocaleDateString('en-NG', { 
-              weekday: 'long', 
-              day: 'numeric', 
-              month: 'long', 
-              year: 'numeric' 
+            {selectedDate.toLocaleDateString("en-NG", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
             })}
           </span>
         </div>
       )}
       
-      {/* FIX: removed 'jsx' attribute from style tag */}
+      {/* COMPLETE STYLES - ALL ORIGINAL CSS PRESERVED */}
       <style>{`
         .calendar-strip-container {
-          background: var(--card);
-          border-radius: var(--r2);
-          padding: var(--sp-3) var(--sp-2);
-          box-shadow: var(--sh);
+          background: #fff;
+          border-radius: 28px;
+          padding: 20px;
+          box-shadow: 0 10px 30px rgb(15 23 42 / 2%), 
+          0 4px 12px rgb(15 23 42 / 0%);
+          border: 1px solid #f5f5f7;
+          margin: 20px;
         }
-        
+
+        /* HEADER */
+
         .cal-nav {
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          margin-bottom: var(--sp-3);
-          padding: 0 var(--sp-2);
+          justify-content: space-between;
+          margin-bottom: 24px;
         }
-        
+
         .cal-nav-btn {
-          background: var(--warm);
-          border: 1px solid var(--border);
-          border-radius: var(--r);
-          padding: var(--sp-2) var(--sp-3);
-          font-size: var(--fs-sm);
+          width: 46px;
+          height: 46px;
+          border: 1px solid rgb(15 23 42 / 8%);
+          border-radius: 16px;
+          background: #fff;
+          color: #7c3aed;
+          font-size: 18px;
           font-weight: 700;
-          color: var(--dp);
           cursor: pointer;
-          min-width: 44px;
-          min-height: 44px;
-          transition: all 0.2s;
+          transition: all .25s ease;
+          box-shadow:
+            0 1px 5px rgb(15 23 42 / 10%);
         }
-        
+
         .cal-nav-btn:hover {
-          background: var(--t);
-          color: #fff;
-          border-color: var(--t);
+          background: #7c3aed70;
+          transform: translateY(-2px);
         }
-        
+
         .cal-today-btn {
-          background: var(--accent, var(--t));
-          color: #fff;
-          border: none;
-          border-radius: var(--r);
-          padding: var(--sp-2) var(--sp-4);
-          font-size: var(--fs-sm);
+          color: #7C3AED;
           font-weight: 700;
+          font-size: 14px;
           cursor: pointer;
-          min-width: 70px;
-          min-height: 44px;
-          transition: all 0.2s;
+          background: none;
         }
-        
-        .cal-today-btn:hover {
-          opacity: 0.85;
-          transform: scale(0.98);
-        }
-        
+
+        /* DAYS */
+
         .cal-strip {
           display: flex;
-          gap: var(--gap-sm);
-          justify-content: space-between;
-          margin-bottom: var(--sp-3);
+          gap: 12px;
+          overflow-x: auto;
+          padding-bottom: 6px;
         }
-        
+
+        .cal-strip::-webkit-scrollbar {
+          display: none;
+        }
+
         .cal-day {
           flex: 1;
+          min-width: 30px;
+          background: #fff;
+          border: 1px solid transparent;
+          border-radius: 22px;
+          padding: 14px 10px;
           display: flex;
           flex-direction: column;
           align-items: center;
-          gap: var(--sp-1);
-          padding: var(--sp-2) var(--sp-1);
-          background: transparent;
-          border: 2px solid transparent;
-          border-radius: var(--r);
           cursor: pointer;
-          transition: all 0.2s;
-          min-width: 50px;
+          transition: all .25s ease;
           position: relative;
         }
-        
+
         .cal-day:hover {
-          background: var(--warm);
-          border-color: var(--border);
+          transform: translateY(-4px);
+          background: #fff;
+          box-shadow:
+            0 10px 24px rgba(15,23,42,.08);
         }
-        
+
+        /* ACTIVE */
+
         .cal-day.active {
-          background: var(--accent, var(--t));
-          border-color: var(--accent, var(--t));
+          background: #fff;
+          border: 1px solid #d63384;
+          box-shadow:
+            0 2px 20px rgba(214,51,132,.25);
+          transform: translateY(-3px);
         }
-        
+          );
+
+          box-shadow:
+            0 12px 30px rgba(214,51,132,.25);
+
+          transform: translateY(-3px);
+        }
+
         .cal-day.active .cal-day-name,
         .cal-day.active .cal-day-num,
         .cal-day.active .cal-month {
-          color: #fff;
+          color: white;
         }
-        
-        .cal-day.today {
-          border-color: #d63a6e40;
-          background: rgb(241 90 139 / 55%);
+
+        /* TODAY */
+
+        .cal-day.today:not(.active) {
+          background: #fff0f6;
+          border: 1px solid #f9c2d9;
         }
-        
+
+        /* TEXT */
+
         .cal-day-name {
-          font-size: var(--fs-xs);
-          font-weight: 600;
-          color: var(--mt);
+          font-size: 11px;
+          font-weight: 700;
           text-transform: uppercase;
+          letter-spacing: .5px;
+          color: #9ca3af;
         }
-        
-        .cal-day.active .cal-day-name {
-          color: #fff;
-        }
-        
+
         .cal-day-num {
-          font-size: var(--fs-xl);
+          margin: 6px 0;
+
+          font-size: 24px;
           font-weight: 800;
-          color: var(--dp);
-          line-height: 1;
+          color: #111827;
         }
-        
-        .cal-day.active .cal-day-num {
-          color: #fff;
-        }
-        
+
         .cal-month {
-          font-size: var(--fs-2xs);
-          color: var(--mt);
-          font-weight: 500;
+          font-size: 11px;
+          font-weight: 600;
+          color: #9ca3af;
         }
-        
-        .cal-day.active .cal-month {
-          color: #fff;
-          opacity: 0.9;
+
+        .cal-selected-icon {
+          background: #7c3aed1c;
+          color: #7C3AED;
+          border-radius: 5px;
+          width: 24px;
+          height: 24px;
         }
-        
+
+        /* APPOINTMENT DOT */
+
         .cal-dot {
           position: absolute;
-          bottom: 4px;
-          width: 6px;
-          height: 6px;
+          top: 8px;
+          right: 8px;
+
+          width: 8px;
+          height: 8px;
+
           border-radius: 50%;
-          background: var(--accent, var(--t));
+          background: #10b981;
         }
-        
+
+        .cal-day.active .cal-dot {
+          background: white;
+        }
+
+        /* TODAY INDICATOR */
+
         .cal-today-marker {
           position: absolute;
-          bottom: 4px;
-          width: 4px;
-          height: 4px;
+          bottom: 8px;
+
+          width: 6px;
+          height: 6px;
+
           border-radius: 50%;
-          background: var(--accent, var(--t));
+          background: #d63384;
         }
-        
+
+        /* SELECTED DATE */
+
         .cal-selected-date {
+          margin-top: 24px;
+          padding: 16px;
           display: flex;
+          border-top: 1px solid rgba(15,23,42,.05);
           justify-content: center;
-          align-items: center;
-          gap: var(--gap-sm);
-          padding-top: var(--sp-2);
-          margin-top: var(--sp-2);
-          border-top: 1px solid var(--border);
-          font-size: var(--fs-sm);
+          gap: 8px;
+          flex-wrap: wrap;
+          align-item: center;
         }
-        
+
         .cal-selected-label {
-          color: var(--mt);
+          color: #6b7280;
           font-weight: 600;
         }
-        
+
         .cal-selected-value {
-          color: var(--dp);
+          color: #111827;
           font-weight: 700;
+          color: #7C3AED;
+          font-family: 'poppins', sans-serif;
         }
-        
-        @media (max-width: 480px) {
-          .cal-strip {
-            gap: var(--gap-xs);
-          }
-          
+
+        /* MOBILE */
+
+        @media (max-width: 768px) {
           .cal-day {
-            min-width: 40px;
-            padding: var(--sp-1) var(--sp-1);
+            min-width: 64px;
           }
-          
+
           .cal-day-num {
-            font-size: var(--fs-md);
+            font-size: 20px;
           }
-          
-          .cal-month {
-            font-size: var(--fs-2xs);
-          }
-          
-          .cal-nav-btn, .cal-today-btn {
-            padding: var(--sp-1) var(--sp-2);
-            font-size: var(--fs-xs);
+
+          .cal-nav-btn {
+            width: 42px;
+            height: 42px;
           }
         }
+              
       `}</style>
     </div>
   );

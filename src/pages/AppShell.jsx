@@ -26,6 +26,7 @@ const Nursing     = lazy(() => import('./Nursing'));
 const Ivfjourney  = lazy(() => import('./IVF'));
 const AIAssistant = lazy(() => import('./Chat/AIAssistant'));
 const Menopause   = lazy(() => import('./Menopause/Menopause'));
+const WeightLogging = lazy(() => import('./WeightLogging')); // ADDED
 
 const Insights          = lazy(() => import('./Insights'));
 const Profile           = lazy(() => import('./Profile'));
@@ -64,7 +65,7 @@ const JOURNEY_KEY_MAP = {
   menopause: 'menopause',
 };
 
-const BASE_TABS = new Set(['home', 'menu', 'settings', 'insights', 'profile']);
+const BASE_TABS = new Set(['home', 'menu', 'settings', 'insights', 'profile', 'body']); // ADDED 'body'
 
 function Spinner() {
   return (
@@ -159,6 +160,7 @@ export default function AppShell() {
       case 'settings':  return <Settings onUpgrade={handleUpgrade} />;
       case 'insights':  return <Insights onUpgrade={handleUpgrade} />;
       case 'profile':   return <Profile onUpgrade={handleUpgrade} />;
+      case 'body':      return <WeightLogging setTab={handleSetTab} onUpgrade={handleUpgrade} />; // ADDED
 
       case 'chat':      return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><Chat onUpgrade={handleUpgrade} /></div>;
       case 'assistant': return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><AIAssistant onUpgrade={handleUpgrade} /></div>;
