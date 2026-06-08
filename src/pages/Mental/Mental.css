@@ -1,0 +1,19 @@
+.mood-row {
+    display: flex;
+    gap: var(--gap-sm);
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r);
+    background: var(--card);
+}
+.mood-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: var(--r);
+}
+.mood-btn span {
+    font-size: 2rem;
+}

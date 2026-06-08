@@ -196,7 +196,7 @@ export default function WeightLogging() {
     <div className="weight-logging-container">
       <div className="weight-header">
         <button onClick={() => setActiveTab('home')} className="back-btn">
-          ← Back
+          {'<'}
         </button>
         <h2>Track Your Weight</h2>
       </div>

@@ -213,3 +213,9 @@
   opacity: 1;
   background: var(--rdl);
 }
+
+.weight-header {
+  font-family: var(--sans);
+  font-size: .700rem;
+  align-items: center;
+}

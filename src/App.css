@@ -1,7 +1,6 @@
+/* Import Poppins font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
-:root {
-  font-family: 'Poppins', sans-serif;
-}
 :root {
   --primary: #D63384;
   --primary-light: #FCE7F3;
@@ -27,6 +26,56 @@
   --radius-sm: 12px;
   --radius-md: 20px;
   --radius-lg: 28px;
+}
+
+/* Global font settings */
+*,
+*::before,
+*::after {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Force Poppins on all elements - add at the bottom of your CSS file */
+*:not(code):not(pre):not(.mono) {
+  font-family: var(--sans) !important;
+}
+
+/* But allow code blocks to keep monospace */
+code, pre, .mono, .counter {
+  font-family: var(--mono) !important;
+}
+
+/* Ensure all text elements use Poppins */
+p, span, div, h1, h2, h3, h4, h5, h6, 
+button, input, textarea, select, label, 
+a, li, blockquote, small, strong, em {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Specific font weights for better typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+p, span, li {
+  font-weight: 400;
+}
+
+button, .button {
+  font-weight: 500;
 }
 
 .hm-section {
@@ -150,6 +199,7 @@
   box-shadow:
     0 8px 30px rgba(0,0,0,.08);
 }
+
 .hero {
   position: relative;
 
@@ -259,8 +309,9 @@
       width: 18px;
     }
   }
+}
 
-  /* Dark Mode Styles */
+/* Dark Mode Styles */
 body.dark-mode {
   --bg: #1a1a2e;
   --card: #16213e;
@@ -275,7 +326,8 @@ body.dark-mode .hm-card {
   border-color: var(--border);
 }
 
-  @media (max-width: 1024px) {
+@media (max-width: 1024px) {
+  #next-steps ul {
     margin-top: 20px;
     flex-wrap: wrap;
     justify-content: center;

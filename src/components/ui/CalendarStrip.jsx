@@ -222,7 +222,7 @@ export default function CalendarStrip({
           display: flex;
           gap: 12px;
           overflow-x: auto;
-          padding-bottom: 6px;
+          padding: 6px;
         }
 
         .cal-strip::-webkit-scrollbar {

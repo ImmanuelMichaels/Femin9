@@ -124,7 +124,11 @@ function CategorySection({ category, ids, onPress }) {
 export default function MenuScreen({ setActive }) {
   const { journeyType, userName } = useApp();
   const name = userName || 'Mama';
-  const sections = JOURNEY_MENU[journeyType] ?? JOURNEY_MENU.pregnant;
+  
+  // FIX 1: Map AppContext keys to JOURNEY_MENU keys
+  const JOURNEY_KEY_MAP = { conceive: 'ttc', mom: 'nursing' };
+  const menuKey = JOURNEY_KEY_MAP[journeyType] ?? journeyType;
+  const sections = JOURNEY_MENU[menuKey] ?? JOURNEY_MENU.pregnant;
 
   // Map feature IDs to route/tab names
   const handleFeaturePress = (featureId) => {
@@ -165,14 +169,14 @@ export default function MenuScreen({ setActive }) {
         </button>
       </div>
 
-      {/* Journey tag */}
+      {/* FIX 2: Journey tag display mapping */}
       <div className="ms-journey-tag">
         <span className="ms-journey-dot" />
         <span className="ms-journey-label">
           {{
             pregnant:  '🤰 Pregnancy Journey',
-            nursing:   '👶 Postpartum & Nursing',
-            ttc:       '🌙 Trying to Conceive',
+            mom:       '👶 Postpartum & Nursing',      // fixed from 'nursing'
+            conceive:  '🌙 Trying to Conceive',        // fixed from 'ttc'
             ivf:       '🌸 IVF & Fertility',
             menstrual: '💧 Menstrual Health',
             menopause: '🌙 Menopause Journey',

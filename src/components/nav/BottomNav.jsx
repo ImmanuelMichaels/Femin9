@@ -1,9 +1,9 @@
-import { Home, Grid, User } from 'lucide-react';
+import { Home, Grip, User } from 'lucide-react';
 
 const TABS = [
-  { id: 'home',    Icon: Home, label: 'Home'    },
-  { id: 'menu',    Icon: Grid, label: 'Menu'    },
-  { id: 'profile', Icon: User, label: 'Profile' },
+  { id: 'home',    Icon: Home },
+  { id: 'menu',    Icon: Grip },
+  { id: 'profile', Icon: User },
 ];
 
 export default function BottomNav({ active, setActive }) {

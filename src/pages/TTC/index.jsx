@@ -332,7 +332,7 @@ export default function TTC() {
 
       {/* ── Pregnancy test reminder ── */}
       {showPTReminder && (
-        <WCard style={{ background: "var(--lvl)", border: "2px solid var(--lvm)", marginBottom: "var(--gap-md)" }}>
+        <WCard style={{ background: "var(--lvl)", fontFamily: "Poppins", border: "2px solid var(--lvm)", marginBottom: "var(--gap-md)" }}>
           <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "center" }}>
             <div style={{ fontSize: 36 }}>🤰</div>
             <div style={{ flex: 1 }}>
@@ -348,7 +348,7 @@ export default function TTC() {
 
       {/* ── GP nudge (now actually fires) ── */}
       {showGPNudge && (
-        <WCard style={{ background: "var(--bll)", border: "2px solid var(--bl)", marginBottom: "var(--gap-md)" }}>
+        <WCard style={{ background: "var(--bll)", fontFamily: "Poppins", border: "2px solid var(--bl)", marginBottom: "var(--gap-md)" }}>
           <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "flex-start" }}>
             <div style={{ fontSize: 32 }}>🩺</div>
             <div style={{ flex: 1 }}>
@@ -367,7 +367,7 @@ export default function TTC() {
 
       {/* ── Cycle irregularity warning ── */}
       {cycleIrregular && (
-        <WCard style={{ background: "var(--rdl)", border: "1.5px solid var(--rdm)", marginBottom: "var(--gap-md)" }}>
+        <WCard style={{ background: "var(--rdl)", fontFamily: "Poppins", border: "1.5px solid var(--rdm)", marginBottom: "var(--gap-md)" }}>
           <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "center" }}>
             <div style={{ fontSize: 28 }}>⚠️</div>
             <div>
@@ -382,7 +382,7 @@ export default function TTC() {
 
       {/* ── Ovulation confidence composite signal ── */}
       {ovulationConfidence && (
-        <WCard style={{ background: ovulationConfidence.bg, border: `2px solid ${ovulationConfidence.color}44`, marginBottom: "var(--gap-md)" }}>
+        <WCard style={{ background: ovulationConfidence.bg, fontFamily: "Poppins", border: `2px solid ${ovulationConfidence.color}44`, marginBottom: "var(--gap-md)" }}>
           <div style={{ display: "flex", gap: "var(--gap-md)", alignItems: "center" }}>
             <div style={{ fontSize: 32 }}>🔬</div>
             <div>
@@ -395,7 +395,7 @@ export default function TTC() {
 
       {/* ── Fertile window glow card with day context ── */}
       {isInFertileWindow && (
-        <WCard style={{ background: "linear-gradient(135deg, #FFF0F5, #FFE4E8)", border: "2px solid #D63A6E", marginBottom: "var(--gap-md)" }}>
+        <WCard style={{ background: "linear-gradient(135deg, #FFF0F5, #FFE4E8)", fontFamily: "Poppins", border: "2px solid #D63A6E", marginBottom: "var(--gap-md)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)" }}>
             <div style={{ fontSize: 40 }}>🌸</div>
             <div style={{ flex: 1 }}>
@@ -415,7 +415,7 @@ export default function TTC() {
       )}
 
       {/* ── Tab Navigation ── */}
-      <div style={{ display: "flex", gap: "var(--gap-sm)", marginBottom: "var(--sp-4)", overflowX: "auto", scrollbarWidth: "none", maskImage: "linear-gradient(to right, black 85%, transparent 100%)" }}>
+      <div style={{ background:"#fff", borderRadius: "12px", border: " 1px solid #F1F5F9", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "var(--gap-sm)", marginBottom: "var(--sp-4)", overflowX: "auto", scrollbarWidth: "none", padding: "20px" }}>
         {["calendar","setup","symptoms","bbt","lh","intercourse","insights"].map(id => {
           const Icon = TAB_ICONS[id];
           const labels = { calendar:"Calendar", setup:"Cycle Setup", symptoms:"Symptoms", bbt:"BBT", insights:"Insights", intercourse:"Intimacy", lh:"LH Test" };
@@ -609,7 +609,7 @@ export default function TTC() {
       {/* ════════════════════════ SETUP TAB ════════════════════════ */}
       {activeTab === "setup" && (
         <>
-          <SectionTitle title="🌸 Cycle Setup" subtitle="Personalise your fertility tracking" />
+          <SectionTitle title="Cycle Setup 🌸" subtitle="Personalise your fertility tracking" />
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
             <WCard>
               {cycleHistory.length > 0 && (
@@ -658,7 +658,7 @@ export default function TTC() {
       {/* ════════════════════════ SYMPTOMS TAB ════════════════════════ */}
       {activeTab === "symptoms" && (
         <>
-          <SectionTitle title="🩺 Symptom Tracker" subtitle="Log your daily symptoms" />
+          <SectionTitle title="Symptom Tracker 🩺" subtitle="Log your daily symptoms" />
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
             <WCard>
               <p style={{ fontSize: "var(--fs-sm)", color: "var(--mt)", marginBottom: "var(--sp-4)" }}>Select all that apply for today.</p>
@@ -743,7 +743,7 @@ export default function TTC() {
       {/* ════════════════════════ BBT TAB ════════════════════════ */}
       {activeTab === "bbt" && (
         <>
-          <SectionTitle title="🌡️ Basal Body Temperature" subtitle="Track ovulation through temperature" />
+          <SectionTitle title="Basal Body Temperature 🌡️" subtitle="Track ovulation through temperature" />
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
             <WCard>
               <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", lineHeight: 1.5, marginBottom: "var(--sp-4)" }}>
@@ -820,7 +820,7 @@ export default function TTC() {
       {/* ════════════════════════ LH TAB ════════════════════════ */}
       {activeTab === "lh" && (
         <>
-          <SectionTitle title="🥚 LH Surge Tracking" subtitle="Predict ovulation with LH tests" />
+          <SectionTitle title="LH Surge Tracking 🥚" subtitle="Predict ovulation with LH tests" />
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
 
             {/* When to test nudge */}
@@ -884,8 +884,8 @@ export default function TTC() {
       {/* ════════════════════════ INTERCOURSE TAB ════════════════════════ */}
       {activeTab === "intercourse" && (
         <>
-          <SectionTitle title="💕 Intimacy Log" subtitle="Private personal log" />
-          <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
+          <SectionTitle title="Intimacy Log 💕" subtitle="Private personal log" />
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)", fontFamily: "Poppins" }}>
             <WCard>
               {!showIntercourseNote ? (
                 <button onClick={() => setShowIntercourseNote(true)}
@@ -947,7 +947,7 @@ export default function TTC() {
       {/* ════════════════════════ INSIGHTS TAB ════════════════════════ */}
       {activeTab === "insights" && (
         <>
-          <SectionTitle title="💡 Fertility Insights" subtitle="Evidence-based guidance for TTC" />
+          <SectionTitle title="Fertility Insights 💡" subtitle="Evidence-based guidance for TTC" />
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
 
             {/* Medical disclaimer — required for ORCHA/DCB0129 */}
