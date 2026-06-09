@@ -17,3 +17,13 @@
 .mood-btn span {
     font-size: 2rem;
 }
+.btn-primary {
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: var(--r);
+    cursor: pointer;
+}
+h2 {
+    color: var(--secondary);
+}

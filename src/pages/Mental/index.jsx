@@ -228,13 +228,13 @@ export default function Mental() {
               onClick={() => setActiveAffirmation((prev) => (prev - 1 + currentAffirmations.length) % currentAffirmations.length)}
               style={{ background: "var(--lvl)", border: "none", borderRadius: 20, padding: "6px 12px", cursor: "pointer" }}
             >
-              ← Previous
+              {'<'}
             </button>
             <button 
               onClick={() => setActiveAffirmation((prev) => (prev + 1) % currentAffirmations.length)}
               style={{ background: "var(--lvl)", border: "none", borderRadius: 20, padding: "6px 12px", cursor: "pointer" }}
             >
-              Next →
+              {'>'}
             </button>
           </div>
         </div>

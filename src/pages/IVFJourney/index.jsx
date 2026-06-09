@@ -1270,7 +1270,7 @@ function CycleStartPicker({ onConfirm }) {
   return (
     <div className="cycle-picker-overlay">
       <div className="cycle-picker-card">
-        <div className="cycle-picker-icon">🌸</div>
+        <div className="cycle-picker-icon"></div>
         <h2>When did your IVF cycle start?</h2>
         <p>Enter your consultation or cycle day 1 date so we can build your personalised timeline.</p>
         <input
