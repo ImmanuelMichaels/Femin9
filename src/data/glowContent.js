@@ -49,15 +49,15 @@ export const GLOW_CONTENT = {
   ivf: {
     default: [
       {
+        title: "One Small Treat",
+        content: "Choose one thing today that has nothing to do with IVF — a candle, a favourite film, a new book. You deserve joy that exists separately from this journey.",
+        affirmation: "Hope is the bravest thing you carry."
+      },
+      {
         title: "Soft Days 💜",
         content: "Today, wear what makes you feel held. Soft waistbands, flowing fabrics, nothing constricting. Your body is doing hard work — dress it with kindness.",
         affirmation: "You are so much stronger than you know."
       },
-      {
-        title: "One Small Treat",
-        content: "Choose one thing today that has nothing to do with IVF — a candle, a favourite film, a new book. You deserve joy that exists separately from this journey.",
-        affirmation: "Hope is the bravest thing you carry."
-      }
     ]
   },
   

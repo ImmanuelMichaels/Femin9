@@ -12,9 +12,9 @@ import './Home.css';
    These are reference values, not user data.
 ───────────────────────────────────────────────────────────────── */
 const PREGNANCY_WEIGHT_GAIN = {
-  T1_EXPECTED_KG: 1.5,   // weeks 1–12 (IOM guideline)
-  T2_EXPECTED_KG: 6.5,   // weeks 13–28 (IOM guideline)
-  T3_EXPECTED_KG: 11.5,  // weeks 29–40+ (IOM guideline)
+  T1_EXPECTED_KG: 1.5,   
+  T2_EXPECTED_KG: 6.5,   
+  T3_EXPECTED_KG: 11.5,  
 };
 
 const CYCLE = {
