@@ -540,6 +540,13 @@
   text-align: center;
 }
 
+.hm-checklist-header {
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-6);
+}
+
 /* Weight Logging */
 .weight-logging-container {
   padding: var(--sp-4);

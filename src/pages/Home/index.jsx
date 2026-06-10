@@ -1340,7 +1340,7 @@ export default function Home({ setTab }) {
         <div className="hm-card hm-checklist-card">
           <div className="hm-checklist-header">
             <p className="hm-card-label" style={{ margin: 0 }}>MY DAILY TASKS</p>
-            <div style={{ display: 'flex', gap: 'var(--gap-sm)', alignItems: 'center', justifyContent: 'spaceBetween' }}>
+            <div style={{ display: 'flex', gap: 'var(--gap-sm)', alignItems: 'center', justifyContent: 'space-between' }}>
               <span className="hm-checklist-pct" style={{ color: meta.accent }}>{pct}%</span>
               <button onClick={() => setShowAddTask(!showAddTask)} className="hm-add-task-btn" style={{ color: meta.accent }}>
                 <Plus size={20} />

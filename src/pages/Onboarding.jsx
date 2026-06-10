@@ -642,12 +642,7 @@ export default function Onboarding() {
   );
   
   return (
-    <div className="ob-root">
-      <div className="ob-logo">
-        <Logo />
-        <span className="ob-logo-text">Femin9</span>
-      </div>
-      
+    <div className="ob-root">      
       <StepIndicator currentStep={step - 1} totalSteps={totalSteps} />
       
       {step === 1 && renderJourneyStep()}
