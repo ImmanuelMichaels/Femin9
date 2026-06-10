@@ -58,17 +58,27 @@
 
 /* DAYS */
 
+/* Recommended: Clean and responsive */
 .cal-strip {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  gap: clamp(6px, 2vw, 12px);
   padding: 6px;
 }
 
-.cal-strip::-webkit-scrollbar {
-  display: none;
+@media (max-width: 640px) {
+  .cal-strip {
+    grid-template-columns: repeat(auto-fit, minmax(55px, 1fr));
+    gap: 8px;
+  }
 }
 
+@media (max-width: 480px) {
+  .cal-strip {
+    grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+    gap: 6px;
+  }
+}
 .cal-day {
   flex: 1;
   min-width: 72px;

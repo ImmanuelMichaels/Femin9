@@ -5,6 +5,23 @@ import { useNotifications } from '../../hooks/useNotifications';
 import NotificationPanel from '../../pages/notifications/NotificationPanel';
 import { auth } from '../../context/firebase';
 
+// ─── Constants ──────────────────────────────────────────────────
+
+const BRAND_PURPLE       = 'var(--color-brand-purple, #724C9D)';
+const PLAN_BLOOM         = 'bloom';
+const PLAN_BLOOM_PLUS    = 'bloomPlus';
+const PLAN_LABELS        = { [PLAN_BLOOM]: 'Bloom', [PLAN_BLOOM_PLUS]: 'Bloom+' };
+const FALLBACK_INITIAL   = 'F';        // Femin9 brand fallback; never a user's initial
+const NOTIF_CAP          = 9;
+const CLOCK_INTERVAL_MS  = 60_000;
+
+const JOURNEY_FALLBACK_NAMES = {
+  menopause: 'Queen',
+  default:   'Mama',
+};
+
+// ─── Icon sub-components ────────────────────────────────────────
+
 function NotificationIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white"
@@ -35,6 +52,8 @@ function CrownIcon() {
   );
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export default function AppHeader({ onNavigate, onUpgrade }) {
   const {
     userName,
@@ -44,11 +63,11 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
     todaysTasks,
   } = useApp();
 
-  const [currentTime, setCurrentTime] = useState(new Date());
+  const [currentTime, setCurrentTime]   = useState(new Date());
   const [profileImage, setProfileImage] = useState(null);
 
   useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+    const timer = setInterval(() => setCurrentTime(new Date()), CLOCK_INTERVAL_MS);
     return () => clearInterval(timer);
   }, []);
 
@@ -64,14 +83,10 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
       }
     };
     loadProfileImage();
-    
-    // Listen for auth state changes
+
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user?.photoURL) {
-        setProfileImage(user.photoURL);
-      }
+      if (user?.photoURL) setProfileImage(user.photoURL);
     });
-    
     return () => unsubscribe();
   }, []);
 
@@ -86,12 +101,13 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
     if (userName) return userName.charAt(0).toUpperCase();
     const user = auth.currentUser;
     if (user?.displayName) return user.displayName.charAt(0).toUpperCase();
-    return 'M';
+    return FALLBACK_INITIAL;
   };
 
-  const greeting    = getGreeting();
-  const displayName = userName || (journeyType === 'menopause' ? 'Queen' : 'Mama');
-  const isPremium = subscriptionPlan === 'bloom' || subscriptionPlan === 'bloomPlus';
+  const greeting     = getGreeting();
+  const displayName  = userName ?? (JOURNEY_FALLBACK_NAMES[journeyType] ?? JOURNEY_FALLBACK_NAMES.default);
+  const isPremium    = subscriptionPlan === PLAN_BLOOM || subscriptionPlan === PLAN_BLOOM_PLUS;
+  const planLabel    = PLAN_LABELS[subscriptionPlan] ?? null;
 
   const {
     notifications,
@@ -111,14 +127,16 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
   const bellRef = useRef(null);
 
   const handleUpgradeClick = () => {
-    if (onUpgrade) {
-      onUpgrade();
-    }
+    if (onUpgrade) onUpgrade();
   };
+
+  const notifLabel = unreadCount > NOTIF_CAP
+    ? `${NOTIF_CAP}+`
+    : String(unreadCount);
 
   return (
     <div style={{
-      background: '#d63a6e',
+      background: BRAND_PURPLE,
       padding: 'var(--sp-5) var(--pad-x) var(--sp-4)',
       position: 'relative',
       overflow: 'visible',
@@ -143,7 +161,6 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
 
         {/* LEFT — avatar + greeting */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {/* Profile Picture - DYNAMIC with fallback */}
           <div style={{
             background: 'rgba(255,255,255,0.2)',
             borderRadius: 10,
@@ -171,7 +188,7 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 24,
+                fontSize: 14,
                 fontWeight: 700,
                 color: 'white',
               }}>
@@ -189,25 +206,24 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
               fontWeight: 500,
               lineHeight: 1.3,
             }}>
-              {greeting},&nbsp;<b>{displayName}</b>
+              {greeting},
             </p>
-            
+            <p style={{
+              fontFamily: 'Poppins, sans-serif',
+              fontSize: 14,
+              color: 'white',
+              margin: 0,
+              fontWeight: 500,
+              lineHeight: 1.3,
+            }}>
+              &nbsp;<b>{displayName}</b>
+            </p>
+
             {/* Subscription badge */}
             {!isPremium && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                marginTop: 2,
-              }}>
-                <span style={{
-                  fontSize: 10,
-                  color: 'rgba(255,255,255,0.7)',
-                }}>Free Plan</span>
-                <span style={{
-                  fontSize: 8,
-                  color: 'rgba(255,255,255,0.5)',
-                }}>•</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>Free Plan</span>
+                <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.5)' }}>•</span>
                 <button
                   onClick={handleUpgradeClick}
                   style={{
@@ -230,12 +246,7 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
             )}
 
             {isPremium && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 4,
-                marginTop: 2,
-              }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
                 <span style={{
                   fontSize: 10,
                   color: '#FFD700',
@@ -244,7 +255,7 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
                   gap: 2,
                 }}>
                   <CrownIcon />
-                  {subscriptionPlan === 'bloom' ? 'Bloom' : 'Bloom+'}
+                  {planLabel}
                 </span>
               </div>
             )}
@@ -253,8 +264,7 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
 
         {/* RIGHT — upgrade button (if free) + bell + help */}
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexShrink: 0 }}>
-          
-          {/* Upgrade Button for free users (visible in header) */}
+
           {!isPremium && (
             <button
               onClick={handleUpgradeClick}
@@ -287,8 +297,8 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
             </button>
           )}
 
-          {/* Premium indicator for paid users */}
-          {isPremium && subscriptionPlan === 'bloomPlus' && (
+          {/* Premium badge — only shown for Bloom+ in the action row */}
+          {isPremium && subscriptionPlan === PLAN_BLOOM_PLUS && (
             <div style={{
               background: 'linear-gradient(135deg, #FFD700, #FFA500)',
               borderRadius: 30,
@@ -334,7 +344,7 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
                   right: -4,
                   minWidth: 18,
                   height: 18,
-                  background: '#ff4757',
+                  background: BRAND_PURPLE,
                   borderRadius: 9,
                   fontSize: 10,
                   fontWeight: 800,
@@ -344,11 +354,10 @@ export default function AppHeader({ onNavigate, onUpgrade }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   padding: '0 4px',
-                  border: '2px solid #d63a6e',
                   letterSpacing: '-0.5px',
                   animation: 'badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1)',
                 }}>
-                  {unreadCount > 9 ? '9+' : unreadCount}
+                  {notifLabel}
                 </span>
               )}
             </button>

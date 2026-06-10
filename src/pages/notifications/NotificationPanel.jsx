@@ -1,21 +1,25 @@
+// src/pages/notifications/NotificationPanel.jsx
 import { useEffect, useRef } from 'react';
 import { NOTIF_TYPES } from '../../hooks/useNotifications';
 
 // ─── Icon map ────────────────────────────────────────────────────────────────
+
 const ICON_MAP = {
   [NOTIF_TYPES.MISSED_TASK]:  { emoji: '⚠️', bg: '#fff0f0' },
   [NOTIF_TYPES.MOTIVATIONAL]: { emoji: '✨', bg: '#f0fff4' },
   [NOTIF_TYPES.RENEWAL]:      { emoji: '⏰', bg: '#fff8e1' },
   [NOTIF_TYPES.TIP]:          { emoji: '💡', bg: '#f0f4ff' },
+  [NOTIF_TYPES.APPOINTMENT]:  { emoji: '📅', bg: '#f0f8ff' },
+  [NOTIF_TYPES.HYDRATION]:    { emoji: '💧', bg: '#e8f4fd' },
+  [NOTIF_TYPES.MEDICATION]:   { emoji: '💊', bg: '#f3f0ff' },
+  [NOTIF_TYPES.KICK_COUNT]:   { emoji: '👶', bg: '#fff0f8' },
+  [NOTIF_TYPES.SLEEP]:        { emoji: '🌙', bg: '#f0f0ff' },
+  [NOTIF_TYPES.SYSTEM]:       { emoji: '🔔', bg: '#f5f0ff' },
 };
 
 // ─── Styles ──────────────────────────────────────────────────────────────────
+
 const S = {
-  overlay: {
-    position: 'fixed',
-    inset: 0,
-    zIndex: 999,
-  },
   panel: {
     position: 'absolute',
     top: 'calc(100% + 8px)',
@@ -151,9 +155,52 @@ const S = {
     color: '#aaa',
   },
   emptyEmoji: { fontSize: 32, display: 'block', marginBottom: 8 },
+  // Loading skeleton
+  skeleton: {
+    padding: '12px 14px',
+    borderBottom: '1px solid #fafafa',
+    display: 'flex',
+    gap: 10,
+    alignItems: 'flex-start',
+  },
+  skeletonIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    background: 'linear-gradient(90deg, #f5f5f5 25%, #ebebeb 50%, #f5f5f5 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.4s infinite',
+    flexShrink: 0,
+  },
+  skeletonBody: { flex: 1 },
+  skeletonLine: (w) => ({
+    height: 10,
+    borderRadius: 5,
+    background: 'linear-gradient(90deg, #f5f5f5 25%, #ebebeb 50%, #f5f5f5 75%)',
+    backgroundSize: '200% 100%',
+    animation: 'shimmer 1.4s infinite',
+    width: w,
+    marginBottom: 6,
+  }),
 };
 
+// ─── Skeleton placeholder ─────────────────────────────────────────────────────
+
+function SkeletonItem() {
+  return (
+    <div style={S.skeleton}>
+      <div style={S.skeletonIcon} />
+      <div style={S.skeletonBody}>
+        <div style={S.skeletonLine('60%')} />
+        <div style={S.skeletonLine('90%')} />
+        <div style={S.skeletonLine('40%')} />
+      </div>
+    </div>
+  );
+}
+
 // ─── NotificationItem ─────────────────────────────────────────────────────────
+
 function NotificationItem({ notif, onClick, onDismiss }) {
   const { emoji, bg } = ICON_MAP[notif.type] || { emoji: '🔔', bg: '#f0f0f0' };
 
@@ -198,9 +245,11 @@ function NotificationItem({ notif, onClick, onDismiss }) {
 }
 
 // ─── NotificationPanel ────────────────────────────────────────────────────────
+
 export default function NotificationPanel({
   notifications,
   unreadCount,
+  loading = false,
   onClose,
   onMarkAllRead,
   onNotificationClick,
@@ -211,11 +260,8 @@ export default function NotificationPanel({
   // Close on outside click
   useEffect(() => {
     function handleClick(e) {
-      if (panelRef.current && !panelRef.current.contains(e.target)) {
-        onClose();
-      }
+      if (panelRef.current && !panelRef.current.contains(e.target)) onClose();
     }
-    // slight delay so the toggle click doesn't immediately close
     const t = setTimeout(() => document.addEventListener('mousedown', handleClick), 10);
     return () => { clearTimeout(t); document.removeEventListener('mousedown', handleClick); };
   }, [onClose]);
@@ -233,6 +279,10 @@ export default function NotificationPanel({
         @keyframes notifSlideIn {
           from { opacity: 0; transform: translateY(-8px) scale(0.97); }
           to   { opacity: 1; transform: translateY(0)  scale(1); }
+        }
+        @keyframes shimmer {
+          from { background-position: 200% 0; }
+          to   { background-position: -200% 0; }
         }
       `}</style>
 
@@ -256,10 +306,17 @@ export default function NotificationPanel({
 
         {/* List */}
         <div style={S.list}>
-          {notifications.length === 0 ? (
+          {loading ? (
+            // Show skeletons while Firestore loads
+            <>
+              <SkeletonItem />
+              <SkeletonItem />
+              <SkeletonItem />
+            </>
+          ) : notifications.length === 0 ? (
             <div style={S.empty}>
-              <span style={S.emptyEmoji}></span>
-              You're all caught up, Mama!
+              <span style={S.emptyEmoji}>🌸</span>
+              You're all caught up!
             </div>
           ) : (
             notifications.map((notif) => (

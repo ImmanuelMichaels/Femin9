@@ -152,7 +152,7 @@ export default function Profile() {
 
   return (
     <div className="page-pad">
-      <SectionTitle title="👤 Profile" subtitle="Manage your account and preferences" />
+      <SectionTitle title="Profile" subtitle="Manage your account and preferences 👤" />
 
       {/* User Info Card with Profile Picture */}
       <WCard>
@@ -164,15 +164,15 @@ export default function Profile() {
                 width: 80,
                 height: 80,
                 borderRadius: '50%',
-                background: profileImage ? 'transparent' : 'linear-gradient(135deg, var(--t), var(--sg))',
+                background: profileImage ? 'transparent' : '#fff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 36,
-                color: '#fff',
+                fontSize: 30,
+                color: '#724C9D',
                 overflow: 'hidden',
                 cursor: 'pointer',
-                border: '3px solid var(--t)',
+                border: '3px solid #724C9D',
               }}
               onClick={() => fileInputRef.current?.click()}
             >
@@ -195,7 +195,7 @@ export default function Profile() {
                 width: 28,
                 height: 28,
                 borderRadius: '50%',
-                background: 'var(--t)',
+                background: '#724c9d',
                 border: '2px solid #fff',
                 color: '#fff',
                 fontSize: 14,
@@ -267,14 +267,14 @@ export default function Profile() {
                     marginTop: 8,
                     background: 'none',
                     border: 'none',
-                    color: 'var(--t)',
+                    color: '#724C9D',
                     fontSize: 'var(--fs-xs)',
                     fontWeight: 600,
                     cursor: 'pointer',
-                    textDecoration: 'underline'
+                    textDecoration: 'none'
                   }}
                 >
-                  Change journey →
+                  Change journey {'>'}
                 </button>
               </>
             )}
@@ -313,7 +313,7 @@ export default function Profile() {
       </WCard>
 
       {/* Notification Preferences */}
-      <SectionTitle title="🔔 Notifications" />
+      <SectionTitle title="Notifications 🔔" />
       <WCard>
         {[
           { key: 'healthReminders', label: 'Health Reminders', desc: 'Daily vitals, kick count, medication reminders' },
@@ -363,7 +363,7 @@ export default function Profile() {
       </WCard>
 
       {/* Privacy Centre - GDPR Required */}
-      <SectionTitle title="🔒 Privacy Centre" />
+      <SectionTitle title="Privacy Centre 🔒" />
       <WCard>
         <button
           onClick={handleExportData}
@@ -431,7 +431,7 @@ export default function Profile() {
       </WCard>
 
       {/* Subscription */}
-      <SectionTitle title="💎 Subscription" />
+      <SectionTitle title="Subscription 💎" />
       <WCard>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
@@ -451,7 +451,7 @@ export default function Profile() {
       </WCard>
 
       {/* App Info */}
-      <SectionTitle title="ℹ️ About" />
+      <SectionTitle title="About ℹ️" />
       <WCard>
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: 'var(--sp-2) 0', borderBottom: '1px solid var(--border)' }}>
           <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--mt)' }}>Version</span>

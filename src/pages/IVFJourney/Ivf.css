@@ -9,6 +9,20 @@
   min-height: 100vh;
 }
 
+.cycle-picker-overlay h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2D1B3C;
+  margin: 0 0 8px;
+}
+
+.cycle-picker-overlay p {
+  font-size: 13px;
+  color: #8B7A9B;
+  margin: 0 0 20px;
+  line-height: 1.4;
+}
+
 .cycle-picker-card {
   display: flex;
   flex-direction: column;
@@ -31,12 +45,12 @@
   border: 1px solid rgba(15,23,42,.05);
   border-radius: 12px;
   box-shadow: 5px 5px 10px rgba(240,140,46,0.1);
-  font-size: 1rem;
+  font-size: 12px;
 }
 
 .cycle-picker-btn {
   padding: 20px 40px;
-  background: #D63384;
+  background: #8B7A9B;
   color: #FFF;
   border: none;
   border-radius: 30px;

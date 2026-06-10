@@ -223,9 +223,9 @@ export const IVF_CONFIG = {
   checklist: [],
 
   quickActions: [
-    { emoji: '💉', label: 'Medications', id: 'ivf'       },
-    { emoji: '🔬', label: 'Embryos',     id: 'ivf'       },
-    { emoji: '💗', label: 'Wellbeing',   id: 'mental'    },
+    { emoji: '💉', label: 'Medications', id: 'ivf-medications' },  // Fixed: unique id
+    { emoji: '🔬', label: 'Embryos',     id: 'ivf-embryos' },      // Fixed: unique id
+    { emoji: '💗', label: 'Wellbeing',   id: 'mental' },
     { emoji: '🤖', label: 'Ask AI',      id: 'assistant' },
   ],
 
@@ -236,7 +236,6 @@ export const IVF_CONFIG = {
     bg:    '#fff3e8',
   },
 };
-
 /* ─────────────────────────────────────────────────────────────────
    MOM / POSTPARTUM CONFIG
 ───────────────────────────────────────────────────────────────────
