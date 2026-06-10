@@ -6,6 +6,7 @@ import { auth, db, storage } from '../context/firebase';
 import { updateProfile, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import SubscriptionPlans from '../components/SubscriptionPlans';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? '1.0.0';
@@ -124,8 +125,6 @@ export default function Profile() {
   const [nameSaving,  setNameSaving]    = useState(false);
 
   // ── Notifications ──────────────────────────────────────────────────────────
-  // notificationsEnabled in context is a boolean (global toggle).
-  // We keep a local granular object here and persist each key separately.
   const [notifications, setNotifications] = useState(() => {
     try {
       const saved = localStorage.getItem('notificationPrefs');
@@ -136,6 +135,7 @@ export default function Profile() {
 
   // ── Modals ─────────────────────────────────────────────────────────────────
   const [modal, setModal] = useState(null); // 'removePhoto' | 'signOut' | 'deleteAccount' | 'upgrade'
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false); // NEW: for subscription modal
   const [deletePassword,    setDeletePassword]    = useState('');
   const [deleteError,       setDeleteError]       = useState(null);
   const [deleteInProgress,  setDeleteInProgress]  = useState(false);
@@ -180,7 +180,6 @@ export default function Profile() {
   const handleToggleNotification = async (key) => {
     const updated = { ...notifications, [key]: !notifications[key] };
     setNotifications(updated);
-    // Mirror the global toggle in context: enabled if any pref is on
     const anyOn = Object.values(updated).some(Boolean);
     setNotificationsEnabled(anyOn);
     await saveNotifications(updated);
@@ -272,7 +271,6 @@ export default function Profile() {
       const user = auth.currentUser;
       if (!user) throw new Error('Not logged in');
 
-      // Re-authenticate with password if the user is email/password
       const emailProvider = user.providerData.find(p => p.providerId === 'password');
       if (emailProvider) {
         if (!deletePassword) {
@@ -300,7 +298,6 @@ export default function Profile() {
 
   // ── Export data ────────────────────────────────────────────────────────────
   const handleExportData = () => {
-    // In production this would hit an API endpoint; for now show in-UI feedback
     showToast('Export request submitted. Check your email within 30 days.');
   };
 
@@ -444,7 +441,7 @@ export default function Profile() {
                     fontWeight: 600, cursor: 'pointer',
                   }}
                 >
-                  Change journey →
+                  Change journey {'>'}
                 </button>
               </>
             )}
@@ -515,7 +512,7 @@ export default function Profile() {
             <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)' }}>{planDesc}</p>
           </div>
           {subscriptionPlan === 'free' && (
-            <Button variant="primary" onClick={() => navigate('/subscribe')}>
+            <Button variant="primary" onClick={() => setShowSubscriptionModal(true)}>
               Upgrade
             </Button>
           )}
@@ -613,6 +610,16 @@ export default function Profile() {
             </div>
           )}
         </ConfirmModal>
+      )}
+
+      {/* ── Subscription Modal ── */}
+      {showSubscriptionModal && (
+        <SubscriptionPlans 
+          onClose={() => setShowSubscriptionModal(false)}
+          onUpgrade={(planId) => {
+            showToast(`Successfully upgraded to ${planId}! 🎉`);
+          }}
+        />
       )}
     </div>
   );
