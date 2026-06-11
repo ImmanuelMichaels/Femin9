@@ -21,11 +21,19 @@ export const NOTIF_TYPES = {
   SYSTEM:        'system',
 };
 
+// ─── Journey types ────────────────────────────────────────────────────────────
+// Used to gate reminders that are only relevant to certain journeys.
+// Omitting `journeys` means the reminder fires for ALL journeys.
+
+const ALL_JOURNEYS     = null; // fires for every journey
+const PREGNANT_ONLY    = ['pregnant'];
+const PRENATAL_JOURNEYS = ['pregnant', 'ivf', 'ttc']; // actively trying / expecting
+
 // ─── Reminder schedules ───────────────────────────────────────────────────────
-// journeys — if set, only fires for those journeyTypes; omit = all journeys
 
 const TIMED_REMINDERS = [
   // Hydration — every 2 hours 8 AM–8 PM
+  // Relevant to all journeys (menopause, menstrual, postpartum all benefit from hydration)
   ...[8, 10, 12, 14, 16, 18, 20].map((h) => ({
     id:      `hydration-${h}`,
     type:    NOTIF_TYPES.HYDRATION,
@@ -34,75 +42,122 @@ const TIMED_REMINDERS = [
       ? 'Start your morning right — drink a glass of water now!'
       : h < 17
         ? 'Afternoon check-in: have you had enough water today?'
-        : 'Evening hydration reminder — keep sipping, Mama!',
+        : 'Evening hydration reminder — keep sipping!',
     hour: h,
+    journeys: ALL_JOURNEYS,
   })),
 
   // Medication / vitamins — 8 AM and 8 PM
+  // Prenatal vitamins only make sense for pregnancy-adjacent journeys.
+  // For menopause/menstrual, this is handled via pushNotification from the app
+  // when the user actually sets up medications.
   { id: 'medication-8',  type: NOTIF_TYPES.MEDICATION,
     title: 'Morning Vitamins 💊',
     message: 'Time to take your prenatal vitamins and any prescribed medication.',
-    hour: 8 },
+    hour: 8,
+    journeys: PRENATAL_JOURNEYS,
+  },
   { id: 'medication-20', type: NOTIF_TYPES.MEDICATION,
     title: 'Evening Medication 💊',
     message: "Don't forget your evening medication or supplements!",
-    hour: 20 },
+    hour: 20,
+    journeys: PRENATAL_JOURNEYS,
+  },
 
-  // Kick count — 9 AM, 1 PM, 6 PM (pregnant only)
+  // Kick count — pregnant only
   { id: 'kicks-9',  type: NOTIF_TYPES.KICK_COUNT,
     title: 'Kick Count Time 👶',
     message: "Log your baby's morning movements — 10 kicks in 2 hours is a good sign.",
-    hour: 9,  journeys: ['pregnant'] },
+    hour: 9, journeys: PREGNANT_ONLY,
+  },
   { id: 'kicks-13', type: NOTIF_TYPES.KICK_COUNT,
     title: 'Kick Count Check 👶',
     message: "Afternoon kick count — find a quiet moment and feel for baby's movements.",
-    hour: 13, journeys: ['pregnant'] },
+    hour: 13, journeys: PREGNANT_ONLY,
+  },
   { id: 'kicks-18', type: NOTIF_TYPES.KICK_COUNT,
     title: 'Evening Kick Count 👶',
     message: "Evening movement check — log your baby's kicks before dinner.",
-    hour: 18, journeys: ['pregnant'] },
+    hour: 18, journeys: PREGNANT_ONLY,
+  },
 
-  // Sleep wind-down — 9 PM
+  // Sleep wind-down — all journeys (good sleep hygiene applies universally)
   { id: 'sleep-21', type: NOTIF_TYPES.SLEEP,
     title: 'Wind Down Time 🌙',
-    message: "It's 9 PM — start winding down for a good night's rest. You deserve it, Mama!",
-    hour: 21 },
+    message: "It's 9 PM — start winding down for a good night's rest. You deserve it!",
+    hour: 21,
+    journeys: ALL_JOURNEYS,
+  },
 ];
 
 // ─── Appointment reminder windows (hours before) ──────────────────────────────
 const APPOINTMENT_REMINDER_HOURS = [48, 24, 2];
 
-// ─── Daily motivational ───────────────────────────────────────────────────────
-const MOTIVATIONAL_QUOTES = [
-  "Every kick is a little love note from your baby. You're doing amazing! 🌸",
-  "Growing a human is hard work — be proud of yourself every single day. 💪",
-  "Your body knows exactly what it's doing. Trust it, nourish it, celebrate it. ✨",
-  "Rest is not laziness — it's how you and your baby recharge together. 🌙",
-  "You are stronger than you know, and braver than you feel. Keep going, Mama! 🦋",
-  "Small steps every day. That's all it takes. You've got this. 💕",
-  "The love you already have for your baby is your superpower. 🌟",
-  "Your journey is unique and beautiful — every step counts. 🌺",
-  "Nourish your body, trust your instincts, and breathe. You've got this. 🍃",
-  "The strength of a mother is unlike anything else in this world. 💫",
-  "Today is a good day to take care of yourself. You matter too, Mama. 🌷",
-  "Every small healthy choice is an act of love for you and your baby. 💕",
-  "You are not alone on this journey — we're right here with you. 🤝",
-  "Progress, not perfection. Every day is a new beginning. ✨",
+// ─── Journey-aware motivational quotes ───────────────────────────────────────
+// Seeded once per day to Firestore so they're real notifications, not mock data.
+
+const MOTIVATIONAL_BY_JOURNEY = {
+  pregnant: [
+    "Every kick is a little love note from your baby. You're doing amazing! 🌸",
+    "Growing a human is hard work — be proud of yourself every single day. 💪",
+    "Your body knows exactly what it's doing. Trust it, nourish it, celebrate it. ✨",
+    "Rest is not laziness — it's how you and your baby recharge together. 🌙",
+    "The love you already have for your baby is your superpower. 🌟",
+    "Nourish your body, trust your instincts, and breathe. You've got this, Mama! 🍃",
+  ],
+  ttc: [
+    "Every cycle is a new beginning. Keep going — your time is coming. 🌱",
+    "The strength it takes to keep hoping is extraordinary. We see you. 💕",
+    "Small steps every day. Tracking, resting, hoping — it all counts. 🌟",
+    "Your journey is uniquely yours. Trust the process and be kind to yourself. 🌺",
+    "You are not alone on this path. We're right here with you. 🤝",
+    "Progress, not perfection. Every day is a new beginning. ✨",
+  ],
+  ivf: [
+    "What you're going through takes immense courage. You are so strong. 💫",
+    "Every injection, every appointment — each one is an act of love. 🌸",
+    "Rest, recover, and be gentle with yourself today. 🍃",
+    "You are doing everything you can. That is enough. 💕",
+    "Your resilience is remarkable. Keep going. 🌟",
+    "The strength of hope is the most powerful thing in this world. ✨",
+  ],
+  mom: [
+    "You are doing a brilliant job — even on the hard days. 🌸",
+    "Rest when you can. You can't pour from an empty cup. 🍵",
+    "Every small healthy choice is an act of love — for you and your baby. 💕",
+    "The love you give every single day is extraordinary. 🌟",
+    "Being a mum is the hardest and most meaningful work there is. You've got this. 💪",
+    "It's okay to not be okay sometimes. You're still an amazing mum. 🌺",
+  ],
+  menopause: [
+    "This transition is a chapter, not an ending. You are still becoming. 🌸",
+    "Your body is changing, and that's okay — be patient and kind with yourself. 💕",
+    "Prioritising your wellbeing right now is one of the wisest things you can do. ✨",
+    "You've navigated so much already. This is just another chapter of your strength. 💫",
+    "Every day of self-care is an investment in the next season of your life. 🌺",
+    "Rest, move, nourish. Small acts of care compound into big changes. 🍃",
+  ],
+  menstrual: [
+    "Your cycle is information — listening to your body is an act of self-respect. 🌸",
+    "Be as gentle with yourself today as you would be with someone you love. 💕",
+    "Tracking your cycle is one of the most powerful things you can do for your health. ✨",
+    "Rest on the days that ask for it. Energy will return. 🌙",
+    "You know your body better than anyone. Trust those instincts. 💫",
+    "Every phase of your cycle has its own wisdom. Honour all of them. 🌺",
+  ],
+};
+
+// Fallback for any journey type not explicitly mapped
+const MOTIVATIONAL_FALLBACK = [
+  "Every step forward matters, no matter how small. You're doing great. 🌸",
+  "Be kind to yourself today — you deserve it. 💕",
+  "Your health journey is unique and worth honouring. ✨",
+  "Small consistent actions lead to big changes. Keep going. 💪",
+  "You are stronger than you know. 🌟",
 ];
 
-function getDailyMotivational() {
-  const today     = new Date();
-  const dayOfYear = Math.floor((today - new Date(today.getFullYear(), 0, 0)) / 86_400_000);
-  const quote     = MOTIVATIONAL_QUOTES[dayOfYear % MOTIVATIONAL_QUOTES.length];
-  return {
-    id:      `motivational-${today.toDateString()}`,
-    type:    NOTIF_TYPES.MOTIVATIONAL,
-    title:   'Daily Boost 🌸',
-    message: quote,
-    time:    'Today · 8:00 AM',
-    read:    false,
-    source:  'client',
-  };
+function getJourneyMotivational(journeyType) {
+  return MOTIVATIONAL_BY_JOURNEY[journeyType] ?? MOTIVATIONAL_FALLBACK;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -154,6 +209,11 @@ function sendBrowserNotification(title, body, icon = '/icon-192.png') {
 /**
  * useNotifications
  *
+ * All notifications originate from Firestore — no hardcoded mock data is merged
+ * client-side. Motivational quotes are seeded to Firestore once per day, scoped
+ * to the user's current journeyType, so they appear, persist, and dismiss like
+ * any other notification.
+ *
  * Firestore path:   notifications/{userId}/items/{notifId}
  * Appointments:     appointments/{userId}/items/{apptId}
  *   Expected appt fields: { type, title, dateTime (Timestamp), location? }
@@ -161,7 +221,7 @@ function sendBrowserNotification(title, body, icon = '/icon-192.png') {
  * @param {object}      opts
  * @param {number|null} opts.daysUntilRenewal
  * @param {array}       opts.tasks        [{ id, label, completed, dueToday, route? }]
- * @param {string}      opts.journeyType  pregnant | mom | conceive | ivf | menstrual | menopause
+ * @param {string}      opts.journeyType  pregnant | mom | ttc | ivf | menstrual | menopause
  * @param {function}    opts.onNavigate   (route) => void
  */
 export function useNotifications({
@@ -180,12 +240,6 @@ export function useNotifications({
 
   const seededRef  = useRef(new Set());
   const timerRefs  = useRef([]);
-
-  const [dismissedIds, setDismissedIds] = useState(() => {
-    try {
-      return new Set(JSON.parse(localStorage.getItem('femin9_dismissed_notifs') || '[]'));
-    } catch { return new Set(); }
-  });
 
   const userId = auth.currentUser?.uid;
 
@@ -300,7 +354,9 @@ export function useNotifications({
 
       for (const reminder of TIMED_REMINDERS) {
         if (reminder.hour !== hour) continue;
-        if (reminder.journeys && !reminder.journeys.includes(journeyType)) continue;
+
+        // Journey gate: null = all journeys, otherwise must match
+        if (reminder.journeys !== null && !reminder.journeys.includes(journeyType)) continue;
 
         const seedKey = `${reminder.id}-${today}`;
         if (seededRef.current.has(seedKey)) continue;
@@ -320,9 +376,9 @@ export function useNotifications({
             dateKey:    today,
             createdAt:  serverTimestamp(),
             action: reminder.type === NOTIF_TYPES.KICK_COUNT
-              ? { label: 'Log Kicks',      route: '/kicks'      }
+              ? { label: 'Log Kicks',      route: '/kicks'     }
               : reminder.type === NOTIF_TYPES.MEDICATION
-                ? { label: 'Mark as Taken', route: '/nutrition'  }
+                ? { label: 'Mark as Taken', route: '/nutrition' }
                 : null,
           }).catch(console.error);
 
@@ -332,10 +388,8 @@ export function useNotifications({
       }
     }
 
-    // Run immediately on mount
     checkTimedReminders().catch(console.error);
 
-    // Then check every minute
     const interval = setInterval(() => checkTimedReminders().catch(console.error), 60_000);
     timerRefs.current.push(interval);
 
@@ -345,7 +399,7 @@ export function useNotifications({
     };
   }, [userId, journeyType]);
 
-  // ── 4. Renewal + missed task seeds ───────────────────────────────────────
+  // ── 4. Renewal + missed task + daily motivational seeds ───────────────────
   useEffect(() => {
     if (!userId || loading) return;
 
@@ -353,7 +407,7 @@ export function useNotifications({
       const today  = new Date().toDateString();
       const colRef = collection(db, 'notifications', userId, 'items');
 
-      // Renewal
+      // ── Renewal ──────────────────────────────────────────────────────────
       if (daysUntilRenewal !== null && daysUntilRenewal <= 2) {
         const seedKey = `renewal-${today}`;
         if (!seededRef.current.has(seedKey)) {
@@ -377,7 +431,7 @@ export function useNotifications({
         }
       }
 
-      // Missed tasks
+      // ── Missed tasks ─────────────────────────────────────────────────────
       for (const task of tasks.filter((t) => t.dueToday && !t.completed)) {
         const seedKey = `missed-${task.id}-${today}`;
         if (seededRef.current.has(seedKey)) continue;
@@ -397,17 +451,48 @@ export function useNotifications({
         }
         seededRef.current.add(seedKey);
       }
+
+      // ── Daily motivational (seeded to Firestore, journey-scoped) ─────────
+      // Seeded once at 8 AM or on first app open of the day.
+      // Uses journeyType so menopause users get menopause-relevant encouragement,
+      // not pregnancy quotes. No client-side merge — this is a real notification.
+      if (journeyType) {
+        const motivationalSeedKey = `motivational-${journeyType}-${today}`;
+        if (!seededRef.current.has(motivationalSeedKey)) {
+          const existing = await getDocs(query(colRef,
+            where('type',    '==', NOTIF_TYPES.MOTIVATIONAL),
+            where('dateKey', '==', today),
+          ));
+          if (existing.empty) {
+            const quotes  = getJourneyMotivational(journeyType);
+            const dayOfYear = Math.floor(
+              (new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86_400_000
+            );
+            const quote = quotes[dayOfYear % quotes.length];
+
+            await addDoc(colRef, {
+              type:      NOTIF_TYPES.MOTIVATIONAL,
+              title:     'Daily Boost 🌸',
+              message:   quote,
+              read:      false,
+              dateKey:   today,
+              createdAt: serverTimestamp(),
+              // No action — motivational quotes are informational only
+            }).catch(console.error);
+          }
+          seededRef.current.add(motivationalSeedKey);
+        }
+      }
     }
 
     seedSystemNotifications().catch(console.error);
-  }, [userId, loading, daysUntilRenewal, tasks]);
+  }, [userId, loading, daysUntilRenewal, tasks, journeyType]);
 
-  // ── 5. Merge Firestore + client-only motivational ─────────────────────────
-  const dailyMotivational = getDailyMotivational();
-  const notifications = [
-    ...firestoreNotifs,
-    ...(!dismissedIds.has(dailyMotivational.id) ? [dailyMotivational] : []),
-  ].sort((a, b) => (a.read === b.read ? 0 : a.read ? 1 : -1));
+  // ── 5. Notifications list — Firestore only, no client-side mock merging ───
+  // Sort: unread first, then by recency (handled by Firestore orderBy createdAt desc)
+  const notifications = firestoreNotifs.sort(
+    (a, b) => (a.read === b.read ? 0 : a.read ? 1 : -1)
+  );
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -415,16 +500,6 @@ export function useNotifications({
 
   const markRead = useCallback(async (id) => {
     if (!userId) return;
-    if (id.startsWith('motivational-')) {
-      setDismissedIds((prev) => {
-        const next = new Set(prev);
-        next.add(id);
-        try { localStorage.setItem('femin9_dismissed_notifs', JSON.stringify([...next])); }
-        catch { /* ignore */ }
-        return next;
-      });
-      return;
-    }
     await updateDoc(doc(db, 'notifications', userId, 'items', id), { read: true })
       .catch(console.error);
   }, [userId]);
@@ -436,16 +511,14 @@ export function useNotifications({
       batch.update(doc(db, 'notifications', userId, 'items', n.id), { read: true });
     });
     await batch.commit().catch(console.error);
-    markRead(dailyMotivational.id);
-  }, [userId, firestoreNotifs, markRead, dailyMotivational.id]);
+  }, [userId, firestoreNotifs]);
 
   const dismissNotification = useCallback(async (id) => {
     if (!userId) return;
-    if (id.startsWith('motivational-')) { markRead(id); return; }
     await updateDoc(doc(db, 'notifications', userId, 'items', id), {
       read: true, dismissed: true,
     }).catch(console.error);
-  }, [userId, markRead]);
+  }, [userId]);
 
   const handleNotificationClick = useCallback((notif) => {
     markRead(notif.id);

@@ -25,7 +25,8 @@ const Nursing     = lazy(() => import('./Nursing'));
 const Ivfjourney  = lazy(() => import('./IVFJourney'));
 const AIAssistant = lazy(() => import('./Chat/AIAssistant'));
 const Menopause   = lazy(() => import('./Menopause/Menopause'));
-const WeightLogging = lazy(() => import('./WeightLogging')); // ADDED
+const WeightLogging = lazy(() => import('./WeightLogging')); 
+const Calendar    = lazy(() => import('./Calendar'));
 
 const Insights          = lazy(() => import('./Insights'));
 const Profile           = lazy(() => import('./Profile'));
@@ -64,7 +65,7 @@ const JOURNEY_KEY_MAP = {
   menopause: 'menopause',
 };
 
-const BASE_TABS = new Set(['home', 'menu', 'settings', 'insights', 'profile', 'body']); // ADDED 'body'
+const BASE_TABS = new Set(['home', 'menu', 'settings', 'insights', 'profile', 'body', 'safety', 'calendar', 'chat', 'assistant']); 
 
 function Spinner() {
   return (
@@ -175,6 +176,7 @@ export default function AppShell() {
       case 'ttc':       return <TTC />;
       case 'nursing':   return <Nursing />;
       case 'ivf':       return <Ivfjourney />;
+      case 'calendar': return <Calendar />;
 
       case 'pregnancy': return <ComingSoon name="Pregnancy Tracker" />;
       case 'menstrual': return <ComingSoon name="Menstrual Tracker" />;

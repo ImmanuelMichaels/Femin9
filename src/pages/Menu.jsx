@@ -3,7 +3,7 @@ import {
   Brain, Bot, ShieldCheck, Moon, HandHeart,
   Calendar, Flower2, Droplets, BarChart3,
   Syringe, Pill, Scan, BabyIcon, Sparkles,
-  Users, Phone, StethoscopeIcon, HeartPulse,
+  Users, Phone, HeartPulse,
 } from 'lucide-react';
 import { useApp } from '../context/useApp';
 import './MenuScreen.css';
@@ -30,11 +30,11 @@ const FEATURES = {
   // New IVF-specific features
   medications: { Icon: Pill,           label: 'Medications',     desc: 'IVF meds & injections',      iconBg: '#f3e5f5', iconColor: '#9c27b0' },
   scans:       { Icon: Scan,           label: 'Fertility Scans',  desc: 'Follicle & lining results',  iconBg: '#e8eaf6', iconColor: '#5c6bc0' },
-  embryos:     { Icon: BabyIcon,       label: 'Embryo Tracker',  desc: 'Embryo grades & status',     iconBg: '#fce4ec', iconColor: '#e91e63' },
-  tww:         { Icon: Sparkles,       label: '2-Week Wait',     desc: 'Wellbeing & symptom log',    iconBg: '#ede7f6', iconColor: '#8a2be2' },
-  partner:     { Icon: Users,          label: 'Partner Support', desc: 'Tips & shared journey',      iconBg: '#e8f5e9', iconColor: '#2e9e67' },
-  careteam:    { Icon: Phone,          label: 'Care Team',       desc: 'Clinic & doctor contacts',   iconBg: '#fff3e0', iconColor: '#e57c1a' },
-  timeline:    { Icon: HeartPulse,     label: 'IVF Timeline',    desc: 'Your treatment progress',    iconBg: '#fde8f0', iconColor: '#d63a6e' },
+  embryos:     { Icon: BabyIcon,       label: 'Embryo Tracker',   desc: 'Embryo grades & status',     iconBg: '#fce4ec', iconColor: '#e91e63' },
+  tww:         { Icon: Sparkles,       label: '2-Week Wait',      desc: 'Wellbeing & symptom log',    iconBg: '#ede7f6', iconColor: '#8a2be2' },
+  partner:     { Icon: Users,          label: 'Partner Support',  desc: 'Tips & shared journey',      iconBg: '#e8f5e9', iconColor: '#2e9e67' },
+  careteam:    { Icon: Phone,          label: 'Care Team',        desc: 'Clinic & doctor contacts',   iconBg: '#fff3e0', iconColor: '#e57c1a' },
+  timeline:    { Icon: HeartPulse,     label: 'IVF Timeline',     desc: 'Your treatment progress',    iconBg: '#fde8f0', iconColor: '#d63a6e' },
 };
 
 /* ─── Journey-specific category layout ─────────────────────────────────────── */
@@ -93,6 +93,12 @@ function FeatureBtn({ id, onPress }) {
   if (!f) return null;
   const { Icon, label, desc, iconBg, iconColor } = f;
 
+  // Safety check for Icon
+  if (!Icon) {
+    console.warn(`Icon for feature "${id}" is undefined`);
+    return null;
+  }
+
   return (
     <button
       className="ms-feature-btn"
@@ -125,7 +131,7 @@ export default function MenuScreen({ setActive }) {
   const { journeyType, userName } = useApp();
   const name = userName || 'Mama';
   
-  // FIX 1: Map AppContext keys to JOURNEY_MENU keys
+  // Map AppContext keys to JOURNEY_MENU keys
   const JOURNEY_KEY_MAP = { conceive: 'ttc', mom: 'nursing' };
   const menuKey = JOURNEY_KEY_MAP[journeyType] ?? journeyType;
   const sections = JOURNEY_MENU[menuKey] ?? JOURNEY_MENU.pregnant;
@@ -169,14 +175,14 @@ export default function MenuScreen({ setActive }) {
         </button>
       </div>
 
-      {/* FIX 2: Journey tag display mapping */}
+      {/* Journey tag display mapping */}
       <div className="ms-journey-tag">
         <span className="ms-journey-dot" />
         <span className="ms-journey-label">
           {{
             pregnant:  '🤰 Pregnancy Journey',
-            mom:       '👶 Postpartum & Nursing',      // fixed from 'nursing'
-            conceive:  '🌙 Trying to Conceive',        // fixed from 'ttc'
+            mom:       '👶 Postpartum & Nursing',
+            conceive:  '🌙 Trying to Conceive',
             ivf:       '🌸 IVF & Fertility',
             menstrual: '💧 Menstrual Health',
             menopause: '🌙 Menopause Journey',

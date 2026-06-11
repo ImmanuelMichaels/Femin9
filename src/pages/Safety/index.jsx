@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { WCard, Tag } from '../../components/ui';
 import DrugSafetyChecker from '../../components/cards/DrugSafetyChecker';
-import { DV_CONTACTS, SEXUAL_HEALTH, REPORT_STEPS, FREE_CLINICS } from '../../data/safety';
 import { useApp } from '../../context/useApp';
 
 const HUB_TABS = [
@@ -13,63 +12,196 @@ const HUB_TABS = [
   { id:"crisis", label:"🚨 Crisis" },
 ];
 
-// Nigerian emergency contacts
+// UK/GB emergency contacts (official)
 const EMERGENCY_CONTACTS = [
   { 
-    name: "National Emergency Number", 
-    number: "112", 
-    description: "Police, Ambulance, Fire Service",
+    name: "999 Emergency Services", 
+    number: "999", 
+    description: "Police, Ambulance, Fire Brigade - Life-threatening emergencies only",
     bg: "var(--rd)",
     color: "#fff"
   },
   { 
-    name: "Lagos State Emergency", 
-    number: "767", 
-    description: "Lagos State Emergency Management Agency",
-    bg: "var(--rdl)",
-    color: "var(--rd)"
+    name: "NHS 111", 
+    number: "111", 
+    description: "Medical advice when it's not an emergency",
+    bg: "var(--bll)",
+    color: "var(--bl)"
   },
   { 
-    name: "Nigerian Police Force", 
-    number: "199", 
-    description: "Emergency police response",
-    bg: "var(--rdl)",
-    color: "var(--rd)"
-  },
-  { 
-    name: "Domestic Violence Helpline", 
-    number: "0800 333 333", 
-    description: "24/7 confidential support",
+    name: "Samaritans", 
+    number: "116 123", 
+    description: "24/7 confidential emotional support",
     bg: "var(--gdl)",
     color: "var(--gd)"
   },
   { 
-    name: "Rape Crisis Helpline", 
-    number: "0800 111 222", 
-    description: "Free and confidential",
-    bg: "var(--bll)",
-    color: "var(--bl)"
+    name: "National Domestic Abuse Helpline", 
+    number: "0808 2000 247", 
+    description: "24/7 confidential support for domestic abuse",
+    bg: "var(--rdl)",
+    color: "var(--rd)"
+  },
+  { 
+    name: "NHS Mental Health Crisis Line", 
+    number: "111 (option 2)", 
+    description: "24/7 mental health support - select option 2",
+    bg: "var(--lvl)",
+    color: "var(--lv)"
+  }
+];
+
+// UK Domestic Violence Contacts by region
+const DV_CONTACTS_UK = [
+  {
+    flag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+    country: "England",
+    lines: [
+      { name: "National Domestic Abuse Helpline", num: "0808 2000 247" },
+      { name: "Men's Advice Line", num: "0808 801 0327" },
+      { name: "Respect (for perpetrators seeking help)", num: "0808 802 4040" }
+    ]
+  },
+  {
+    flag: "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+    country: "Scotland",
+    lines: [
+      { name: "Scotland Domestic Abuse Helpline", num: "0800 027 1234" },
+      { name: "FearFree (support for men)", num: "0808 802 0030" }
+    ]
+  },
+  {
+    flag: "🏴󠁧󠁢󠁷󠁬󠁳󠁿",
+    country: "Wales",
+    lines: [
+      { name: "Live Fear Free Helpline", num: "0808 80 10 800" },
+      { name: "Dyn Wales (support services)", num: "01792 644 683" }
+    ]
+  },
+  {
+    flag: "🇬🇧",
+    country: "Northern Ireland",
+    lines: [
+      { name: "Domestic & Sexual Abuse Helpline", num: "0808 802 1414" },
+      { name: "Men's Advisory Project", num: "028 9024 1929" }
+    ]
+  }
+];
+
+// UK Sexual Health Services
+const SEXUAL_HEALTH_UK = [
+  {
+    icon: "🏥",
+    title: "NHS Sexual Health Services",
+    desc: "Free STI testing, contraception, and advice available at local clinics. Search 'NHS sexual health clinic near me'.",
+    tag: "Free NHS"
+  },
+  {
+    icon: "📦",
+    title: "SH:24",
+    desc: "Free at-home STI testing kits delivered discreetly. Results via text within days.",
+    tag: "Online"
+  },
+  {
+    icon: "💊",
+    title: "Brook",
+    desc: "Free and confidential sexual health services for under-25s. Clinics nationwide and online consultations.",
+    tag: "Under 25"
+  },
+  {
+    icon: "🩺",
+    title: "Terrence Higgins Trust",
+    desc: "HIV and sexual health charity offering testing, support, and advice.",
+    tag: "Charity"
+  }
+];
+
+// UK Reporting Steps
+const REPORT_STEPS_UK = [
+  {
+    n: 1,
+    title: "Get to a Safe Place",
+    body: "If you're in immediate danger, call 999. Find somewhere you feel safe, whether that's with a friend, family member, or in a public space."
+  },
+  {
+    n: 2,
+    title: "Speak to a Specialist",
+    body: "Call the National Domestic Abuse Helpline (0808 2000 247) for confidential advice. They can help you understand your options."
+  },
+  {
+    n: 3,
+    title: "Document Everything",
+    body: "Save messages, photos of injuries (with dates), and record incidents in a log. This evidence helps with police reports and protection orders."
+  },
+  {
+    n: 4,
+    title: "Contact the Police",
+    body: "Call 101 for non-emergency reporting, or visit your local police station. Ask to speak to specially trained domestic abuse officers."
+  },
+  {
+    n: 5,
+    title: "Apply for a Protection Order",
+    body: "Through a court, you can get a Non-Molestation Order or Occupation Order. Your local domestic abuse service can help with paperwork."
+  },
+  {
+    n: 6,
+    title: "Access Ongoing Support",
+    body: "Get linked with an Independent Domestic Violence Advisor (IDVA), refuge accommodation, or counselling through local services."
+  }
+];
+
+// UK Free Clinics & Services
+const FREE_CLINICS_UK = [
+  {
+    flag: "🏥",
+    name: "NHS Sexual Health Clinic",
+    area: "England/Wales/Scotland/NI",
+    detail: "Free STI testing, contraception, HPV vaccine, PrEP, and emergency contraception. Find your nearest via NHS website."
+  },
+  {
+    flag: "📦",
+    name: "SH:24",
+    area: "Online",
+    detail: "Free STI testing kits delivered to your home. Covers chlamydia, gonorrhoea, syphilis, and HIV."
+  },
+  {
+    flag: "💊",
+    name: "Brook",
+    area: "Nationwide",
+    detail: "Free and confidential sexual health services for under-25s. Offers contraception, STI testing, and pregnancy advice."
+  },
+  {
+    flag: "🩺",
+    name: "C-Card Scheme",
+    area: "Various Locations",
+    detail: "Free condoms for young people (typically under-25) through participating pharmacies and youth centres."
+  },
+  {
+    flag: "🏳️‍🌈",
+    name: "HIV Prevention England",
+    area: "Nationwide",
+    detail: "Free PrEP (pre-exposure prophylaxis) available through NHS sexual health clinics for HIV prevention."
   }
 ];
 
 // Crisis warning signs with severity levels
 const CRISIS_WARNING_SIGNS = [
-  { id: 1, sign: "Talking about wanting to die", action: "Call 112 or go to nearest hospital immediately", severity: "critical" },
-  { id: 2, sign: "Feeling hopeless or trapped", action: "Speak to a mental health professional", severity: "high" },
-  { id: 3, sign: "Withdrawing from family and friends", action: "Reach out to someone you trust", severity: "medium" },
-  { id: 4, sign: "Extreme mood swings", action: "Consult a doctor for evaluation", severity: "high" },
-  { id: 5, sign: "Talking about being a burden", action: "You are not alone. Help is available", severity: "critical" },
-  { id: 6, sign: "Increased substance use", action: "Contact addiction support services", severity: "high" }
+  { id: 1, sign: "Talking about wanting to die or harm yourself", action: "Call 999 immediately or go to A&E", severity: "critical" },
+  { id: 2, sign: "Feeling hopeless or trapped", action: "Call Samaritans (116 123) 24/7", severity: "high" },
+  { id: 3, sign: "Withdrawing from family and friends", action: "Reach out to someone you trust or call NHS 111 (option 2)", severity: "medium" },
+  { id: 4, sign: "Extreme mood swings or agitation", action: "Contact your GP for urgent mental health assessment", severity: "high" },
+  { id: 5, sign: "Feeling like a burden to others", action: "Call Samaritans - you matter and help is available", severity: "critical" },
+  { id: 6, sign: "Increased alcohol or drug use", action: "Contact FRANK (0300 123 6600) for substance support", severity: "high" }
 ];
 
 // Crisis action checklist
 const CRISIS_ACTION_CHECKLIST = [
-  { id: 1, action: "Call emergency helpline (112)", completed: false, icon: "📞" },
+  { id: 1, action: "Call emergency helpline (999 or 111 option 2)", completed: false, icon: "📞" },
   { id: 2, action: "Reach out to a trusted friend or family member", completed: false, icon: "👥" },
   { id: 3, action: "Remove yourself from immediate danger", completed: false, icon: "🚶" },
   { id: 4, action: "Practice grounding technique (5-4-3-2-1 method)", completed: false, icon: "🧘" },
-  { id: 5, action: "Go to nearest hospital emergency room", completed: false, icon: "🏥" },
-  { id: 6, action: "Contact your therapist or counselor", completed: false, icon: "💬" }
+  { id: 5, action: "Go to nearest hospital A&E department", completed: false, icon: "🏥" },
+  { id: 6, action: "Contact your GP or mental health team", completed: false, icon: "💬" }
 ];
 
 export default function Safety() {
@@ -131,20 +263,22 @@ export default function Safety() {
   const getJourneyResources = () => {
     if (journeyType === 'pregnant') {
       return {
-        title: "Pregnancy Emergency Resources",
+        title: "Pregnancy Emergency Resources (UK)",
         resources: [
-          "Maternity Triage: Call your hospital's maternity unit immediately",
-          "Early Pregnancy Unit: For bleeding or pain in early pregnancy",
-          "Midwife: Contact your community midwife for urgent concerns"
+          "Maternity Triage: Call your hospital's maternity unit immediately for urgent concerns",
+          "Early Pregnancy Unit: For bleeding or pain in early pregnancy - ask your GP for referral",
+          "NHS 111: For urgent medical advice about pregnancy concerns",
+          "Tommy's PregnancyLine: 0800 014 7800 (pregnancy complications support)"
         ]
       };
     } else if (journeyType === 'mom') {
       return {
-        title: "Postpartum Emergency Resources",
+        title: "Postpartum Emergency Resources (UK)",
         resources: [
-          "Postnatal Depression: Speak to your health visitor",
-          "Breastfeeding Support: Call your local breastfeeding helpline",
-          "Perinatal Mental Health Team: Urgent mental health support"
+          "Perinatal Mental Health Team: Urgent mental health support - ask your health visitor for referral",
+          "Health Visitor: Contact your health visitor for postnatal concerns",
+          "National Breastfeeding Helpline: 0300 100 0212",
+          "Association for Postnatal Illness: 0207 386 0868"
         ]
       };
     }
@@ -181,7 +315,7 @@ export default function Safety() {
         }}>
           <div>
             <div style={{ fontWeight: 800, fontSize: "var(--fs-xl)", color: "var(--dp)" }}>🛡️ Safety Hub</div>
-            <div style={{ fontSize: "var(--fs-sm)", color: "var(--mt)", marginTop: 3 }}>Support, rights & health safety</div>
+            <div style={{ fontSize: "var(--fs-sm)", color: "var(--mt)", marginTop: 3 }}>Support, rights & health safety - UK & GB services</div>
           </div>
           <button
             onClick={handleSOS}
@@ -221,16 +355,22 @@ export default function Safety() {
           </span>
           <div style={{ display: "flex", gap: "var(--gap-sm)", flexWrap: "wrap" }}>
             <button 
-              onClick={() => handleEmergencyCall("112")}
+              onClick={() => handleEmergencyCall("999")}
               style={{ background: "var(--rd)", color: "#fff", border: "none", borderRadius: 20, padding: "4px 12px", fontSize: "var(--fs-xs)", fontWeight: 700, cursor: "pointer" }}
             >
-              112 (National)
+              999 (Emergency)
             </button>
             <button 
-              onClick={() => handleEmergencyCall("767")}
+              onClick={() => handleEmergencyCall("111")}
+              style={{ background: "var(--bll)", border: "none", borderRadius: 20, padding: "4px 12px", fontSize: "var(--fs-xs)", fontWeight: 700, cursor: "pointer", color: "var(--bl)" }}
+            >
+              111 (NHS)
+            </button>
+            <button 
+              onClick={() => handleEmergencyCall("116123")}
               style={{ background: "var(--gdl)", border: "none", borderRadius: 20, padding: "4px 12px", fontSize: "var(--fs-xs)", fontWeight: 700, cursor: "pointer", color: "var(--gd)" }}
             >
-              767 (LASEMA)
+              116 123 (Samaritans)
             </button>
           </div>
         </div>
@@ -277,26 +417,27 @@ export default function Safety() {
           </WCard>
         )}
         
-        {/* DV Help Tab */}
+        {/* DV Help Tab - UK Data */}
         {tab === "dv" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
             <WCard style={{ background: "var(--rdl)", border: "1.5px solid var(--rdm)33" }}>
               <div style={{ fontWeight: 800, fontSize: "var(--fs-md)", color: "var(--rd)", marginBottom: 6 }}>🆘 You Are Not Alone</div>
-              <div style={{ fontSize: "var(--fs-sm)", color: "var(--md)", lineHeight: 1.6 }}>Domestic violence affects 1 in 3 women in Nigeria. Help is available — free, confidential, and open to all women.</div>
+              <div style={{ fontSize: "var(--fs-sm)", color: "var(--md)", lineHeight: 1.6 }}>Domestic abuse affects 1 in 4 women and 1 in 6 men in the UK. Free, confidential help is available 24/7 through national and local services.</div>
             </WCard>
             
             <WCard style={{ background: "var(--bll)" }}>
-              <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)", marginBottom: 8 }}>📋 Safety Planning Tips</div>
+              <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)", marginBottom: 8 }}>📋 Safety Planning Tips (UK)</div>
               <ul style={{ fontSize: "var(--fs-sm)", color: "var(--md)", lineHeight: 1.6, margin: 0, paddingLeft: 20 }}>
-                <li>Have a code word with trusted friends/family</li>
-                <li>Keep important documents in a safe place</li>
-                <li>Charge your phone and keep emergency numbers saved</li>
-                <li>Plan an escape route and safe place to go</li>
+                <li>Have a code word with trusted friends/family to signal danger</li>
+                <li>Keep important documents (passport, bank details) in a safe place</li>
+                <li>Charge your phone and keep emergency numbers saved as contacts</li>
+                <li>Plan an escape route and identify local refuge options</li>
                 <li>Use incognito browsing to hide your search history</li>
+                <li>Download the Bright Sky app for location-based support</li>
               </ul>
             </WCard>
             
-            {DV_CONTACTS.map((c, i) => (
+            {DV_CONTACTS_UK.map((c, i) => (
               <WCard key={i}>
                 <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)", marginBottom: 8 }}>{c.flag} {c.country}</div>
                 {c.lines.map((l, j) => (
@@ -309,7 +450,7 @@ export default function Safety() {
             ))}
             
             <button 
-              onClick={() => window.location.href = "https://www.google.com"}
+              onClick={() => window.location.href = "https://www.bbc.co.uk/news"}
               style={{
                 width: "100%",
                 padding: "var(--sp-3)",
@@ -321,15 +462,15 @@ export default function Safety() {
                 color: "var(--mt)"
               }}
             >
-              🚪 Quick Escape (Opens Google)
+              🚪 Quick Escape (Opens BBC News - covers your tracks)
             </button>
           </div>
         )}
 
-        {/* Sexual Health Tab */}
+        {/* Sexual Health Tab - UK Data */}
         {tab === "sexual" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
-            {SEXUAL_HEALTH.map((s, i) => (
+            {SEXUAL_HEALTH_UK.map((s, i) => (
               <WCard key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: "var(--bll)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>{s.icon}</div>
                 <div style={{ flex: 1 }}>
@@ -343,23 +484,23 @@ export default function Safety() {
             ))}
             
             <WCard>
-              <div style={{ fontWeight: 700, marginBottom: 8 }}>🩺 STI Testing Reminder</div>
-              <p style={{ fontSize: "var(--fs-sm)", color: "var(--mt)", marginBottom: 12 }}>Regular testing is recommended if you have new or multiple partners.</p>
-              <button style={{ background: "var(--t)", color: "#fff", border: "none", borderRadius: 20, padding: "8px 16px", cursor: "pointer" }}>
-                Set Testing Reminder
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>🩺 STI Testing Reminder (UK)</div>
+              <p style={{ fontSize: "var(--fs-sm)", color: "var(--mt)", marginBottom: 12 }}>NHS recommends annual STI testing if you have new or multiple partners. Testing is free and confidential.</p>
+              <button style={{ background: "var(--t)", color: "#fff", border: "none", borderRadius: 20, padding: "8px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                <span>📅</span> Set NHS Testing Reminder
               </button>
             </WCard>
           </div>
         )}
 
-        {/* Report Incident Tab */}
+        {/* Report Incident Tab - UK Data */}
         {tab === "report" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
             <WCard style={{ background: "var(--gdl)" }}>
-              <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)", color: "var(--gd)", marginBottom: 4 }}>📋 6-Step Incident Guide</div>
-              <div style={{ fontSize: "var(--fs-sm)", color: "var(--md)" }}>Follow these steps to report domestic violence safely and effectively.</div>
+              <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)", color: "var(--gd)", marginBottom: 4 }}>📋 6-Step Incident Guide (UK)</div>
+              <div style={{ fontSize: "var(--fs-sm)", color: "var(--md)" }}>Follow these steps to report domestic abuse safely and effectively in the UK.</div>
             </WCard>
-            {REPORT_STEPS.map((s, i) => (
+            {REPORT_STEPS_UK.map((s, i) => (
               <WCard key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                 <div style={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, background: "var(--t)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-sm)", fontWeight: 800, color: "#fff" }}>{s.n}</div>
                 <div>
@@ -371,14 +512,14 @@ export default function Safety() {
           </div>
         )}
 
-        {/* Free Clinics Tab */}
+        {/* Free Clinics Tab - UK Data */}
         {tab === "condoms" && (
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
             <WCard style={{ background: "var(--sgl)" }}>
-              <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)", color: "var(--sg)", marginBottom: 4 }}>🩹 Free & Low-Cost Care</div>
-              <div style={{ fontSize: "var(--fs-sm)", color: "var(--md)" }}>Free condoms, STI testing, and contraception near you.</div>
+              <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)", color: "var(--sg)", marginBottom: 4 }}>🩹 Free NHS & Low-Cost Care</div>
+              <div style={{ fontSize: "var(--fs-sm)", color: "var(--md)" }}>Free condoms, STI testing, contraception, and sexual health services available across the UK.</div>
             </WCard>
-            {FREE_CLINICS.map((c, i) => (
+            {FREE_CLINICS_UK.map((c, i) => (
               <WCard key={i}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                   <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)" }}>{c.flag} {c.name}</div>
@@ -398,11 +539,11 @@ export default function Safety() {
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
             <WCard style={{ background: "var(--rdl)", border: "2px solid var(--rd)" }}>
               <div style={{ fontWeight: 800, fontSize: "var(--fs-md)", color: "var(--rd)", marginBottom: 8 }}>
-                🚨 Mental Health Crisis Support
+                🚨 Mental Health Crisis Support (UK)
               </div>
               <div style={{ fontSize: "var(--fs-sm)", color: "var(--md)", lineHeight: 1.6 }}>
                 If you're thinking about harming yourself or others, please reach out immediately.
-                <strong> You are not alone. Help is available 24/7.</strong>
+                <strong> You are not alone. Help is available 24/7 across the UK.</strong>
               </div>
             </WCard>
             
@@ -427,10 +568,10 @@ export default function Safety() {
               📋 View Crisis Action Checklist
             </button>
             
-            {/* Crisis Helplines */}
+            {/* Crisis Helplines - UK */}
             {EMERGENCY_CONTACTS.map((contact, i) => (
               <WCard key={i}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: "var(--fs-sm)" }}>{contact.name}</div>
                     <div style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>{contact.description}</div>
@@ -453,6 +594,17 @@ export default function Safety() {
                 </div>
               </WCard>
             ))}
+            
+            {/* Additional UK Mental Health Resources */}
+            <WCard>
+              <div style={{ fontWeight: 700, marginBottom: 8 }}>📞 Other UK Mental Health Helplines</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div><strong>CALM (Campaign Against Living Miserably):</strong> 0800 58 58 58 (5pm-midnight)</div>
+                <div><strong>Mind Infoline:</strong> 0300 123 3393 (9am-6pm, Mon-Fri)</div>
+                <div><strong>SANEline:</strong> 0300 304 7000 (4pm-10pm daily)</div>
+                <div><strong>Shout Crisis Text Line:</strong> Text "SHOUT" to 85258</div>
+              </div>
+            </WCard>
             
             {/* Warning Signs Checklist - Clickable */}
             <WCard>
@@ -530,7 +682,7 @@ export default function Safety() {
                 <li>Reach out to one person you trust</li>
                 <li>Remove yourself from stressful environments if possible</li>
                 <li>Stay hydrated and try to eat something small</li>
-                <li>Remember: This feeling is temporary, help is available</li>
+                <li>Remember: This feeling is temporary, help is available 24/7</li>
               </ul>
             </WCard>
           </div>

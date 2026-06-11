@@ -155,7 +155,6 @@ const S = {
     color: '#aaa',
   },
   emptyEmoji: { fontSize: 32, display: 'block', marginBottom: 8 },
-  // Loading skeleton
   skeleton: {
     padding: '12px 14px',
     borderBottom: '1px solid #fafafa',
@@ -307,7 +306,6 @@ export default function NotificationPanel({
         {/* List */}
         <div style={S.list}>
           {loading ? (
-            // Show skeletons while Firestore loads
             <>
               <SkeletonItem />
               <SkeletonItem />
