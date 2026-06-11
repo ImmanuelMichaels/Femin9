@@ -37,14 +37,15 @@ export const JOURNEY_CONFIG = {
     id: 'ivf',
     name: 'IVF & Fertility',
     description: 'IVF treatment support',
-    tabs: ["home", "ivf", "nutrition", "vitals", "health", "mental", "chat", "insights", "profile"],
+    tabs: ["home", "treatment", "medications", "embryos", "scans", "insights", "profile", "chat"],
+    // Added "embryos" tab
     pills: [
       { dot: "var(--lv)", label: "Cycle Day 14 · Stimulation", bg: "var(--lvl)" },
       { dot: "var(--sg)", label: "4/5 meds taken ✓", bg: "var(--sgl)" },
       { dot: "var(--t)", label: "14 follicles 📊", bg: "var(--gdl)" },
     ],
     greeting: "Warrior",
-    taskIds: ["medications", "injections", "hydration", "rest", "mood_log", "nutrition"],
+    taskIds: ["medications", "injections", "hydration", "rest", "mood_log"],
     quickActions: [],
     showAlert: true,
   },
@@ -53,7 +54,8 @@ export const JOURNEY_CONFIG = {
     id: 'mom',
     name: 'Postpartum & Nursing',
     description: 'Postpartum recovery and baby care',
-    tabs: ["home", "baby", "nutrition", "vitals", "health", "mental", "chat", "insights", "profile"],
+    tabs: ["home", "nursing", "baby", "nutrition", "vitals", "health", "mental", "chat", "insights", "profile"],
+    //      ^^^^^^^^^^ Add 'nursing' here
     pills: [
       { dot: "var(--t)", label: "Week 6 Postpartum", bg: "var(--gdl)" },
       { dot: "var(--sg)", label: "Breastfeeding · Day 42", bg: "var(--sgl)" },

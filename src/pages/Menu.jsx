@@ -12,7 +12,7 @@ import './MenuScreen.css';
 const FEATURES = {
   // Original features
   kicks:     { Icon: Activity,    label: 'Baby Kicks',    desc: 'Track movements',            iconBg: '#fde8f0', iconColor: '#d63a6e' },
-  vitals:    { Icon: Heart,       label: 'Vitals',        desc: 'BP, weight & more',          iconBg: '#fde4f0', iconColor: '#e91e8c' },
+  vitals:    { Icon: Heart,       label: 'Vitals',        desc: 'BP, weight & temperature',   iconBg: '#fde4f0', iconColor: '#e91e8c' },
   nutrition: { Icon: Salad,       label: 'Nutrition',     desc: 'Meals & food safety',        iconBg: '#fff3e0', iconColor: '#e57c1a' },
   health:    { Icon: Stethoscope, label: 'Health',        desc: 'Symptoms & meds',            iconBg: '#e3f2fd', iconColor: '#1976d2' },
   baby:      { Icon: Baby,        label: 'Baby Care',     desc: 'Guides & milestones',        iconBg: '#ede7f6', iconColor: '#8a2be2' },
@@ -27,7 +27,7 @@ const FEATURES = {
   menopause: { Icon: Moon,        label: 'Menopause',     desc: 'Symptoms & hormone log',     iconBg: '#ede7f6', iconColor: '#5e35b1' },
   insights:  { Icon: BarChart3,   label: 'Insights',      desc: 'Trends & reports',           iconBg: '#e8f5e9', iconColor: '#388e3c' },
   
-  // New IVF-specific features
+  // IVF-specific features
   medications: { Icon: Pill,           label: 'Medications',     desc: 'IVF meds & injections',      iconBg: '#f3e5f5', iconColor: '#9c27b0' },
   scans:       { Icon: Scan,           label: 'Fertility Scans',  desc: 'Follicle & lining results',  iconBg: '#e8eaf6', iconColor: '#5c6bc0' },
   embryos:     { Icon: BabyIcon,       label: 'Embryo Tracker',   desc: 'Embryo grades & status',     iconBg: '#fce4ec', iconColor: '#e91e63' },
@@ -52,10 +52,18 @@ const JOURNEY_MENU = {
     { category: '🤖 Support & Tracking',ids: ['chat', 'calendar', 'insights']   },
   ],
   ttc: [
-    { category: '🌙 Fertility',         ids: ['ttc', 'vitals']                   },
-    { category: '🥗 Wellness',          ids: ['nutrition', 'mental']             },
-    { category: '🩺 Health & Safety',   ids: ['health', 'safety']               },
-    { category: '🤖 Support & Tracking',ids: ['chat', 'calendar', 'insights']   },
+    { category: '🌙 Cycle Tracking',     ids: ['ttc', 'calendar', 'vitals']      },
+    { category: '📊 Cycle Insights',     ids: ['insights', 'mental']             },
+    { category: '🥗 Wellness',           ids: ['nutrition', 'health']            },
+    { category: '🩺 Health & Safety',    ids: ['safety']                         },
+    { category: '🤖 Support & Tracking', ids: ['chat', 'assistant']              },
+  ],
+  conceive: [
+    { category: '🌙 Cycle Tracking',     ids: ['ttc', 'calendar', 'vitals']      },
+    { category: '📊 Cycle Insights',     ids: ['insights', 'mental']             },
+    { category: '🥗 Wellness',           ids: ['nutrition', 'health']            },
+    { category: '🩺 Health & Safety',    ids: ['safety']                         },
+    { category: '🤖 Support & Tracking', ids: ['chat', 'assistant']              },
   ],
   ivf: [
     { category: '🌸 IVF Treatment',     ids: ['ivf', 'timeline', 'medications']  },
@@ -93,17 +101,13 @@ function FeatureBtn({ id, onPress }) {
   if (!f) return null;
   const { Icon, label, desc, iconBg, iconColor } = f;
 
-  // Safety check for Icon
   if (!Icon) {
     console.warn(`Icon for feature "${id}" is undefined`);
     return null;
   }
 
   return (
-    <button
-      className="ms-feature-btn"
-      onClick={() => onPress(id)}
-    >
+    <button className="ms-feature-btn" onClick={() => onPress(id)}>
       <div className="ms-icon-box" style={{ background: iconBg }}>
         <Icon size={20} color={iconColor} strokeWidth={1.8} />
       </div>
@@ -131,30 +135,46 @@ export default function MenuScreen({ setActive }) {
   const { journeyType, userName } = useApp();
   const name = userName || 'Mama';
   
-  // Map AppContext keys to JOURNEY_MENU keys
-  const JOURNEY_KEY_MAP = { conceive: 'ttc', mom: 'nursing' };
-  const menuKey = JOURNEY_KEY_MAP[journeyType] ?? journeyType;
+  const menuKey = journeyType === 'conceive' ? 'ttc' : (journeyType === 'mom' ? 'nursing' : journeyType);
   const sections = JOURNEY_MENU[menuKey] ?? JOURNEY_MENU.pregnant;
 
-  // Map feature IDs to route/tab names
   const handleFeaturePress = (featureId) => {
     const featureRoutes = {
-      'ivf': 'ivf',
-      'timeline': 'ivf',
-      'medications': 'meds',
-      'scans': 'journey',
-      'embryos': 'journey',
-      'vitals': 'vitals',
-      'mental': 'mental',
-      'tww': 'insights',
-      'partner': 'profile',
-      'nutrition': 'nutrition',
-      'health': 'health',
-      'careteam': 'profile',
-      'safety': 'safety',
-      'chat': 'chat',
-      'calendar': 'calendar',
-      'insights': 'insights',
+      // IVF features
+      'ivf':         'treatment',
+      'timeline':    'treatment',
+      'medications': 'medications',
+      'scans':       'scans',
+      'embryos':     'embryos',
+      'tww':         'insights',
+      'partner':     'profile',
+      'careteam':    'profile',
+      
+      // TTC/Fertility features
+      'ttc':         'ttc',
+      'vitals':      'vitals',
+      'calendar':    'calendar',
+      'insights':    'insights',
+      
+      // Wellness features
+      'mental':      'mental',
+      'nutrition':   'nutrition',
+      'health':      'health',
+      
+      // Pregnancy features
+      'kicks':       'kicks',
+      'baby':        'baby',
+      'nursing':     'nursing',
+      
+      // Support features
+      'safety':      'safety',
+      'chat':        'chat',
+      'assistant':   'assistant',
+      
+      // Default
+      'body':        'body',
+      'settings':    'settings',
+      'profile':     'profile',
     };
     
     const route = featureRoutes[featureId] || featureId;
@@ -163,8 +183,6 @@ export default function MenuScreen({ setActive }) {
 
   return (
     <div className="ms-root">
-
-      {/* Header */}
       <div className="ms-header">
         <div>
           <p className="ms-greeting-sub">{greeting()}</p>
@@ -175,7 +193,6 @@ export default function MenuScreen({ setActive }) {
         </button>
       </div>
 
-      {/* Journey tag display mapping */}
       <div className="ms-journey-tag">
         <span className="ms-journey-dot" />
         <span className="ms-journey-label">
@@ -183,6 +200,7 @@ export default function MenuScreen({ setActive }) {
             pregnant:  '🤰 Pregnancy Journey',
             mom:       '👶 Postpartum & Nursing',
             conceive:  '🌙 Trying to Conceive',
+            ttc:       '🌙 Trying to Conceive',
             ivf:       '🌸 IVF & Fertility',
             menstrual: '💧 Menstrual Health',
             menopause: '🌙 Menopause Journey',
@@ -190,7 +208,6 @@ export default function MenuScreen({ setActive }) {
         </span>
       </div>
 
-      {/* Categorised feature sections */}
       <div className="ms-sections">
         {sections.map(s => (
           <CategorySection

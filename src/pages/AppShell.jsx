@@ -22,14 +22,13 @@ const Chat        = lazy(() => import('./Chat'));
 const Safety      = lazy(() => import('./Safety'));
 const TTC         = lazy(() => import('./TTC'));
 const Nursing     = lazy(() => import('./Nursing'));
-const Ivfjourney  = lazy(() => import('./IVFJourney'));
+const Ivfjourney  = lazy(() => import('./Ivfjourney'));
 const AIAssistant = lazy(() => import('./Chat/AIAssistant'));
 const Menopause   = lazy(() => import('./Menopause/Menopause'));
 const WeightLogging = lazy(() => import('./WeightLogging')); 
 const Calendar    = lazy(() => import('./Calendar'));
-
-const Insights          = lazy(() => import('./Insights'));
-const Profile           = lazy(() => import('./Profile'));
+const Insights    = lazy(() => import('./Insights'));
+const Profile     = lazy(() => import('./Profile'));
 const EPDSQuestionnaire = lazy(() => import('../components/EPDSQuestionnaire'));
 
 // Placeholder for unfinished screens
@@ -51,7 +50,7 @@ function ComingSoon({ name }) {
 // Journey mapping
 const JOURNEY_TAB_MAP = {
   pregnant:  'home',
-  ivf:       'ivf',
+  ivf:       'treatment',
   conceive:  'ttc',
   mom:       'nursing',
   menopause: 'menopause',
@@ -65,7 +64,50 @@ const JOURNEY_KEY_MAP = {
   menopause: 'menopause',
 };
 
-const BASE_TABS = new Set(['home', 'menu', 'settings', 'insights', 'profile', 'body', 'safety', 'calendar', 'chat', 'assistant']); 
+// Base tabs available to all journeys - INCLUDING TTC features
+const BASE_TABS = new Set([
+  'home', 'menu', 'settings', 'insights', 'profile', 
+  'chat', 'assistant', 'vitals', 'calendar', 'nutrition', 
+  'health', 'mental', 'safety', 'body'
+]); 
+
+// Journey-specific blocked tabs
+const getBlockedTabsForJourney = (journeyType) => {
+  switch(journeyType) {
+    case 'ivf':
+      return new Set([
+        'baby', 'nursing', 'kicks', 'ttc', 'pregnancy', 
+        'menstrual', 'partner'
+      ]);
+    
+    case 'mom':
+      return new Set([
+        'kicks', 'ttc', 'ivf', 'treatment', 'medications', 
+        'scans', 'embryos', 'pregnancy', 'menstrual', 'partner'
+      ]);
+    
+    case 'pregnant':
+      return new Set([
+        'nursing', 'ttc', 'ivf', 'treatment', 'medications', 
+        'scans', 'embryos', 'menstrual', 'menopause'
+      ]);
+    
+    case 'conceive':
+      return new Set([
+        'baby', 'nursing', 'kicks', 'ivf', 'treatment', 
+        'medications', 'scans', 'embryos', 'menopause', 'pregnancy'
+      ]);
+    
+    case 'menopause':
+      return new Set([
+        'baby', 'nursing', 'kicks', 'ttc', 'ivf', 'treatment', 
+        'medications', 'scans', 'embryos', 'pregnancy'
+      ]);
+    
+    default:
+      return new Set();
+  }
+};
 
 function Spinner() {
   return (
@@ -103,28 +145,37 @@ export default function AppShell() {
     }
   }, [journey, setJourneyType]);
 
-  // Derive initial tab from journeyType (no effect needed for this)
-  const initialTab = JOURNEY_TAB_MAP[journeyType] || 'home';
-  const [tab, setTabState] = useState(initialTab);
-
   const journeyKey = JOURNEY_KEY_MAP[journeyType] ?? journeyType;
   const allowed = BLOOM_KB[journeyKey]?.tabs ?? [];
+  const blockedTabs = getBlockedTabsForJourney(journeyType);
+
+  // Check if a tab is allowed for current journey
+  const isTabAllowed = (tabId) => {
+    if (BASE_TABS.has(tabId)) return true;
+    if (blockedTabs.has(tabId)) return false;
+    return allowed.includes(tabId);
+  };
+
+  // Get initial tab that is allowed for this journey
+  const getInitialTab = () => {
+    const mappedTab = JOURNEY_TAB_MAP[journeyType] || 'home';
+    
+    if (blockedTabs.has(mappedTab)) return 'home';
+    if (BASE_TABS.has(mappedTab) || allowed.includes(mappedTab)) return mappedTab;
+    
+    return 'home';
+  };
+
+  const [tab, setTabState] = useState(getInitialTab);
 
   const handleSetTab = (id) => {
-    if (BASE_TABS.has(id) || allowed.includes(id)) {
+    if (isTabAllowed(id)) {
       setTabState(id);
     }
   };
 
-  // Handle upgrade from anywhere in the app
-  const handleUpgrade = () => {
-    setShowSubscription(true);
-  };
-
-  // Handle subscription close
-  const handleSubscriptionClose = () => {
-    setShowSubscription(false);
-  };
+  const handleUpgrade = () => setShowSubscription(true);
+  const handleSubscriptionClose = () => setShowSubscription(false);
 
   // EPDS screening for nursing moms
   useEffect(() => {
@@ -154,45 +205,60 @@ export default function AppShell() {
   };
 
   const renderPage = () => {
+    if (!isTabAllowed(tab)) {
+      return <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+    }
+
     switch (tab) {
+      // Core tabs
       case 'home':      return <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
       case 'menu':      return <Menu setActive={handleSetTab} onUpgrade={handleUpgrade} />;
       case 'settings':  return <Settings onUpgrade={handleUpgrade} />;
       case 'insights':  return <Insights onUpgrade={handleUpgrade} />;
       case 'profile':   return <Profile onUpgrade={handleUpgrade} />;
-      case 'body':      return <WeightLogging setTab={handleSetTab} onUpgrade={handleUpgrade} />; // ADDED
+      case 'body':      return <WeightLogging setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'safety':    return <Safety />;
+      
+      // TTC & Fertility tabs
+      case 'ttc':       return journeyType === 'conceive' ? <TTC /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'calendar':  return <Calendar />;
+      case 'vitals':    return <Vitals />;
+      case 'nutrition': return <Nutrition />;
+      case 'health':    return <Health />;
+      case 'mental':    return <Mental />;
 
+      // Chat & AI
       case 'chat':      return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><Chat onUpgrade={handleUpgrade} /></div>;
       case 'assistant': return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><AIAssistant onUpgrade={handleUpgrade} /></div>;
 
-      case 'kicks':     return <Kicks />;
-      case 'nutrition': return <Nutrition />;
-      case 'vitals':    return <Vitals />;
-      case 'health':    return <Health />;
-      case 'baby':      return <Baby />;
-      case 'mental':    return <Mental />;
-      case 'partner':   return <Partner />;
-      case 'safety':    return <Safety />;
-      case 'ttc':       return <TTC />;
-      case 'nursing':   return <Nursing />;
-      case 'ivf':       return <Ivfjourney />;
-      case 'calendar': return <Calendar />;
+      // Pregnancy tabs
+      case 'kicks':     return journeyType === 'pregnant' ? <Kicks /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'baby':      return (journeyType === 'pregnant' || journeyType === 'mom') ? <Baby /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'partner':   return (journeyType === 'pregnant' || journeyType === 'conceive') ? <Partner /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'nursing':   return journeyType === 'mom' ? <Nursing /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      
+      // IVF Journey tabs
+      case 'ivf':       
+      case 'treatment': return journeyType === 'ivf' ? <Ivfjourney activeTab="treatment" /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'medications': return journeyType === 'ivf' ? <Ivfjourney activeTab="medications" /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'scans':     return journeyType === 'ivf' ? <Ivfjourney activeTab="scans" /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'embryos':   return journeyType === 'ivf' ? <Ivfjourney activeTab="embryos" /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      
+      case 'menopause': return journeyType === 'menopause' ? <Menopause /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
 
+      // Coming soon
       case 'pregnancy': return <ComingSoon name="Pregnancy Tracker" />;
       case 'menstrual': return <ComingSoon name="Menstrual Tracker" />;
-      case 'menopause': return <Menopause />;
 
-      default:          return <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      default: return <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
     }
   };
 
   return (
     <div className="app-page">
       <div className="app-frame fu">
-        {/* Emergency SOS Modal */}
         {showSOS && <EmergencyModal onClose={() => setShowSOS(false)} />}
 
-        {/* EPDS Screening Modal (Postpartum Depression) */}
         {showEPDS && (
           <div style={{
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 2000,
@@ -209,7 +275,6 @@ export default function AppShell() {
           </div>
         )}
 
-        {/* Subscription Modal */}
         {showSubscription && (
           <div style={{
             position: 'fixed',

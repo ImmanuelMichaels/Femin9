@@ -1090,6 +1090,302 @@
   cursor: pointer;
 }
 
+
+.embryo-tracker-page {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MEDICATION SECTION — append these rules to Ivf.css
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Form fields (used inside MedModal) ─────────────────────────────────────── */
+.med-field {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 14px;
+}
+
+.med-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.med-input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #e8e8e8;
+  font-size: 14px;
+  color: var(--text, #222);
+  background: var(--card, #fff);
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.15s;
+}
+
+.med-input:focus {
+  border-color: #d63a6e;
+}
+
+/* ── Progress bar wrapper ────────────────────────────────────────────────────── */
+.med-progress-bar-wrap {
+  background: var(--card, #fff);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+
+/* ── View toggle ─────────────────────────────────────────────────────────────── */
+.med-view-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.med-toggle-btn {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 10px;
+  border: 1.5px solid #e8e8e8;
+  background: transparent;
+  color: var(--muted, #888);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+}
+
+.med-toggle-btn.active {
+  border-color: #d63a6e;
+  background: #fde8f0;
+  color: #d63a6e;
+  font-weight: 700;
+}
+
+/* ── Medication list container ───────────────────────────────────────────────── */
+.med-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.med-group-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted, #888);
+  padding: 0 2px;
+  margin-bottom: 2px;
+}
+
+/* ── Daily check row (Today's schedule) ─────────────────────────────────────── */
+.med-check-row {
+  background: var(--card, #fff);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+
+.med-check-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.med-check-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text, #222);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.med-check-meta {
+  font-size: 12px;
+  color: var(--muted, #888);
+}
+
+.med-check-times {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.med-time-chip {
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1.5px solid #e8e8e8;
+  background: transparent;
+  color: var(--muted, #888);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.med-time-chip.taken {
+  border-color: #2e9e67;
+  background: #e8f5ee;
+  color: #2e9e67;
+  font-weight: 700;
+}
+
+/* ── Medication card (All medications view) ──────────────────────────────────── */
+.med-card {
+  background: var(--card, #fff);
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  border-left: 4px solid transparent;
+}
+
+.med-card--active {
+  border-left-color: #d63a6e;
+}
+
+.med-card--inactive {
+  border-left-color: #ddd;
+  opacity: 0.75;
+}
+
+.med-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.med-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text, #222);
+  margin-bottom: 3px;
+}
+
+.med-card-sub {
+  font-size: 12px;
+  color: var(--muted, #888);
+  margin-bottom: 2px;
+}
+
+.med-card-dates {
+  font-size: 12px;
+  color: var(--muted, #888);
+  margin-top: 8px;
+}
+
+.med-card-notes {
+  font-size: 13px;
+  color: var(--text, #444);
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--bg, #fafafa);
+  border-radius: 8px;
+  line-height: 1.5;
+}
+
+.med-status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.med-status-pill.active {
+  background: #fde8f0;
+  color: #d63a6e;
+}
+
+.med-status-pill.inactive {
+  background: #f0f0f0;
+  color: #999;
+}
+
+.med-time-label {
+  display: inline-block;
+  padding: 3px 10px;
+  background: #fde8f0;
+  color: #d63a6e;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.med-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.med-icon-btn:hover {
+  background: #f5f5f5;
+}
+
+/* ── add-med-btn (already in Ivf.css, verify it exists) ─────────────────────── */
+.add-med-btn {
+  margin-left: auto;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1.5px solid #d63a6e;
+  background: transparent;
+  color: #d63a6e;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.add-med-btn:hover {
+  background: #fde8f0;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .embryo-tracker-page {
+    padding: 12px;
+  }
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .ivf-journey {

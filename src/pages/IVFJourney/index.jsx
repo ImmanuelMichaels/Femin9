@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/useApp';
-// import { calender } from 'lucide-react';
+import EmbryoTracker from '../../components/EmbryoTracker'; 
 import './Ivf.css';
 
 /* ─────────────────HELPERS─────────────────────────────── */
@@ -25,11 +25,20 @@ function toISO(date) {
   return date.toISOString().split('T')[0];
 }
 
-/* ─────────────────CYCLE OFFSETS (named constants, not magic numbers)── */
-/**
- * All offsets are in days from cycle start (day 0 = consultation).
- * Adjust here if your clinic protocol differs.
- */
+/* ─────────────────SVG RING─────────────────────────────────────────── */
+const ringCircumference = (r) => 2 * Math.PI * r;
+
+/* ─────────────────CYCLE DAY CALCULATION────────────────────────────── */
+function getCycleDay(cycleStart) {
+  if (!cycleStart) return null;
+  const start = new Date(cycleStart);
+  const today = new Date();
+  start.setHours(0, 0, 0, 0);
+  today.setHours(0, 0, 0, 0);
+  return Math.floor((today - start) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+/* ─────────────────CYCLE OFFSETS────────────────────────── */
 const CYCLE_OFFSETS = {
   CONSULTATION:   0,
   STIMULATION:    7,
@@ -63,6 +72,7 @@ const STORAGE_KEYS = {
   CYCLE_START:     'ivf_cycle_start',
   CONTACTS:        'ivf_contacts',
   PARTNER:         'ivf_partner',
+  PARTNER_SUPPORT: 'ivf_partner_support',
 };
 
 /* ─────────────────TIMELINE & SCAN BUILDERS─────────────────────────── */
@@ -87,397 +97,43 @@ const buildTimeline = (cycleStart) => {
   const testDate      = addDays(c, CYCLE_OFFSETS.PREGNANCY_TEST);
 
   return [
-    {
-      id: 'consultation', label: "Consultation",
-      date: formatShortDate(consultDate),
-      done: isDoneOrToday(consultDate),
-      active: isToday(consultDate),
-      timestamp: toISO(consultDate),
-    },
-    {
-      id: 'stimulation', label: "Stimulation",
-      date: formatShortDate(stimDate),
-      done: isDoneOrToday(stimDate),
-      active: isToday(stimDate),
-      timestamp: toISO(stimDate),
-    },
-    {
-      id: 'egg-retrieval', label: "Egg Retrieval",
-      date: formatShortDate(retrievalDate),
-      done: isDoneOrToday(retrievalDate),
-      active: isToday(retrievalDate),
-      timestamp: toISO(retrievalDate),
-    },
-    {
-      id: 'fertilisation', label: "Fertilisation",
-      date: formatShortDate(fertiliseDate),
-      done: isDoneOrToday(fertiliseDate),
-      active: isToday(fertiliseDate),
-      timestamp: toISO(fertiliseDate),
-    },
-    {
-      id: 'embryo-dev', label: "Embryo Dev.",
-      date: formatDateRange(embryoStart, embryoEnd),
-      done: isDoneOrToday(embryoEnd),
-      active: today >= embryoStart && today <= embryoEnd,
-      timestamp: null,
-    },
-    {
-      id: 'transfer', label: "Transfer",
-      date: formatShortDate(transferDate),
-      done: isDoneOrToday(transferDate),
-      active: isToday(transferDate),
-      timestamp: toISO(transferDate),
-    },
-    {
-      id: 'tww', label: "2-Week Wait",
-      date: `${formatShortDate(twwStart)}+`,
-      done: isDoneOrToday(testDate),
-      active: today > transferDate && today < testDate,
-      timestamp: null,
-    },
-    {
-      id: 'pregnancy-test', label: "Pregnancy Test",
-      date: formatShortDate(testDate),
-      done: isDoneOrToday(testDate),
-      active: isToday(testDate),
-      timestamp: toISO(testDate),
-    },
+    { id: 'consultation', label: "Consultation", date: formatShortDate(consultDate), done: isDoneOrToday(consultDate), active: isToday(consultDate), timestamp: toISO(consultDate) },
+    { id: 'stimulation', label: "Stimulation", date: formatShortDate(stimDate), done: isDoneOrToday(stimDate), active: isToday(stimDate), timestamp: toISO(stimDate) },
+    { id: 'egg-retrieval', label: "Egg Retrieval", date: formatShortDate(retrievalDate), done: isDoneOrToday(retrievalDate), active: isToday(retrievalDate), timestamp: toISO(retrievalDate) },
+    { id: 'fertilisation', label: "Fertilisation", date: formatShortDate(fertiliseDate), done: isDoneOrToday(fertiliseDate), active: isToday(fertiliseDate), timestamp: toISO(fertiliseDate) },
+    { id: 'embryo-dev', label: "Embryo Dev.", date: formatDateRange(embryoStart, embryoEnd), done: isDoneOrToday(embryoEnd), active: today >= embryoStart && today <= embryoEnd, timestamp: null },
+    { id: 'transfer', label: "Transfer", date: formatShortDate(transferDate), done: isDoneOrToday(transferDate), active: isToday(transferDate), timestamp: toISO(transferDate) },
+    { id: 'tww', label: "2-Week Wait", date: `${formatShortDate(twwStart)}+`, done: isDoneOrToday(testDate), active: today > transferDate && today < testDate, timestamp: null },
+    { id: 'pregnancy-test', label: "Pregnancy Test", date: formatShortDate(testDate), done: isDoneOrToday(testDate), active: isToday(testDate), timestamp: toISO(testDate) },
   ];
 };
 
 const buildScans = (cycleStart) => {
   if (!cycleStart) return [];
-
   const c = new Date(cycleStart);
-
   return SCAN_OFFSETS.map(e => {
     const d = addDays(c, e.offset);
-    return {
-      id:        e.id,
-      date:      formatShortDate(d),
-      isoDate:   toISO(d),
-      label:     e.label,
-      follicles: null,
-      lining:    null,
-      e2:        null,
-      status:    "upcoming",
-      completed: false,
-      note:      `Schedule your ${e.label.toLowerCase()} with your clinic.`,
-    };
+    return { id: e.id, date: formatShortDate(d), isoDate: toISO(d), label: e.label, follicles: null, lining: null, e2: null, status: "upcoming", completed: false, note: `Schedule your ${e.label.toLowerCase()} with your clinic.` };
   });
 };
 
 const getInitialMedications = () => [];
-const getInitialEmbryos    = () => [];
-const getInitialContacts   = () => [];
+const getInitialEmbryos = () => [];
+const getInitialContacts = () => [];
 
-/* ─────────────────CONTENT LIBRARIES (not user data)────────────────── */
-
-const AFFIRMATIONS = [
-  "Your body is doing something extraordinary.",
-  "Every injection is a profound act of love.",
-  "You are so much stronger than you know.",
-  "Hope is the bravest thing you carry.",
-  "Rest is not giving up — rest is part of the work.",
-  "Whatever happens, you are already a warrior.",
-];
-
-const DEFAULT_MOODS = [
-  { label: "Hopeful",   emoji: "🌸", color: "#7DCB98" },
-  { label: "Anxious",   emoji: "😰", color: "#E87070" },
-  { label: "Calm",      emoji: "🕊️", color: "#9B8FD8" },
-  { label: "Tired",     emoji: "😴", color: "#F08C2E" },
-  { label: "Strong",    emoji: "💪", color: "#2E9E9B" },
-  { label: "Emotional", emoji: "💧", color: "#C96A10" },
-];
-
-const DEFAULT_SYMPTOMS = [
-  "Bloating", "Cramping", "Spotting", "Nausea", "Breast tenderness",
-  "Fatigue", "Headache", "Mood changes", "Increased urination", "Constipation",
-];
-
-const MEDICATION_COLORS = ['#F08C2E', '#9B8FD8', '#E87070', '#2E9E9B', '#7DCB98'];
-
-/* ─────────────────CYCLE DAY CALCULATION────────────────────────────── */
-function getCycleDay(cycleStart) {
-  if (!cycleStart) return null;
-  const start = new Date(cycleStart);
-  const today = new Date();
-  start.setHours(0, 0, 0, 0);
-  today.setHours(0, 0, 0, 0);
-  return Math.floor((today - start) / (1000 * 60 * 60 * 24)) + 1;
-}
-
-/* ─────────────────MEDICATION THRESHOLDS (named)────────────────────── */
-const MED_THRESHOLD_EXCELLENT = 90; // % taken to be "Excellent"
-const MED_THRESHOLD_GOOD      = 70; // % taken to be "Good"
-
-/* ─────────────────SVG RING─────────────────────────────────────────── */
-const ringCircumference = (r) => 2 * Math.PI * r;
-
-/* ─────────────────MODAL────────────────────────────────────────────── */
-function Modal({ isOpen, onClose, title, children }) {
-  if (!isOpen) return null;
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <h3>{title}</h3>
-        {children}
-        <button className="modal-close" onClick={onClose}>Close</button>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────ADD MEDICATION MODAL─────────────────────────────── */
-function AddMedicationModal({ isOpen, onClose, onAdd }) {
-  const [newMed, setNewMed] = useState({
-    name: '', type: 'Injection', dose: '', time: '', notes: ''
-  });
-
-  const handleSubmit = () => {
-    if (!newMed.name || !newMed.dose || !newMed.time) return;
-    onAdd(newMed);
-    setNewMed({ name: '', type: 'Injection', dose: '', time: '', notes: '' });
-    onClose();
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Medication">
-      <div className="add-med-form">
-        <input
-          placeholder="Medication name *"
-          value={newMed.name}
-          onChange={e => setNewMed({ ...newMed, name: e.target.value })}
-        />
-        <select value={newMed.type} onChange={e => setNewMed({ ...newMed, type: e.target.value })}>
-          <option>Injection</option>
-          <option>Oral</option>
-          <option>Vaginal</option>
-        </select>
-        <input
-          placeholder="Dose (e.g., 150 IU) *"
-          value={newMed.dose}
-          onChange={e => setNewMed({ ...newMed, dose: e.target.value })}
-        />
-        <input
-          placeholder="Time (e.g., 07:00 AM) *"
-          value={newMed.time}
-          onChange={e => setNewMed({ ...newMed, time: e.target.value })}
-        />
-        <textarea
-          placeholder="Notes (optional)"
-          value={newMed.notes}
-          onChange={e => setNewMed({ ...newMed, notes: e.target.value })}
-          rows={3}
-        />
-        <button className="submit-btn" onClick={handleSubmit}>Add Medication</button>
-      </div>
-    </Modal>
-  );
-}
-
-/* ─────────────────ADD EMBRYO MODAL─────────────────────────────────── */
-function AddEmbryoModal({ isOpen, onClose, onAdd }) {
-  const [newEmbryo, setNewEmbryo] = useState({
-    label: '', grade: '', status: 'culturing', day: '', notes: ''
-  });
-
-  const gradeOptions = ["AA", "AB", "BA", "BB", "BC", "CB", "CC"];
-
-  const handleSubmit = () => {
-    if (!newEmbryo.label) return;
-    const embryo = {
-      id:            Date.now(),
-      label:         newEmbryo.label,
-      grade:         newEmbryo.grade || null,
-      day:           newEmbryo.day ? parseInt(newEmbryo.day) : null,
-      stage:         newEmbryo.day ? `Day ${newEmbryo.day}` : 'Culturing',
-      status:        newEmbryo.status,
-      quality:       null,
-      qualityColor:  "#9B8FD8",
-      qualityBg:     "#F0EEFF",
-      notes:         newEmbryo.notes || `Embryo ${newEmbryo.label} added on ${new Date().toLocaleDateString()}.`,
-    };
-    onAdd(embryo);
-    setNewEmbryo({ label: '', grade: '', status: 'culturing', day: '', notes: '' });
-    onClose();
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Embryo">
-      <div className="add-embryo-form">
-        <input
-          placeholder="Embryo label (e.g., Embryo A, Embryo #1) *"
-          value={newEmbryo.label}
-          onChange={e => setNewEmbryo({ ...newEmbryo, label: e.target.value })}
-          required
-        />
-        <select value={newEmbryo.grade} onChange={e => setNewEmbryo({ ...newEmbryo, grade: e.target.value })}>
-          <option value="">Select grade (optional)</option>
-          {gradeOptions.map(g => <option key={g} value={g}>{g}</option>)}
-        </select>
-        <input
-          type="number"
-          placeholder="Development day (e.g., 3, 5)"
-          value={newEmbryo.day}
-          onChange={e => setNewEmbryo({ ...newEmbryo, day: e.target.value })}
-        />
-        <select value={newEmbryo.status} onChange={e => setNewEmbryo({ ...newEmbryo, status: e.target.value })}>
-          <option value="culturing">Culturing (in lab)</option>
-          <option value="transfer-ready">Transfer Ready</option>
-          <option value="frozen">Frozen</option>
-          <option value="discarded">Discarded</option>
-        </select>
-        <textarea
-          placeholder="Notes (optional)"
-          value={newEmbryo.notes}
-          onChange={e => setNewEmbryo({ ...newEmbryo, notes: e.target.value })}
-          rows={3}
-        />
-        <button className="submit-btn" onClick={handleSubmit}>Add Embryo</button>
-      </div>
-    </Modal>
-  );
-}
-
-/* ─────────────────ADD CONTACT MODAL────────────────────────────────── */
-function AddContactModal({ isOpen, onClose, onAdd }) {
-  const [newContact, setNewContact] = useState({ name: '', phone: '', role: '' });
-
-  const handleSubmit = () => {
-    if (!newContact.name || !newContact.phone) return;
-    onAdd({
-      id:       Date.now(),
-      name:     newContact.name,
-      subtitle: newContact.role || "Care Team Member",
-      phone:    newContact.phone,
-      icon:     "👩‍⚕️",
-      color:    "#9B8FD8",
-      bg:       "#F0EEFF",
-    });
-    setNewContact({ name: '', phone: '', role: '' });
-    onClose();
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Add Contact">
-      <div className="add-contact-form">
-        <input
-          placeholder="Contact name *"
-          value={newContact.name}
-          onChange={e => setNewContact({ ...newContact, name: e.target.value })}
-        />
-        <input
-          placeholder="Phone number *"
-          value={newContact.phone}
-          onChange={e => setNewContact({ ...newContact, phone: e.target.value })}
-        />
-        <input
-          placeholder="Role (e.g., Nurse, Doctor)"
-          value={newContact.role}
-          onChange={e => setNewContact({ ...newContact, role: e.target.value })}
-        />
-        <button className="submit-btn" onClick={handleSubmit}>Add Contact</button>
-      </div>
-    </Modal>
-  );
-}
-
-/* ─────────────────EDIT PARTNER MODAL───────────────────────────────── */
-function EditPartnerModal({ isOpen, onClose, partner, onSave }) {
-  const [draft, setDraft] = useState(partner);
-
-  useEffect(() => { setDraft(partner); }, [partner]);
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Edit Partner Details">
-      <div className="add-contact-form">
-        <input
-          placeholder="Partner name"
-          value={draft.name}
-          onChange={e => setDraft({ ...draft, name: e.target.value })}
-        />
-        <input
-          placeholder="Role / description (e.g., My husband)"
-          value={draft.role}
-          onChange={e => setDraft({ ...draft, role: e.target.value })}
-        />
-        <button className="submit-btn" onClick={() => { onSave(draft); onClose(); }}>Save</button>
-      </div>
-    </Modal>
-  );
-}
-
-/* ─────────────────HYDRATION GOAL PICKER (replaces prompt())────────── */
-function HydrationGoalPicker({ current, onSave, onClose }) {
-  const [value, setValue] = useState(current);
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()}>
-        <h3>Set Hydration Goal</h3>
-        <p>How many cups of water do you aim to drink each day?</p>
-        <input
-          type="number"
-          min={1}
-          max={20}
-          value={value}
-          onChange={e => setValue(parseInt(e.target.value) || 1)}
-          style={{ width: '100%', padding: '8px', marginBottom: '12px' }}
-        />
-        <button className="submit-btn" onClick={() => { onSave(value); onClose(); }}>Save Goal</button>
-        <button className="modal-close" onClick={onClose}>Cancel</button>
-      </div>
-    </div>
-  );
-}
-
-/* ─────────────────HERO SECTION──────────────────────────────────────  */
+/* ─────────────────HERO SECTION────────────────────────────────────── */
 function HeroSection({ stage, progress, userName, cycleDay, cycleStartDate, timeline }) {
   const circumference = ringCircumference(52);
-
-  const getEmbryoInfo = () => {
-    if (!cycleStartDate || !timeline || timeline.length === 0) {
-      return { embryoDay: null, daysUntilTransfer: null };
-    }
-    const today         = new Date();
-    const retrievalStage = timeline.find(s => s.label === "Egg Retrieval");
-    const transferStage  = timeline.find(s => s.label === "Transfer");
-
-    if (!retrievalStage?.timestamp || !transferStage?.timestamp) {
-      return { embryoDay: null, daysUntilTransfer: null };
-    }
-
-    const retrievalDate      = new Date(retrievalStage.timestamp);
-    const transferDate       = new Date(transferStage.timestamp);
-    const daysSinceRetrieval = Math.floor((today - retrievalDate) / (1000 * 60 * 60 * 24));
-    const embryoDay          = daysSinceRetrieval >= 0 ? daysSinceRetrieval + 1 : null;
-    const daysUntilTransfer  = Math.ceil((transferDate - today) / (1000 * 60 * 60 * 24));
-
-    return { embryoDay, daysUntilTransfer };
-  };
-
-  const { embryoDay, daysUntilTransfer } = getEmbryoInfo();
-
   const getEncouragement = () => {
-    if (stage === "Embryo Dev." && embryoDay !== null) {
-      if (daysUntilTransfer !== null && daysUntilTransfer > 0) {
-        return `Day ${embryoDay} embryo development. Transfer in ${daysUntilTransfer} day${daysUntilTransfer !== 1 ? 's' : ''}. 💛`;
-      }
-      return `Day ${embryoDay} embryo development. Your embryos are being carefully nurtured. 💛`;
-    }
-
     const messages = {
-      "Consultation":    "Your journey begins today. Every step forward takes courage. 💛",
-      "Stimulation":     "Keep taking your medications consistently. Your body is responding. 💛",
-      "Egg Retrieval":   "Today is a big day. You've prepared well — trust the process. 💛",
-      "Fertilisation":   "The magic is happening in the lab today. Rest and breathe. 💛",
-      "Transfer":        "Transfer day — what you've been working towards. You've got this. 💛",
-      "2-Week Wait":     "The hardest two weeks — you are not waiting alone. 💛",
-      "Pregnancy Test":  "Whatever today brings, your strength is extraordinary. 💛",
+      "Consultation": "Your journey begins today. Every step forward takes courage. 💛",
+      "Stimulation": "Keep taking your medications consistently. Your body is responding. 💛",
+      "Egg Retrieval": "Today is a big day. You've prepared well — trust the process. 💛",
+      "Fertilisation": "The magic is happening in the lab today. Rest and breathe. 💛",
+      "Transfer": "Transfer day — what you've been working towards. You've got this. 💛",
+      "2-Week Wait": "The hardest two weeks — you are not waiting alone. 💛",
+      "Pregnancy Test": "Whatever today brings, your strength is extraordinary. 💛",
     };
-
     return messages[stage] || "Keep going — every step matters. 💛";
   };
 
@@ -488,18 +144,9 @@ function HeroSection({ stage, progress, userName, cycleDay, cycleStartDate, time
         <div className="hero-left">
           <p className="hero-greeting">Hello, {userName || 'there'} ✨</p>
           <h1 className="hero-stage-name">{stage || "Your IVF Journey"}</h1>
-          {cycleDay !== null && cycleDay > 0 && (
-            <p className="hero-stage-sub">Day {cycleDay} of cycle</p>
-          )}
-          {stage === "Embryo Dev." && embryoDay !== null && (
-            <p className="hero-stage-sub" style={{ fontSize: '14px', marginTop: '4px' }}>
-              Embryo Day {embryoDay}
-            </p>
-          )}
+          {cycleDay !== null && cycleDay > 0 && <p className="hero-stage-sub">Day {cycleDay} of cycle</p>}
           <div className="hero-progress">
-            <div className="hero-progress-bar">
-              <div className="hero-progress-fill" style={{ width: `${progress}%` }} />
-            </div>
+            <div className="hero-progress-bar"><div className="hero-progress-fill" style={{ width: `${progress}%` }} /></div>
             <p className="hero-progress-text">{progress}% complete</p>
           </div>
           <p className="hero-encourage">{getEncouragement()}</p>
@@ -507,17 +154,8 @@ function HeroSection({ stage, progress, userName, cycleDay, cycleStartDate, time
         <div className="hero-ring">
           <svg width="120" height="120" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="52" fill="none" stroke="#FFE4D0" strokeWidth="6" />
-            <circle
-              cx="60" cy="60" r="52" fill="none" stroke="#F08C2E" strokeWidth="6"
-              strokeDasharray={circumference}
-              strokeDashoffset={circumference * (1 - progress / 100)}
-              strokeLinecap="round"
-              transform="rotate(-90 60 60)"
-            />
-            <text x="60" y="67" textAnchor="middle" fill="#C96A10"
-              fontSize="20" fontWeight="700" fontFamily="DM Sans, sans-serif">
-              {progress}%
-            </text>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="#F08C2E" strokeWidth="6" strokeDasharray={circumference} strokeDashoffset={circumference * (1 - progress / 100)} strokeLinecap="round" transform="rotate(-90 60 60)" />
+            <text x="60" y="67" textAnchor="middle" fill="#C96A10" fontSize="20" fontWeight="700">{progress}%</text>
           </svg>
         </div>
       </div>
@@ -525,23 +163,16 @@ function HeroSection({ stage, progress, userName, cycleDay, cycleStartDate, time
   );
 }
 
-/* ─────────────────IVF TIMELINE──────────────────────────────────────  */
+/* ─────────────────IVF TIMELINE────────────────────────────────────── */
 function IVFTimeline({ stages, onStageUpdate }) {
   const completedCount = stages.filter(s => s.done).length;
-  const total          = stages.length;
-  const progressPct    = total > 0 ? Math.round((completedCount / total) * 100) : 0;
-
-  const progressMessage =
-    completedCount === 0     ? "Your journey starts here. One step at a time."
-    : completedCount === total ? "You've completed every stage. Incredible strength."
-    : progressPct >= 50      ? `${completedCount} of ${total} stages complete — more than halfway there.`
-    :                          `${completedCount} of ${total} stages complete. Keep going.`;
+  const total = stages.length;
 
   const handleStageToggle = (stageId) => {
-    const idx     = stages.findIndex(s => s.id === stageId);
+    const idx = stages.findIndex(s => s.id === stageId);
     const updated = stages.map((stage, i) => {
       if (stage.id === stageId) return { ...stage, done: !stage.done, active: !stage.done };
-      if (i === idx + 1)        return { ...stage, active: !stages[idx].done };
+      if (i === idx + 1) return { ...stage, active: !stages[idx].done };
       return stage;
     });
     onStageUpdate(updated);
@@ -552,7 +183,6 @@ function IVFTimeline({ stages, onStageUpdate }) {
       <div className="section-header">
         <span className="section-badge">YOUR JOURNEY</span>
         <h2 className="section-title">IVF Progress</h2>
-        <p className="section-subtitle">{progressMessage}</p>
       </div>
       <div className="timeline-scroll">
         <div className="timeline-track">
@@ -576,849 +206,356 @@ function IVFTimeline({ stages, onStageUpdate }) {
   );
 }
 
-/* ─────────────────MEDICATION SECTION───────────────────────────────── */
-function MedicationSection({ medications, onMedicationUpdate }) {
-  const [expanded,    setExpanded]    = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
+/* ─────────────────MEDICATION SECTION───────────────────────────── */
 
-  const taken = medications.filter(m => m.status === "taken").length;
-  const total = medications.length;
-  const pct   = total > 0 ? Math.round((taken / total) * 100) : 0;
+const FREQ_OPTIONS = [
+  { value: 'once',      label: 'Once daily'    },
+  { value: 'twice',     label: 'Twice daily'   },
+  { value: 'three',     label: 'Three times daily' },
+  { value: 'injection', label: 'Injection'     },
+  { value: 'asneeded',  label: 'As needed'     },
+];
 
-  const handleMarkTaken = (id) => {
-    onMedicationUpdate(
-      medications.map(med =>
-        med.id === id ? { ...med, status: "taken", takenAt: new Date().toISOString() } : med
-      )
-    );
-  };
+const ROUTE_OPTIONS = [
+  { value: 'oral',        label: '💊 Oral'         },
+  { value: 'injection',   label: '💉 Injection'     },
+  { value: 'pessary',     label: '🔵 Pessary/Gel'  },
+  { value: 'patch',       label: '🩹 Patch'         },
+  { value: 'nasal',       label: '👃 Nasal spray'   },
+  { value: 'topical',     label: '🧴 Topical'       },
+];
 
-  const handleAddMedication = (newMed) => {
-    const color = MEDICATION_COLORS[Math.floor(Math.random() * MEDICATION_COLORS.length)];
-    onMedicationUpdate([
-      ...medications,
-      { id: Date.now(), ...newMed, status: 'pending', color, bg: '#FFF3E8' },
-    ]);
-  };
+const TIMES_OF_DAY = ['Morning', 'Afternoon', 'Evening', 'Bedtime'];
 
-  return (
-    <section className="meds-section">
-      <div className="section-header">
-        <span className="section-badge">TODAY'S PLAN</span>
-        <h2 className="section-title">Medication Schedule</h2>
-        <button className="add-med-btn" onClick={() => setShowAddModal(true)}>+ Add Medication</button>
-      </div>
-
-      {medications.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">💊</div>
-          <p>No medications added yet.</p>
-          <p className="empty-sub">Click "Add Medication" to start tracking your IVF protocol.</p>
-        </div>
-      ) : (
-        <>
-          <div className="meds-progress">
-            <div className="meds-progress-info">
-              <span>{taken} of {total} taken today</span>
-              <span className="meds-progress-pct">{pct}%</span>
-            </div>
-            <div className="meds-progress-bar">
-              <div className="meds-progress-fill" style={{ width: `${pct}%` }} />
-            </div>
-          </div>
-
-          <div className="meds-list">
-            {medications.map(med => (
-              <div key={med.id} className={`med-card ${med.status}`}>
-                <button className="med-row" onClick={() => setExpanded(expanded === med.id ? null : med.id)}>
-                  <div className="med-pip" style={{ background: med.color }} />
-                  <div className="med-content">
-                    <div className="med-header">
-                      <span className="med-name">{med.name}</span>
-                      <span className={`med-badge ${med.status}`}>
-                        {med.status === "taken" ? "✓ Taken" : "Pending"}
-                      </span>
-                    </div>
-                    <p className="med-sub">{med.dose} · {med.time} · {med.type}</p>
-                  </div>
-                  <span className={`med-chevron ${expanded === med.id ? 'open' : ''}`}>▼</span>
-                </button>
-                {expanded === med.id && (
-                  <div className="med-expand">
-                    <p className="med-note">{med.notes || "No additional notes."}</p>
-                    {med.status === "pending" && (
-                      <button className="med-taken-btn" onClick={() => handleMarkTaken(med.id)}>
-                        Mark as Taken
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      <AddMedicationModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onAdd={handleAddMedication}
-      />
-    </section>
-  );
+function todayISO() {
+  return new Date().toISOString().split('T')[0];
 }
 
-/* ─────────────────SCAN SECTION──────────────────────────────────────  */
-function ScanSection({ scans, onScanUpdate }) {
-  const [editingScan, setEditingScan] = useState(null);
-
-  const handleScanUpdate = (scanId, field, value) => {
-    onScanUpdate(scans.map(scan => scan.id === scanId ? { ...scan, [field]: value } : scan));
-  };
-
-  const handleCompleteScan = (scanId) => {
-    onScanUpdate(scans.map(scan => scan.id === scanId ? { ...scan, status: "completed", completed: true } : scan));
-  };
-
-  return (
-    <section className="scans-section">
-      <div className="section-header">
-        <span className="section-badge">MONITORING</span>
-        <h2 className="section-title">Fertility Scans</h2>
-        <p className="section-subtitle">Track your follicle and lining progress</p>
-      </div>
-
-      {scans.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">📊</div>
-          <p>No scans scheduled yet.</p>
-          <p className="empty-sub">Your scan schedule will appear once you set your cycle start date.</p>
-        </div>
-      ) : (
-        <div className="scans-list">
-          {scans.map(scan => (
-            <div key={scan.id} className={`scan-card ${scan.status}`}>
-              <div className="scan-header">
-                <div className="scan-info">
-                  <span className={`scan-badge ${scan.status}`}>
-                    {scan.status === "completed" ? "✓ Complete" : "Upcoming"}
-                  </span>
-                  <h3 className="scan-title">{scan.label}</h3>
-                  <p className="scan-date">{scan.date}</p>
-                </div>
-                {!scan.completed && (
-                  <button className="scan-edit-btn" onClick={() => setEditingScan(scan.id)}>
-                    ✏️ Add Results
-                  </button>
-                )}
-              </div>
-
-              {editingScan === scan.id ? (
-                <div className="scan-edit-form">
-                  <input
-                    type="number"
-                    placeholder="Follicle count"
-                    value={scan.follicles || ''}
-                    onChange={e => handleScanUpdate(scan.id, 'follicles', parseInt(e.target.value))}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Lining thickness (mm)"
-                    value={scan.lining || ''}
-                    onChange={e => handleScanUpdate(scan.id, 'lining', e.target.value)}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Estradiol (pmol/L)"
-                    value={scan.e2 || ''}
-                    onChange={e => handleScanUpdate(scan.id, 'e2', e.target.value)}
-                  />
-                  <button className="save-btn" onClick={() => { handleCompleteScan(scan.id); setEditingScan(null); }}>
-                    Save Results
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {scan.follicles && (
-                    <div className="scan-metrics">
-                      <div className="scan-metric">
-                        <span className="metric-label">Follicles</span>
-                        <span className="metric-value">{scan.follicles}</span>
-                      </div>
-                      {scan.lining && (
-                        <div className="scan-metric">
-                          <span className="metric-label">Lining</span>
-                          <span className="metric-value">{scan.lining} mm</span>
-                        </div>
-                      )}
-                      {scan.e2 && (
-                        <div className="scan-metric">
-                          <span className="metric-label">Estradiol</span>
-                          <span className="metric-value">{scan.e2}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <p className="scan-note">{scan.note}</p>
-                </>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
-  );
+function formatDisplayDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-/* ─────────────────EMBRYO SECTION───────────────────────────────────── */
-function EmbryoSection({ embryos, onEmbryoUpdate }) {
-  const [editing,      setEditing]      = useState(null);
-  const [showAddModal, setShowAddModal] = useState(false);
-
-  const handleEmbryoUpdate = (embryoId, field, value) => {
-    onEmbryoUpdate(embryos.map(emb => emb.id === embryoId ? { ...emb, [field]: value } : emb));
-  };
-
-  const qualityOptions = ["Excellent", "Good", "Fair", "Poor"];
-  const gradeOptions   = ["AA", "AB", "BA", "BB", "BC", "CB", "CC"];
-
-  const transferReadyCount = embryos.filter(e => e.status === "transfer-ready").length;
-  const frozenCount        = embryos.filter(e => e.status === "frozen").length;
-  const discardedCount     = embryos.filter(e => e.status === "discarded").length;
-  const culturingCount     = embryos.filter(e => e.status === "culturing").length;
-
-  const subtitleParts = [
-    transferReadyCount > 0 && `${transferReadyCount} transfer-ready`,
-    frozenCount        > 0 && `${frozenCount} frozen`,
-    culturingCount     > 0 && `${culturingCount} in culture`,
-    discardedCount     > 0 && `${discardedCount} discarded`,
-  ].filter(Boolean);
-
-  return (
-    <section className="embryos-section">
-      <div className="section-header">
-        <span className="section-badge">LAB UPDATE</span>
-        <h2 className="section-title">Embryo Development</h2>
-        <button className="add-embryo-btn" onClick={() => setShowAddModal(true)}>+ Add Embryo</button>
-      </div>
-
-      {embryos.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">🔬</div>
-          <p>No embryos tracked yet.</p>
-          <p className="empty-sub">
-            After your egg retrieval, add embryos to track their development,
-            grades, and transfer readiness.
-          </p>
-          <button className="empty-state-btn" onClick={() => setShowAddModal(true)}>
-            + Add Your First Embryo
-          </button>
-        </div>
-      ) : (
-        <>
-          {subtitleParts.length > 0 && (
-            <p className="section-subtitle">{subtitleParts.join(' · ')}</p>
-          )}
-
-          <div className="embryos-grid">
-            {embryos.map(emb => (
-              <div key={emb.id} className={`embryo-card ${emb.status}`}>
-                <div className="embryo-visual">
-                  <div className={`embryo-orb ${emb.grade ? `grade-${emb.grade[0].toLowerCase()}` : 'grade-none'}`}>
-                    <span className="embryo-grade">{emb.grade || '?'}</span>
-                  </div>
-                  {emb.status === "transfer-ready" && <span className="embryo-star">⭐ Selected</span>}
-                </div>
-                <div className="embryo-info">
-                  <div className="embryo-header">
-                    <h4 className="embryo-name">{emb.label}</h4>
-                    <button className="embryo-edit" onClick={() => setEditing(emb.id)}>✏️</button>
-                  </div>
-                  {editing === emb.id ? (
-                    <div className="embryo-edit-form">
-                      <select onChange={e => handleEmbryoUpdate(emb.id, 'grade', e.target.value)} value={emb.grade || ''}>
-                        <option value="">Select grade</option>
-                        {gradeOptions.map(g => <option key={g} value={g}>{g}</option>)}
-                      </select>
-                      <input
-                        type="number"
-                        placeholder="Day (e.g., 3, 5)"
-                        value={emb.day || ''}
-                        onChange={e => handleEmbryoUpdate(emb.id, 'day', parseInt(e.target.value))}
-                      />
-                      <select onChange={e => handleEmbryoUpdate(emb.id, 'status', e.target.value)} value={emb.status}>
-                        <option value="culturing">Culturing</option>
-                        <option value="transfer-ready">Transfer Ready</option>
-                        <option value="frozen">Frozen</option>
-                        <option value="discarded">Discarded</option>
-                      </select>
-                      <select onChange={e => handleEmbryoUpdate(emb.id, 'quality', e.target.value)} value={emb.quality || ''}>
-                        <option value="">Select quality</option>
-                        {qualityOptions.map(q => <option key={q} value={q}>{q}</option>)}
-                      </select>
-                      <textarea
-                        placeholder="Notes"
-                        value={emb.notes || ''}
-                        onChange={e => handleEmbryoUpdate(emb.id, 'notes', e.target.value)}
-                        rows={2}
-                      />
-                      <button className="save-btn" onClick={() => setEditing(null)}>Save</button>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="embryo-stage">Day {emb.day || '—'} · {emb.stage || 'Culturing'}</p>
-                      <div className="embryo-tags">
-                        <span className={`embryo-status ${emb.status}`}>
-                          {emb.status === "frozen"          ? "❄️ Frozen"
-                           : emb.status === "transfer-ready" ? "✅ Transfer Ready"
-                           : emb.status === "discarded"      ? "🗑️ Discarded"
-                           :                                   "🔬 Culturing"}
-                        </span>
-                        {emb.quality && (
-                          <span className="embryo-quality" style={{ background: emb.qualityBg, color: emb.qualityColor }}>
-                            {emb.quality}
-                          </span>
-                        )}
-                      </div>
-                      {emb.notes && <p className="embryo-notes">{emb.notes}</p>}
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      <AddEmbryoModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onAdd={(newEmbryo) => onEmbryoUpdate([...embryos, newEmbryo])}
-      />
-    </section>
-  );
+function isMedActive(med) {
+  const today = todayISO();
+  if (med.startDate && med.startDate > today) return false;
+  if (med.endDate && med.endDate < today) return false;
+  return true;
 }
 
-/* ─────────────────TWO WEEK WAIT────────────────────────────────────── */
-function TwoWeekWait({ onMoodLog, onHydrationUpdate, onJournalUpdate, onSymptomLog, cycleId }) {
-  const [mood,           setMood]          = useState(null);
-  const [hydration,      setHydration]     = useState(0);
-  const [journal,        setJournal]       = useState('');
-  const [activeSymptoms, setActiveSymptoms] = useState([]);
-  const [affirmIdx,      setAffirmIdx]     = useState(0);
-  const [saved,          setSaved]         = useState(false);
-  const [showGoalPicker, setShowGoalPicker] = useState(false);
+const BLANK_FORM = {
+  name: '',
+  dose: '',
+  unit: 'mg',
+  frequency: 'once',
+  route: 'oral',
+  times: ['Morning'],
+  startDate: todayISO(),
+  endDate: '',
+  prescribedBy: '',
+  notes: '',
+};
 
-  const [customHydrationGoal, setCustomHydrationGoal] = useState(() => {
-    try {
-      const v = localStorage.getItem(`hydration_goal_${cycleId}`);
-      return v ? parseInt(v) : 8;
-    } catch { return 8; }
-  });
-
-  const [moods, setMoods] = useState(() => {
-    try {
-      const v = localStorage.getItem('ivf_custom_moods');
-      return v ? JSON.parse(v) : DEFAULT_MOODS;
-    } catch { return DEFAULT_MOODS; }
-  });
-
-  const [symptoms] = useState(() => {
-    try {
-      const v = localStorage.getItem('ivf_custom_symptoms');
-      return v ? JSON.parse(v) : DEFAULT_SYMPTOMS;
-    } catch { return DEFAULT_SYMPTOMS; }
-  });
-
-  useEffect(() => {
-    const h = localStorage.getItem(STORAGE_KEYS.HYDRATION);
-    if (h) setHydration(parseInt(h));
-    const j = localStorage.getItem(STORAGE_KEYS.JOURNAL);
-    if (j) setJournal(j);
-    const s = localStorage.getItem(STORAGE_KEYS.SYMPTOM_LOGS);
-    if (s) setActiveSymptoms(JSON.parse(s));
-    const a = localStorage.getItem(STORAGE_KEYS.AFFIRMATION_IDX);
-    if (a) setAffirmIdx(parseInt(a));
-  }, []);
-
-  const handleHydration = (value) => {
-    const v = Math.max(0, value);
-    setHydration(v);
-    localStorage.setItem(STORAGE_KEYS.HYDRATION, v.toString());
-    onHydrationUpdate?.(v);
+function MedModal({ initial, onSave, onClose, title }) {
+  const [form, setForm] = useState(initial);
+  const set = (field, value) => setForm(f => ({ ...f, [field]: value }));
+  const toggleTime = (t) => {
+    setForm(f => ({
+      ...f,
+      times: f.times.includes(t) ? f.times.filter(x => x !== t) : [...f.times, t],
+    }));
+  };
+  const handleSubmit = () => {
+    if (!form.name.trim()) return;
+    onSave(form);
   };
 
-  const handleJournalSave = () => {
-    localStorage.setItem(STORAGE_KEYS.JOURNAL, journal);
-    onJournalUpdate?.(journal);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  };
-
-  const toggleSymptom = (symptom) => {
-    const updated = activeSymptoms.includes(symptom)
-      ? activeSymptoms.filter(s => s !== symptom)
-      : [...activeSymptoms, symptom];
-    setActiveSymptoms(updated);
-    localStorage.setItem(STORAGE_KEYS.SYMPTOM_LOGS, JSON.stringify(updated));
-    onSymptomLog?.(updated);
-  };
-
-  const handleMood = (moodLabel) => {
-    setMood(moodLabel);
-    const moodLog  = { mood: moodLabel, timestamp: new Date().toISOString() };
-    const existing = JSON.parse(localStorage.getItem(STORAGE_KEYS.MOOD_LOGS) || '[]');
-    localStorage.setItem(STORAGE_KEYS.MOOD_LOGS, JSON.stringify([moodLog, ...existing]));
-    onMoodLog?.(moodLabel);
-  };
-
-  const handleGoalSave = (newGoal) => {
-    setCustomHydrationGoal(newGoal);
-    localStorage.setItem(`hydration_goal_${cycleId}`, newGoal.toString());
-  };
-
-  const hydrationProgress = Math.min(100, Math.round((hydration / customHydrationGoal) * 100));
-  // Clamp cup display to 12 max for UI legibility; actual goal is used for %
-  const displayCups = Math.min(customHydrationGoal, 12);
-
   return (
-    <section className="tww-section">
-      <div className="section-header">
-        <span className="section-badge">2-WEEK WAIT</span>
-        <h2 className="section-title">Wellbeing Support</h2>
-        <p className="section-subtitle">The two-week wait is hard. We are here with you.</p>
-      </div>
-
-      <div className="affirmation-card">
-        <div className="affirmation-icon">🌸</div>
-        <p className="affirmation-text">"{AFFIRMATIONS[affirmIdx]}"</p>
-        <button className="affirmation-next" onClick={() => {
-          const next = (affirmIdx + 1) % AFFIRMATIONS.length;
-          setAffirmIdx(next);
-          localStorage.setItem(STORAGE_KEYS.AFFIRMATION_IDX, next.toString());
-        }}>
-          Next affirmation →
-        </button>
-      </div>
-
-      <div className="mood-card">
-        <h3>How are you feeling?</h3>
-        <div className="mood-grid">
-          {moods.map(m => (
-            <button
-              key={m.label}
-              className={`mood-btn ${mood === m.label ? 'active' : ''}`}
-              onClick={() => handleMood(m.label)}
-              style={{ borderColor: mood === m.label ? m.color : 'transparent' }}
-            >
-              <span className="mood-emoji">{m.emoji}</span>
-              <span className="mood-label">{m.label}</span>
-            </button>
-          ))}
+    <div className="cycle-picker-overlay" onClick={onClose}>
+      <div className="cycle-picker-card" style={{ maxWidth: 420, width: '100%', maxHeight: '88vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        <h2 style={{ marginBottom: 4 }}>{title}</h2>
+        <p style={{ fontSize: 13, color: '#888', marginBottom: 20 }}>Record exactly what your clinic or GP prescribed.</p>
+        <div className="med-field"><label className="med-label">Medication name *</label><input className="med-input" placeholder="e.g. Gonal-F, Progesterone" value={form.name} onChange={e => set('name', e.target.value)} /></div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div className="med-field" style={{ flex: 2 }}><label className="med-label">Dose</label><input className="med-input" placeholder="e.g. 150" value={form.dose} onChange={e => set('dose', e.target.value)} /></div>
+          <div className="med-field" style={{ flex: 1 }}><label className="med-label">Unit</label><select className="med-input" value={form.unit} onChange={e => set('unit', e.target.value)}>{['mg', 'mcg', 'IU', 'ml', '%', 'units'].map(u => (<option key={u} value={u}>{u}</option>))}</select></div>
         </div>
-        {mood && (
-          <p className="mood-ack">
-            Feeling <strong>{mood}</strong> is completely valid. Thank you for checking in. 💛
-          </p>
-        )}
-      </div>
-
-      <div className="hydration-card">
-        <div className="hydration-header">
-          <h3>Hydration Tracker</h3>
-          <div className="hydration-controls">
-            <button className="hydration-goal-btn" onClick={() => setShowGoalPicker(true)}>
-              🎯 Goal: {customHydrationGoal} cups
-            </button>
-            <span className="hydration-count">{hydration}/{customHydrationGoal}</span>
-          </div>
+        <div className="med-field"><label className="med-label">Route</label><select className="med-input" value={form.route} onChange={e => set('route', e.target.value)}>{ROUTE_OPTIONS.map(r => (<option key={r.value} value={r.value}>{r.label}</option>))}</select></div>
+        <div className="med-field"><label className="med-label">Frequency</label><select className="med-input" value={form.frequency} onChange={e => set('frequency', e.target.value)}>{FREQ_OPTIONS.map(f => (<option key={f.value} value={f.value}>{f.label}</option>))}</select></div>
+        <div className="med-field"><label className="med-label">Time(s) of day</label><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>{TIMES_OF_DAY.map(t => (<button key={t} type="button" onClick={() => toggleTime(t)} style={{ padding: '6px 14px', borderRadius: 20, border: '1.5px solid', borderColor: form.times.includes(t) ? '#d63a6e' : '#ddd', background: form.times.includes(t) ? '#fde8f0' : 'transparent', color: form.times.includes(t) ? '#d63a6e' : '#666', fontSize: 13, cursor: 'pointer' }}>{t}</button>))}</div></div>
+        <div style={{ display: 'flex', gap: 10 }}><div className="med-field" style={{ flex: 1 }}><label className="med-label">Start date</label><input type="date" className="med-input" value={form.startDate} onChange={e => set('startDate', e.target.value)} /></div><div className="med-field" style={{ flex: 1 }}><label className="med-label">End date</label><input type="date" className="med-input" value={form.endDate} onChange={e => set('endDate', e.target.value)} /></div></div>
+        <div className="med-field"><label className="med-label">Prescribed by</label><input className="med-input" placeholder="e.g. Dr Smith" value={form.prescribedBy} onChange={e => set('prescribedBy', e.target.value)} /></div>
+        <div className="med-field"><label className="med-label">Notes</label><textarea className="med-input" rows={3} placeholder="e.g. Take with food, store in fridge..." value={form.notes} onChange={e => set('notes', e.target.value)} style={{ resize: 'vertical' }} /></div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: '1.5px solid #ddd', background: 'transparent', color: '#666', fontSize: 14, cursor: 'pointer' }}>Cancel</button>
+          <button onClick={handleSubmit} disabled={!form.name.trim()} className="cycle-picker-btn" style={{ flex: 2, margin: 0 }}>Save medication</button>
         </div>
-        <p>Stay hydrated to support your body during this time.</p>
-        <div className="hydration-progress">
-          <div className="hydration-progress-bar">
-            <div className="hydration-progress-fill" style={{ width: `${hydrationProgress}%` }} />
-          </div>
-          <span className="hydration-progress-text">{hydrationProgress}%</span>
-        </div>
-        <div className="hydration-cups">
-          {Array.from({ length: displayCups }).map((_, i) => (
-            <button
-              key={i}
-              className={`hydration-cup ${i < hydration ? 'filled' : ''}`}
-              onClick={() => handleHydration(i + 1)}
-            >
-              🥛
-            </button>
-          ))}
-          {customHydrationGoal > 12 && (
-            <span className="hydration-overflow">+{customHydrationGoal - 12} more</span>
-          )}
-        </div>
-      </div>
-
-      {showGoalPicker && (
-        <HydrationGoalPicker
-          current={customHydrationGoal}
-          onSave={handleGoalSave}
-          onClose={() => setShowGoalPicker(false)}
-        />
-      )}
-
-      <div className="symptoms-card">
-        <h3>Symptom Log</h3>
-        <p>Tap any symptoms you're experiencing today.</p>
-        <div className="symptoms-grid">
-          {symptoms.map(s => (
-            <button
-              key={s}
-              className={`symptom-chip ${activeSymptoms.includes(s) ? 'active' : ''}`}
-              onClick={() => toggleSymptom(s)}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="journal-card">
-        <div className="journal-icon">📓</div>
-        <h3>Daily Journal</h3>
-        <textarea
-          className="journal-input"
-          placeholder="Today I'm feeling..."
-          value={journal}
-          onChange={e => setJournal(e.target.value)}
-          rows={4}
-        />
-        <button className={`journal-save ${saved ? 'saved' : ''}`} onClick={handleJournalSave}>
-          {saved ? '✓ Saved' : 'Save Entry'}
-        </button>
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────PROGRESS SUMMARY────────────────────────────────── */
-function ProgressSummarySection({ scans, embryos, medications }) {
-  const completedScans  = scans.filter(s => s.completed).length;
-  const totalEmbryos    = embryos.length;
-  const transferReady   = embryos.filter(e => e.status === "transfer-ready").length;
-  const medsTaken       = medications.filter(m => m.status === "taken").length;
-  const medsTotal       = medications.length;
-  const medsPct         = medsTotal > 0 ? Math.round((medsTaken / medsTotal) * 100) : 0;
-
-  const medTag =
-    medsTotal === 0                    ? "Not Started"
-    : medsPct >= MED_THRESHOLD_EXCELLENT ? "Excellent"
-    : medsPct >= MED_THRESHOLD_GOOD      ? "Good"
-    :                                      "In Progress";
-
-  const scansMidpoint = scans.length > 0 ? Math.ceil(scans.length / 2) : 0;
-  const scanTag =
-    scans.length === 0                    ? "Not Scheduled"
-    : completedScans >= scans.length      ? "All Done"
-    : completedScans >= scansMidpoint     ? "Good Progress"
-    :                                       "Getting Started";
-
-  const insights = [
-    {
-      icon: "💊", title: "Medication Consistency",
-      value:  medsTotal > 0 ? `${medsPct}%` : '—',
-      tag:    medTag,
-      detail: medsTotal > 0 ? `${medsTaken} of ${medsTotal} doses taken` : "No medications added yet",
-      color1: "#F08C2E", color2: "#FFB347",
-    },
-    {
-      icon: "🔬", title: "Embryo Development",
-      value:  totalEmbryos > 0 ? transferReady : '—',
-      tag:    totalEmbryos === 0 ? "Not Started" : transferReady > 0 ? "Promising" : "In Progress",
-      detail: totalEmbryos > 0
-        ? `${transferReady} embryo${transferReady !== 1 ? 's are' : ' is'} transfer-ready. ${totalEmbryos} total embryos tracked.`
-        : "No embryos added yet",
-      color1: "#7DCB98", color2: "#56AB2F",
-    },
-    {
-      icon: "✨", title: "Scan Completion",
-      value:  scans.length > 0 ? `${completedScans}/${scans.length}` : '—',
-      tag:    scanTag,
-      detail: scans.length > 0 ? `${completedScans} of ${scans.length} scans completed` : "No scans scheduled",
-      color1: "#9B8FD8", color2: "#C9B8F5",
-    },
-  ];
-
-  return (
-    <section className="insights-section">
-      <div className="section-header">
-        <span className="section-badge">YOUR PROGRESS</span>
-        <h2 className="section-title">Cycle Summary</h2>
-        <p className="section-subtitle">Based on your tracked data</p>
-      </div>
-      <div className="insights-grid">
-        {insights.map((ins, i) => (
-          <div
-            key={i}
-            className="insight-card"
-            style={{ background: `linear-gradient(135deg, ${ins.color1} 0%, ${ins.color2} 100%)` }}
-          >
-            <div className="insight-icon">{ins.icon}</div>
-            <span className="insight-tag">{ins.tag}</span>
-            <h3 className="insight-title">{ins.title}</h3>
-            <p className="insight-value">{ins.value}</p>
-            <p className="insight-detail">{ins.detail}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/* ─────────────────PARTNER SECTION──────────────────────────────────── */
-function PartnerSection({ partner, onPartnerUpdate }) {
-  const [showEdit, setShowEdit] = useState(false);
-
-  const PARTNER_TIPS = [
-    "💬 Ask how they're feeling — and really listen",
-    "🍵 Prepare a warm, nutritious meal together",
-    "📅 Review upcoming appointments as a team",
-  ];
-
-  return (
-    <section className="partner-section">
-      <div className="section-header">
-        <span className="section-badge">TOGETHER</span>
-        <h2 className="section-title">Partner Support</h2>
-        <p className="section-subtitle">This journey is shared.</p>
-      </div>
-      <div className="partner-card">
-        <div className="partner-profile">
-          <div className="partner-avatar">👤</div>
-          <div>
-            <h3 className="partner-name">{partner.name || "Your Partner"}</h3>
-            <p className="partner-role">{partner.role || "Connected · Supportive"}</p>
-          </div>
-          <button className="embryo-edit" onClick={() => setShowEdit(true)} style={{ marginLeft: 'auto' }}>
-            ✏️
-          </button>
-        </div>
-        <div className="partner-tips">
-          <h4>💡 Tips for today</h4>
-          <ul>
-            {PARTNER_TIPS.map((tip, i) => <li key={i}>{tip}</li>)}
-          </ul>
-        </div>
-      </div>
-
-      <EditPartnerModal
-        isOpen={showEdit}
-        onClose={() => setShowEdit(false)}
-        partner={partner}
-        onSave={onPartnerUpdate}
-      />
-    </section>
-  );
-}
-
-/* ─────────────────CONTACT SECTION──────────────────────────────────── */
-function ContactSection({ contacts, onContactUpdate }) {
-  const [showAddModal, setShowAddModal] = useState(false);
-
-  return (
-    <section className="contact-section">
-      <div className="section-header">
-        <span className="section-badge">CARE TEAM</span>
-        <h2 className="section-title">Your Support Network</h2>
-        <button className="add-contact-btn" onClick={() => setShowAddModal(true)}>+ Add Contact</button>
-      </div>
-
-      {contacts.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-state-icon">👥</div>
-          <p>No contacts added yet.</p>
-          <p className="empty-sub">Add your clinic, doctor, nurse, or support person.</p>
-          <button className="empty-state-btn" onClick={() => setShowAddModal(true)}>
-            + Add Your First Contact
-          </button>
-        </div>
-      ) : (
-        <div className="contacts-list">
-          {contacts.map(c => (
-            <div key={c.id} className="contact-card">
-              <div className="contact-icon">{c.icon}</div>
-              <div className="contact-info">
-                <h4>{c.name}</h4>
-                <p>{c.subtitle}</p>
-                <a href={`tel:${c.phone.replace(/\s/g, "")}`} className="contact-phone">{c.phone}</a>
-              </div>
-              <a href={`tel:${c.phone.replace(/\s/g, "")}`} className="contact-call">Call</a>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <AddContactModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onAdd={(newContact) => onContactUpdate([...contacts, newContact])}
-      />
-    </section>
-  );
-}
-
-/* ─────────────────CYCLE START PICKER──────────────────────────────── */
-function CycleStartPicker({ onConfirm }) {
-  const [date, setDate] = useState('');
-
-  return (
-    <div className="cycle-picker-overlay">
-      <div className="cycle-picker-card">
-        <div className="cycle-picker-icon"></div>
-        <h2>When did your IVF cycle start?</h2>
-        <p>Enter your consultation or cycle day 1 date so we can build your personalised timeline.</p>
-        <input
-          type="date"
-          value={date}
-          max={new Date().toISOString().split('T')[0]}
-          onChange={e => setDate(e.target.value)}
-        />
-        <button
-          className="cycle-picker-btn"
-          disabled={!date}
-          onClick={() => onConfirm(date)}
-        >
-          Start my journey
-        </button>
       </div>
     </div>
   );
 }
 
+function DailyCheckRow({ med, takenLog, onToggle }) {
+  const times = med.times?.length ? med.times : ['Morning'];
+  return (
+    <div className="med-check-row">
+      <div className="med-check-info"><span className="med-check-name">{med.name}</span><span className="med-check-meta">{med.dose}{med.unit} · {ROUTE_OPTIONS.find(r => r.value === med.route)?.label ?? med.route}</span></div>
+      <div className="med-check-times">{times.map(t => { const key = `${med.id}_${t}`; const done = !!takenLog[key]; return (<button key={t} onClick={() => onToggle(key)} className={`med-time-chip ${done ? 'taken' : ''}`}>{done ? '✓' : '○'} {t}</button>); })}</div>
+    </div>
+  );
+}
+
+function MedCard({ med, onEdit, onDelete }) {
+  const active = isMedActive(med);
+  const routeLabel = ROUTE_OPTIONS.find(r => r.value === med.route)?.label ?? med.route;
+  return (
+    <div className={`med-card ${active ? 'med-card--active' : 'med-card--inactive'}`}>
+      <div className="med-card-top"><div><p className="med-card-name">{med.name}</p><p className="med-card-sub">{med.dose}{med.unit} · {routeLabel} · {FREQ_OPTIONS.find(f => f.value === med.frequency)?.label ?? med.frequency}</p>{med.prescribedBy && <p className="med-card-sub" style={{ opacity: 0.7 }}>Prescribed by {med.prescribedBy}</p>}</div><div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}><span className={`med-status-pill ${active ? 'active' : 'inactive'}`}>{active ? 'Active' : 'Inactive'}</span><div style={{ display: 'flex', gap: 6 }}><button className="med-icon-btn" onClick={() => onEdit(med)}>✏️</button><button className="med-icon-btn" onClick={() => onDelete(med.id)}>🗑️</button></div></div></div>
+      {(med.startDate || med.endDate) && <p className="med-card-dates">{med.startDate && `From ${formatDisplayDate(med.startDate)}`}{med.endDate && ` · Until ${formatDisplayDate(med.endDate)}`}</p>}
+      {med.times?.length > 0 && <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>{med.times.map(t => (<span key={t} className="med-time-label">{t}</span>))}</div>}
+      {med.notes && <p className="med-card-notes">📝 {med.notes}</p>}
+    </div>
+  );
+}
+
+function MedicationSection({ medications, onMedicationUpdate }) {
+  const todayKey = `ivf_taken_${todayISO()}`;
+  const [takenLog, setTakenLog] = useState(() => { try { return JSON.parse(localStorage.getItem(todayKey) || '{}'); } catch { return {}; } });
+  const [showAdd, setShowAdd] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [view, setView] = useState('today');
+  const saveMedications = (updated) => onMedicationUpdate(updated);
+  const handleAdd = (form) => { const newMed = { id: Date.now(), ...form }; saveMedications([...medications, newMed]); setShowAdd(false); };
+  const handleEdit = (form) => { const updated = medications.map(m => m.id === editing.id ? { ...m, ...form } : m); saveMedications(updated); setEditing(null); };
+  const handleDelete = (id) => { if (!window.confirm('Remove this medication?')) return; saveMedications(medications.filter(m => m.id !== id)); };
+  const toggleTaken = (key) => { const updated = { ...takenLog, [key]: !takenLog[key] }; setTakenLog(updated); localStorage.setItem(todayKey, JSON.stringify(updated)); };
+  const activeMeds = medications.filter(isMedActive);
+  const inactiveMeds = medications.filter(m => !isMedActive(m));
+  const todayTotal = activeMeds.reduce((acc, m) => acc + (m.times?.length || 1), 0);
+  const todayTaken = activeMeds.reduce((acc, m) => { const times = m.times?.length ? m.times : ['Morning']; return acc + times.filter(t => takenLog[`${m.id}_${t}`]).length; }, 0);
+  const todayPct = todayTotal > 0 ? Math.round((todayTaken / todayTotal) * 100) : 0;
+
+  return (
+    <section className="meds-section">
+      <div className="section-header"><span className="section-badge">TODAY'S PLAN</span><h2 className="section-title">Medication Log</h2><button className="add-med-btn" onClick={() => setShowAdd(true)}>+ Add</button></div>
+      {medications.length === 0 ? (<div className="empty-state"><div className="empty-state-icon">💊</div><p style={{ fontWeight: 600, marginBottom: 4 }}>No medications logged yet</p><p style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>Add the medications your clinic or GP has prescribed for this cycle.</p><button className="cycle-picker-btn" style={{ margin: 0 }} onClick={() => setShowAdd(true)}>+ Add first medication</button></div>) : (<>
+        {activeMeds.length > 0 && (<div className="med-progress-bar-wrap"><div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}><span style={{ fontSize: 13, fontWeight: 600 }}>Today's doses</span><span style={{ fontSize: 13, color: todayPct === 100 ? '#2e9e67' : '#d63a6e', fontWeight: 700 }}>{todayTaken}/{todayTotal} taken {todayPct === 100 ? '🎉' : ''}</span></div><div className="hero-progress-bar"><div className="hero-progress-fill" style={{ width: `${todayPct}%`, background: todayPct === 100 ? '#2e9e67' : undefined }} /></div></div>)}
+        <div className="med-view-toggle"><button className={`med-toggle-btn ${view === 'today' ? 'active' : ''}`} onClick={() => setView('today')}>Today's schedule</button><button className={`med-toggle-btn ${view === 'all' ? 'active' : ''}`} onClick={() => setView('all')}>All medications</button></div>
+        {view === 'today' && (<div className="med-list">{activeMeds.length === 0 ? (<p style={{ fontSize: 14, color: '#888', textAlign: 'center', padding: '24px 0' }}>No active medications.</p>) : (activeMeds.map(med => (<DailyCheckRow key={med.id} med={med} takenLog={takenLog} onToggle={toggleTaken} />)))}</div>)}
+        {view === 'all' && (<div className="med-list">{activeMeds.length > 0 && (<><p className="med-group-label">Active</p>{activeMeds.map(med => (<MedCard key={med.id} med={med} onEdit={setEditing} onDelete={handleDelete} />))}</>)}{inactiveMeds.length > 0 && (<><p className="med-group-label" style={{ marginTop: 16 }}>Past / Inactive</p>{inactiveMeds.map(med => (<MedCard key={med.id} med={med} onEdit={setEditing} onDelete={handleDelete} />))}</>)}</div>)}
+      </>)}
+      {showAdd && <MedModal title="Add medication" initial={{ ...BLANK_FORM }} onSave={handleAdd} onClose={() => setShowAdd(false)} />}
+      {editing && <MedModal title="Edit medication" initial={{ ...editing }} onSave={handleEdit} onClose={() => setEditing(null)} />}
+    </section>
+  );
+}
+
+/* ─────────────────SCAN SECTION───────────────────────────── */
+function ScanSection({ scans, onScanUpdate }) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [selectedScan, setSelectedScan] = useState(null);
+  const [formData, setFormData] = useState({ date: toISO(new Date()), label: '', type: 'baseline', follicles: '', lining: '', e2: '', progesterone: '', lh: '', fsh: '', notes: '', completed: false });
+
+  const scanTypes = [
+    { value: 'baseline', label: 'Baseline Scan', icon: '📊' },
+    { value: 'stimulation', label: 'Stimulation Scan', icon: '📈' },
+    { value: 'trigger', label: 'Trigger Scan', icon: '💉' },
+    { value: 'retrieval', label: 'Egg Retrieval', icon: '🥚' },
+    { value: 'transfer', label: 'Transfer Scan', icon: '🔄' },
+    { value: 'pregnancy', label: 'Pregnancy Scan', icon: '👶' },
+    { value: 'other', label: 'Other Scan', icon: '🔍' }
+  ];
+
+  const handleAddScan = () => { const newScan = { id: Date.now(), ...formData, follicles: formData.follicles ? formData.follicles.split(',').map(f => parseInt(f.trim())) : [], createdAt: toISO(new Date()) }; onScanUpdate([...scans, newScan]); resetForm(); setShowAddForm(false); };
+  const handleUpdateScan = () => { const updated = scans.map(scan => scan.id === editingId ? { ...formData, id: editingId, follicles: formData.follicles ? formData.follicles.split(',').map(f => parseInt(f.trim())) : [], updatedAt: toISO(new Date()) } : scan); onScanUpdate(updated); resetForm(); setEditingId(null); setShowAddForm(false); };
+  const handleDeleteScan = (id) => { if (window.confirm('Delete this scan record?')) onScanUpdate(scans.filter(scan => scan.id !== id)); };
+  const handleToggleComplete = (id) => { const updated = scans.map(scan => scan.id === id ? { ...scan, completed: !scan.completed } : scan); onScanUpdate(updated); };
+  const resetForm = () => setFormData({ date: toISO(new Date()), label: '', type: 'baseline', follicles: '', lining: '', e2: '', progesterone: '', lh: '', fsh: '', notes: '', completed: false });
+  const editScan = (scan) => { setFormData({ date: scan.date, label: scan.label, type: scan.type, follicles: scan.follicles ? scan.follicles.join(', ') : '', lining: scan.lining || '', e2: scan.e2 || '', progesterone: scan.progesterone || '', lh: scan.lh || '', fsh: scan.fsh || '', notes: scan.notes || '', completed: scan.completed || false }); setEditingId(scan.id); setShowAddForm(true); };
+  const getScanTypeInfo = (type) => scanTypes.find(t => t.value === type) || scanTypes[0];
+  const calculateTotalFollicles = (follicles) => follicles ? follicles.reduce((sum, f) => sum + f, 0) : 0;
+  const getFollicleSizeRange = (follicles) => { if (!follicles || !follicles.length) return 'N/A'; const sorted = [...follicles].sort((a,b) => a - b); return `${sorted[0]}mm - ${sorted[sorted.length-1]}mm`; };
+  const upcomingScans = scans.filter(s => !s.completed && new Date(s.date) >= new Date()).sort((a,b) => new Date(a.date) - new Date(b.date));
+  const completedScans = scans.filter(s => s.completed).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  return (
+    <section className="scans-section">
+      <div className="section-header"><span className="section-badge">MONITORING</span><h2 className="section-title">Fertility Scans</h2><button className="add-med-btn" onClick={() => { resetForm(); setEditingId(null); setShowAddForm(!showAddForm); }}>{showAddForm ? '− Cancel' : '+ Add Scan'}</button></div>
+      {showAddForm && (<div className="cycle-picker-overlay" onClick={() => { setShowAddForm(false); resetForm(); setEditingId(null); }}><div className="cycle-picker-card" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}><h2>{editingId ? 'Edit Scan' : 'Add New Scan'}</h2>
+        <div className="med-field"><label className="med-label">Scan Date *</label><input type="date" className="med-input" value={formData.date} onChange={e => setFormData({...formData, date: e.target.value})} required /></div>
+        <div className="med-field"><label className="med-label">Scan Type *</label><select className="med-input" value={formData.type} onChange={e => { const type = e.target.value; const typeInfo = getScanTypeInfo(type); setFormData({...formData, type, label: typeInfo.label}); }}>{scanTypes.map(type => (<option key={type.value} value={type.value}>{type.icon} {type.label}</option>))}</select></div>
+        <div className="med-field"><label className="med-label">Custom Label</label><input type="text" className="med-input" value={formData.label} onChange={e => setFormData({...formData, label: e.target.value})} placeholder="e.g., Day 8 Monitoring" /></div>
+        <div className="med-field"><label className="med-label">Follicle Sizes (mm) - comma separated</label><input type="text" className="med-input" value={formData.follicles} onChange={e => setFormData({...formData, follicles: e.target.value})} placeholder="e.g., 12, 14, 16, 18" /><small style={{ color: '#888', fontSize: 12 }}>Enter each follicle size in mm, separated by commas</small></div>
+        <div className="med-field"><label className="med-label">Endometrial Lining (mm)</label><input type="number" className="med-input" value={formData.lining} onChange={e => setFormData({...formData, lining: e.target.value})} placeholder="e.g., 8.5" step="0.1" /></div>
+        <div className="med-field"><label className="med-label">Estradiol (E2) levels</label><input type="number" className="med-input" value={formData.e2} onChange={e => setFormData({...formData, e2: e.target.value})} placeholder="pg/mL" /></div>
+        <div className="med-field"><label className="med-label">Progesterone (P4) levels</label><input type="number" className="med-input" value={formData.progesterone} onChange={e => setFormData({...formData, progesterone: e.target.value})} placeholder="ng/mL" /></div>
+        <div className="med-field"><label className="med-label">LH levels</label><input type="number" className="med-input" value={formData.lh} onChange={e => setFormData({...formData, lh: e.target.value})} placeholder="mIU/mL" /></div>
+        <div className="med-field"><label className="med-label">FSH levels</label><input type="number" className="med-input" value={formData.fsh} onChange={e => setFormData({...formData, fsh: e.target.value})} placeholder="mIU/mL" /></div>
+        <div className="med-field"><label className="med-label">Notes</label><textarea className="med-input" rows="3" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} placeholder="e.g., Lead follicle on right ovary..." /></div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}><button onClick={() => { setShowAddForm(false); resetForm(); setEditingId(null); }} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: '1.5px solid #ddd', background: 'transparent', color: '#666', fontSize: 14, cursor: 'pointer' }}>Cancel</button><button onClick={editingId ? handleUpdateScan : handleAddScan} disabled={!formData.date} className="cycle-picker-btn" style={{ flex: 2, margin: 0 }}>{editingId ? 'Update' : 'Save'} Scan</button></div>
+      </div></div>)}
+      {upcomingScans.length > 0 && (<div className="scans-upcoming"><h3 className="scans-section-title">🔜 Upcoming Scans</h3><div className="scans-list">{upcomingScans.map(scan => { const typeInfo = getScanTypeInfo(scan.type); return (<div key={scan.id} className="scan-card upcoming"><div className="scan-card-header"><div className="scan-icon">{typeInfo.icon}</div><div className="scan-info"><h4 className="scan-title">{scan.label || typeInfo.label}</h4><p className="scan-date">{formatShortDate(new Date(scan.date))}</p></div><div className="scan-actions"><button className="scan-edit-btn" onClick={() => editScan(scan)}>✏️</button><button className="scan-delete-btn" onClick={() => handleDeleteScan(scan.id)}>🗑️</button></div></div>{scan.notes && <p className="scan-notes-preview">📝 {scan.notes.substring(0, 60)}...</p>}<button className="scan-complete-btn" onClick={() => handleToggleComplete(scan.id)}>✓ Mark as completed</button></div>); })}</div></div>)}
+      {completedScans.length > 0 && (<div className="scans-completed"><h3 className="scans-section-title">✅ Completed Scans</h3><div className="scans-list">{completedScans.map(scan => { const typeInfo = getScanTypeInfo(scan.type); const totalFollicles = calculateTotalFollicles(scan.follicles); return (<div key={scan.id} className="scan-card completed" onClick={() => setSelectedScan(selectedScan === scan.id ? null : scan.id)}><div className="scan-card-header"><div className="scan-icon">{typeInfo.icon}</div><div className="scan-info"><h4 className="scan-title">{scan.label || typeInfo.label}</h4><p className="scan-date">{formatShortDate(new Date(scan.date))}</p></div><div className="scan-actions"><button className="scan-edit-btn" onClick={(e) => { e.stopPropagation(); editScan(scan); }}>✏️</button><button className="scan-delete-btn" onClick={(e) => { e.stopPropagation(); handleDeleteScan(scan.id); }}>🗑️</button></div></div>{(scan.follicles?.length > 0 || scan.lining || scan.e2) && (<div className="scan-results-preview">{scan.follicles?.length > 0 && (<span className="scan-badge">📊 {totalFollicles} follicles ({getFollicleSizeRange(scan.follicles)})</span>)}{scan.lining && <span className="scan-badge">📏 Lining: {scan.lining}mm</span>}{scan.e2 && <span className="scan-badge">💉 E2: {scan.e2}</span>}</div>)}{selectedScan === scan.id && (<div className="scan-details-expanded">{(scan.follicles?.length > 0 || scan.lining || scan.e2 || scan.progesterone || scan.lh || scan.fsh) && (<div className="scan-results-details"><h5>Results Details</h5>{scan.follicles?.length > 0 && (<div className="scan-detail-row"><strong>Follicles:</strong> {scan.follicles.map(f => `${f}mm`).join(', ')}</div>)}{scan.lining && (<div className="scan-detail-row"><strong>Endometrial Lining:</strong> {scan.lining}mm</div>)}{scan.e2 && (<div className="scan-detail-row"><strong>Estradiol (E2):</strong> {scan.e2} pg/mL</div>)}{scan.progesterone && (<div className="scan-detail-row"><strong>Progesterone (P4):</strong> {scan.progesterone} ng/mL</div>)}{scan.lh && (<div className="scan-detail-row"><strong>LH:</strong> {scan.lh} mIU/mL</div>)}{scan.fsh && (<div className="scan-detail-row"><strong>FSH:</strong> {scan.fsh} mIU/mL</div>)}</div>)}{scan.notes && (<div className="scan-notes"><strong>Notes:</strong><p>{scan.notes}</p></div>)}</div>)}{selectedScan !== scan.id && scan.notes && (<p className="scan-notes-preview">📝 {scan.notes.substring(0, 80)}...</p>)}</div>); })}</div></div>)}
+      {scans.length === 0 && (<div className="empty-state"><div className="empty-state-icon">📊</div><p style={{ fontWeight: 600, marginBottom: 4 }}>No scans recorded yet</p><p style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>Track your fertility monitoring appointments and results here.</p><button className="cycle-picker-btn" style={{ margin: 0 }} onClick={() => setShowAddForm(true)}>+ Add your first scan</button></div>)}
+    </section>
+  );
+}
+
+/* ─────────────────EMBRYO SECTION───────────────────────────── */
+function EmbryoSection({ embryos, onEmbryoUpdate }) {
+  const totalEmbryos = embryos.length;
+  const frozenEmbryos = embryos.filter(e => e.frozen).length;
+  const transferredEmbryos = embryos.filter(e => e.transferred).length;
+  const blastocysts = embryos.filter(e => e.stage === 'blastocyst').length;
+
+  return (
+    <section className="embryos-section">
+      <div className="section-header"><span className="section-badge">LAB UPDATE</span><h2 className="section-title">Embryo Development</h2><button className="add-med-btn" onClick={() => window.location.hash = 'embryos'}>View Full Tracker →</button></div>
+      {totalEmbryos === 0 ? (<div className="empty-state"><div className="empty-state-icon">🔬</div><p style={{ fontWeight: 600, marginBottom: 4 }}>No embryos recorded yet</p><p style={{ fontSize: 13, color: '#888', marginBottom: 16 }}>After egg retrieval, track your embryo development in the Embryos tab.</p></div>) : (<><div className="embryo-summary-grid"><div className="embryo-stat"><div className="stat-value">{totalEmbryos}</div><div className="stat-label">Total Embryos</div></div><div className="embryo-stat"><div className="stat-value">{frozenEmbryos}</div><div className="stat-label">Frozen</div></div><div className="embryo-stat"><div className="stat-value">{transferredEmbryos}</div><div className="stat-label">Transferred</div></div><div className="embryo-stat"><div className="stat-value">{blastocysts}</div><div className="stat-label">Blastocysts</div></div></div></>)}
+    </section>
+  );
+}
+
+/* ─────────────────TWO WEEK WAIT SECTION───────────────────────────── */
+function TwoWeekWait({ cycleId, transferDate }) {
+  const [symptoms, setSymptoms] = useState(() => { const saved = localStorage.getItem(`${STORAGE_KEYS.SYMPTOM_LOGS}_${todayISO()}`); return saved ? JSON.parse(saved) : {}; });
+  const [dailyAffirmation, setDailyAffirmation] = useState(() => { const idx = localStorage.getItem(STORAGE_KEYS.AFFIRMATION_IDX) || 0; const affirmationsList = ["You are stronger than you know. 💪", "Every day brings you closer to your dream. 🌈", "Your body is capable of amazing things. ✨", "Trust the process, trust your journey. 🦋"]; return affirmationsList[idx % affirmationsList.length]; });
+  const affirmationsList = ["You are stronger than you know. 💪", "Every day brings you closer to your dream. 🌈", "Your body is capable of amazing things. ✨", "Trust the process, trust your journey. 🦋", "You've prepared well. Now rest and hope. 🌸", "You are not alone in this wait. 💕"];
+  const commonSymptoms = [{ name: "Mild cramping", emoji: "🔴" }, { name: "Spotting", emoji: "🩸" }, { name: "Breast tenderness", emoji: "🤱" }, { name: "Fatigue", emoji: "😴" }, { name: "Bloating", emoji: "🎈" }, { name: "Nausea", emoji: "🤢" }];
+  const handleSymptomToggle = (symptom) => { const updated = { ...symptoms, [symptom]: !symptoms[symptom] }; setSymptoms(updated); localStorage.setItem(`${STORAGE_KEYS.SYMPTOM_LOGS}_${todayISO()}`, JSON.stringify(updated)); };
+  const nextAffirmation = () => { const currentIdx = affirmationsList.findIndex(a => a === dailyAffirmation); const nextIdx = (currentIdx + 1) % affirmationsList.length; setDailyAffirmation(affirmationsList[nextIdx]); localStorage.setItem(STORAGE_KEYS.AFFIRMATION_IDX, nextIdx); };
+  const testDate = transferDate ? new Date(transferDate) : null; if (testDate) testDate.setDate(testDate.getDate() + 14);
+  const today = new Date(); const daysUntilTest = testDate ? Math.ceil((testDate - today) / (1000 * 60 * 60 * 24)) : null;
+
+  return (
+    <section className="tww-section">
+      <div className="section-header"><span className="section-badge">2-WEEK WAIT</span><h2 className="section-title">Wellbeing Support</h2></div>
+      {testDate && daysUntilTest !== null && daysUntilTest <= 14 && daysUntilTest > 0 && (<div className="tww-countdown"><div className="countdown-number">{daysUntilTest}</div><div className="countdown-label">days until pregnancy test</div><div className="countdown-progress"><div className="hero-progress-bar"><div className="hero-progress-fill" style={{ width: `${((14 - daysUntilTest) / 14) * 100}%` }} /></div></div><p className="countdown-message">{daysUntilTest === 14 && "The wait begins. Take it one day at a time. 💛"}{daysUntilTest === 7 && "Halfway there! You're doing great. 🌟"}{daysUntilTest === 1 && "Tomorrow is the big day. Whatever happens, you're amazing. 💕"}</p></div>)}
+      <div className="tww-affirmation"><button className="affirmation-refresh" onClick={nextAffirmation}>⟳</button><p className="affirmation-text">"{dailyAffirmation}"</p><small>Tap to refresh ✨</small></div>
+      <div className="tww-symptoms"><h3>🌸 Track Your Symptoms</h3><div className="symptoms-grid">{commonSymptoms.map(symptom => (<button key={symptom.name} className={`symptom-card ${symptoms[symptom.name] ? 'active' : ''}`} onClick={() => handleSymptomToggle(symptom.name)}><span className="symptom-emoji">{symptom.emoji}</span><span className="symptom-name">{symptom.name}</span></button>))}</div></div>
+    </section>
+  );
+}
+
+/* ─────────────────PROGRESS SUMMARY SECTION───────────────────────────── */
+function ProgressSummarySection({ scans, embryos, medications, timeline, cycleStart }) {
+  const [selectedMetric, setSelectedMetric] = useState('overview');
+  const completedScans = scans.filter(s => s.completed).length;
+  const totalScans = scans.length;
+  const scanCompletionRate = totalScans > 0 ? Math.round((completedScans / totalScans) * 100) : 0;
+  const activeMeds = medications.filter(m => { const today = todayISO(); return today >= m.startDate && today <= (m.endDate || '9999-12-31'); }).length;
+  const completedStages = timeline.filter(s => s.done).length;
+  const totalStages = timeline.length;
+  const timelineProgress = totalStages > 0 ? Math.round((completedStages / totalStages) * 100) : 0;
+  const currentStage = timeline.find(s => s.active) || timeline[timeline.length - 1];
+
+  return (
+    <section className="insights-section">
+      <div className="section-header"><span className="section-badge">YOUR PROGRESS</span><h2 className="section-title">Cycle Summary</h2></div>
+      <div className="metrics-grid"><div className="metric-card"><div className="metric-icon">📊</div><div className="metric-value">{timelineProgress}%</div><div className="metric-label">Journey Complete</div><div className="metric-sub">{completedStages}/{totalStages} stages done</div></div><div className="metric-card"><div className="metric-icon">🩺</div><div className="metric-value">{scanCompletionRate}%</div><div className="metric-label">Scans Completed</div><div className="metric-sub">{completedScans}/{totalScans} scans</div></div><div className="metric-card"><div className="metric-icon">💪</div><div className="metric-value">{activeMeds}</div><div className="metric-label">Active Medications</div></div></div>
+      {currentStage && (<div className="current-stage-card"><h3>📍 Current Stage</h3><div className="stage-name">{currentStage.label}</div><div className="stage-date">Expected: {currentStage.date}</div></div>)}
+      <div className="insights-tabs"><button className={`insight-tab ${selectedMetric === 'overview' ? 'active' : ''}`} onClick={() => setSelectedMetric('overview')}>Overview</button></div>
+    </section>
+  );
+}
+
+/* ─────────────────PARTNER SECTION───────────────────────────── */
+function PartnerSection({ partner, onPartnerUpdate }) {
+  const [showEdit, setShowEdit] = useState(false);
+  const [supportLog, setSupportLog] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.PARTNER_SUPPORT); return saved ? JSON.parse(saved) : []; });
+  const [newNote, setNewNote] = useState('');
+  const supportActivities = ["Attended appointment", "Gave injection", "Emotional support", "Helped with medications"];
+  const addSupportNote = () => { if (!newNote.trim()) return; const updated = [...supportLog, { id: Date.now(), note: newNote, date: todayISO(), type: 'note' }]; setSupportLog(updated); localStorage.setItem(STORAGE_KEYS.PARTNER_SUPPORT, JSON.stringify(updated)); setNewNote(''); };
+  const logActivity = (activity) => { const updated = [...supportLog, { id: Date.now(), activity, date: todayISO(), type: 'activity' }]; setSupportLog(updated); localStorage.setItem(STORAGE_KEYS.PARTNER_SUPPORT, JSON.stringify(updated)); };
+  const todaysActivities = supportLog.filter(log => log.date === todayISO());
+
+  return (
+    <section className="partner-section">
+      <div className="section-header"><span className="section-badge">TOGETHER</span><h2 className="section-title">Partner Support</h2><button className="add-med-btn" onClick={() => setShowEdit(!showEdit)}>{showEdit ? '− Done' : '✏️ Edit'}</button></div>
+      <div className="partner-info-card">{showEdit ? (<div className="partner-edit"><input type="text" className="med-input" value={partner.name || ''} onChange={e => onPartnerUpdate({...partner, name: e.target.value})} placeholder="Partner's name" /></div>) : (partner.name ? <div className="partner-name">💑 {partner.name}</div> : <div className="partner-placeholder"><p>Add your partner's name</p><button className="cycle-picker-btn" onClick={() => setShowEdit(true)}>+ Add Partner</button></div>)}</div>
+      <div className="support-activities"><h3>🤝 Log Support Today</h3><div className="activities-grid">{supportActivities.map(activity => (<button key={activity} className="activity-btn" onClick={() => logActivity(activity)}>{activity}</button>))}</div></div>
+      {todaysActivities.length > 0 && (<div className="support-log"><h3>📝 Today's Support</h3>{todaysActivities.map(log => (<div key={log.id} className="support-log-item"><span className="log-icon">{log.type === 'activity' ? '✓' : '💬'}</span><span className="log-text">{log.activity || log.note}</span></div>))}</div>)}
+      <div className="support-notes"><h3>💬 Notes</h3><textarea className="med-input" rows="2" value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Write a note..." /><button className="add-med-btn" onClick={addSupportNote}>Post</button></div>
+    </section>
+  );
+}
+
+/* ─────────────────CONTACT SECTION───────────────────────────── */
+function ContactSection({ contacts, onContactUpdate }) {
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [formData, setFormData] = useState({ name: '', role: 'clinic', phone: '', email: '', notes: '', isEmergency: false });
+  const contactTypes = [{ value: 'clinic', label: '🏥 Clinic' }, { value: 'doctor', label: '👨‍⚕️ Doctor' }, { value: 'nurse', label: '👩‍⚕️ Nurse' }, { value: 'pharmacy', label: '💊 Pharmacy' }];
+  const handleAddContact = () => { const newContact = { id: Date.now(), ...formData, createdAt: toISO(new Date()) }; onContactUpdate([...contacts, newContact]); resetForm(); setShowAddForm(false); };
+  const handleUpdateContact = () => { const updated = contacts.map(contact => contact.id === editingId ? { ...formData, id: editingId, updatedAt: toISO(new Date()) } : contact); onContactUpdate(updated); resetForm(); setEditingId(null); setShowAddForm(false); };
+  const handleDeleteContact = (id) => { if (window.confirm('Remove this contact?')) onContactUpdate(contacts.filter(c => c.id !== id)); };
+  const resetForm = () => setFormData({ name: '', role: 'clinic', phone: '', email: '', notes: '', isEmergency: false });
+  const editContact = (contact) => { setFormData(contact); setEditingId(contact.id); setShowAddForm(true); };
+  const emergencyContacts = contacts.filter(c => c.isEmergency);
+
+  return (
+    <section className="contact-section">
+      <div className="section-header"><span className="section-badge">CARE TEAM</span><h2 className="section-title">Your Support Network</h2><button className="add-med-btn" onClick={() => { resetForm(); setEditingId(null); setShowAddForm(!showAddForm); }}>{showAddForm ? '− Cancel' : '+ Add Contact'}</button></div>
+      {showAddForm && (<div className="cycle-picker-overlay" onClick={() => { setShowAddForm(false); resetForm(); setEditingId(null); }}><div className="cycle-picker-card" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}><h2>{editingId ? 'Edit Contact' : 'Add New Contact'}</h2>
+        <div className="med-field"><label className="med-label">Name *</label><input type="text" className="med-input" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required /></div>
+        <div className="med-field"><label className="med-label">Role</label><select className="med-input" value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})}>{contactTypes.map(type => (<option key={type.value} value={type.value}>{type.label}</option>))}</select></div>
+        <div className="med-field"><label className="med-label">Phone</label><input type="tel" className="med-input" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} /></div>
+        <div className="med-field"><label className="med-label">Email</label><input type="email" className="med-input" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
+        <div className="med-field"><label className="med-label">Notes</label><textarea className="med-input" rows="2" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} /></div>
+        <label className="checkbox-label"><input type="checkbox" checked={formData.isEmergency} onChange={e => setFormData({...formData, isEmergency: e.target.checked})} /> Emergency contact</label>
+        <div style={{ display: 'flex', gap: 10, marginTop: 20 }}><button onClick={() => { setShowAddForm(false); resetForm(); setEditingId(null); }} style={{ flex: 1, padding: '12px 0', borderRadius: 10, border: '1.5px solid #ddd', background: 'transparent', color: '#666', cursor: 'pointer' }}>Cancel</button><button onClick={editingId ? handleUpdateContact : handleAddContact} disabled={!formData.name} className="cycle-picker-btn" style={{ flex: 2, margin: 0 }}>{editingId ? 'Update' : 'Save'}</button></div>
+      </div></div>)}
+      {emergencyContacts.length > 0 && (<div className="contact-group"><h3 className="contact-group-title">🚨 Emergency Contacts</h3>{emergencyContacts.map(contact => (<div key={contact.id} className="contact-card emergency"><div className="contact-details"><div className="contact-name">{contact.name}</div>{contact.phone && <div className="contact-phone">📞 {contact.phone}</div>}</div><div className="contact-actions"><button className="scan-edit-btn" onClick={() => editContact(contact)}>✏️</button><button className="scan-delete-btn" onClick={() => handleDeleteContact(contact.id)}>🗑️</button></div></div>))}</div>)}
+      {contacts.length === 0 && (<div className="empty-state"><div className="empty-state-icon">👥</div><p>No contacts saved yet</p><button className="cycle-picker-btn" onClick={() => setShowAddForm(true)}>+ Add your first contact</button></div>)}
+    </section>
+  );
+}
+
+/* ─────────────────CYCLE START PICKER───────────────────────────── */
+function CycleStartPicker({ onConfirm }) {
+  const [date, setDate] = useState('');
+  return (<div className="cycle-picker-overlay"><div className="cycle-picker-card"><h2>When did your IVF cycle start?</h2><p>Enter your consultation or cycle day 1 date to build your personalised timeline.</p><input type="date" value={date} max={new Date().toISOString().split('T')[0]} onChange={e => setDate(e.target.value)} /><button className="cycle-picker-btn" disabled={!date} onClick={() => onConfirm(date)}>Start my journey</button></div></div>);
+}
+
 /* ─────────────────MAIN COMPONENT───────────────────────────────────── */
 export default function IVFJourney({ activeTab = "home" }) {
   const { userName } = useApp();
+  const [cycleStart, setCycleStart] = useState(() => localStorage.getItem(STORAGE_KEYS.CYCLE_START) || null);
+  const handleCycleStartConfirm = (dateString) => { localStorage.setItem(STORAGE_KEYS.CYCLE_START, dateString); setCycleStart(dateString); };
+  const [timeline, setTimeline] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.TIMELINE); if (saved) return JSON.parse(saved); return cycleStart ? buildTimeline(cycleStart) : []; });
+  const [medications, setMedications] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.MEDICATIONS); return saved ? JSON.parse(saved) : getInitialMedications(); });
+  const [scans, setScans] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.SCANS); if (saved) return JSON.parse(saved); return cycleStart ? buildScans(cycleStart) : []; });
+  const [embryos, setEmbryos] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.EMBRYOS); return saved ? JSON.parse(saved) : getInitialEmbryos(); });
+  const [contacts, setContacts] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.CONTACTS); return saved ? JSON.parse(saved) : getInitialContacts(); });
+  const [partner, setPartner] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.PARTNER); return saved ? JSON.parse(saved) : { name: '', role: '' }; });
 
-  const [cycleStart, setCycleStart] = useState(() =>
-    localStorage.getItem(STORAGE_KEYS.CYCLE_START) || null
-  );
-
-  const handleCycleStartConfirm = (dateString) => {
-    localStorage.setItem(STORAGE_KEYS.CYCLE_START, dateString);
-    setCycleStart(dateString);
-  };
-
-  const [timeline, setTimeline] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.TIMELINE);
-    if (saved) return JSON.parse(saved);
-    return cycleStart ? buildTimeline(cycleStart) : [];
-  });
-
-  const [medications, setMedications] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.MEDICATIONS);
-    return saved ? JSON.parse(saved) : getInitialMedications();
-  });
-
-  const [scans, setScans] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.SCANS);
-    if (saved) return JSON.parse(saved);
-    return cycleStart ? buildScans(cycleStart) : [];
-  });
-
-  const [embryos, setEmbryos] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.EMBRYOS);
-    return saved ? JSON.parse(saved) : getInitialEmbryos();
-  });
-
-  const [contacts, setContacts] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.CONTACTS);
-    return saved ? JSON.parse(saved) : getInitialContacts();
-  });
-
-  const [partner, setPartner] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEYS.PARTNER);
-    return saved ? JSON.parse(saved) : { name: '', role: '' };
-  });
-
-  useEffect(() => {
-    if (!cycleStart) return;
-    if (!localStorage.getItem(STORAGE_KEYS.TIMELINE)) {
-      setTimeline(buildTimeline(cycleStart));
-    }
-    if (!localStorage.getItem(STORAGE_KEYS.SCANS)) {
-      setScans(buildScans(cycleStart));
-    }
-  }, [cycleStart]);
-
-  // Persist all state
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.TIMELINE,    JSON.stringify(timeline));    }, [timeline]);
+  useEffect(() => { if (!cycleStart) return; if (!localStorage.getItem(STORAGE_KEYS.TIMELINE)) setTimeline(buildTimeline(cycleStart)); if (!localStorage.getItem(STORAGE_KEYS.SCANS)) setScans(buildScans(cycleStart)); }, [cycleStart]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.TIMELINE, JSON.stringify(timeline)); }, [timeline]);
   useEffect(() => { localStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify(medications)); }, [medications]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.SCANS,       JSON.stringify(scans));       }, [scans]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.EMBRYOS,     JSON.stringify(embryos));     }, [embryos]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.CONTACTS,    JSON.stringify(contacts));    }, [contacts]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.PARTNER,     JSON.stringify(partner));     }, [partner]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.SCANS, JSON.stringify(scans)); }, [scans]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.EMBRYOS, JSON.stringify(embryos)); }, [embryos]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.CONTACTS, JSON.stringify(contacts)); }, [contacts]);
+  useEffect(() => { localStorage.setItem(STORAGE_KEYS.PARTNER, JSON.stringify(partner)); }, [partner]);
 
   const completedStages = timeline.filter(s => s.done).length;
   const progress = timeline.length > 0 ? Math.round((completedStages / timeline.length) * 100) : 0;
-  const currentStage =
-    timeline.find(s => s.active)?.label
-    ?? (completedStages === timeline.length && timeline.length > 0
-      ? timeline[timeline.length - 1]?.label
-      : timeline[0]?.label);
+  const currentStage = timeline.find(s => s.active)?.label ?? (completedStages === timeline.length && timeline.length > 0 ? timeline[timeline.length - 1]?.label : timeline[0]?.label);
   const cycleDay = getCycleDay(cycleStart);
+  const transferStage = timeline.find(s => s.id === 'transfer');
 
-  if (!cycleStart) {
-    return <CycleStartPicker onConfirm={handleCycleStartConfirm} />;
-  }
+  if (!cycleStart) return <CycleStartPicker onConfirm={handleCycleStartConfirm} />;
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'home':
-        return (
-          <>
-            <HeroSection
-              userName={userName}
-              progress={progress}
-              stage={currentStage}
-              cycleDay={cycleDay}
-              cycleStartDate={cycleStart}
-              timeline={timeline}
-            />
-            <IVFTimeline stages={timeline} onStageUpdate={setTimeline} />
-          </>
-        );
-      case 'journey':
-        return (
-          <>
-            <IVFTimeline stages={timeline} onStageUpdate={setTimeline} />
-            <ScanSection scans={scans} onScanUpdate={setScans} />
-            <EmbryoSection embryos={embryos} onEmbryoUpdate={setEmbryos} />
-          </>
-        );
-      case 'meds':
-        return <MedicationSection medications={medications} onMedicationUpdate={setMedications} />;
-      case 'insights':
-        return (
-          <>
-            <TwoWeekWait cycleId={cycleStart} />
-            <ProgressSummarySection scans={scans} embryos={embryos} medications={medications} />
-          </>
-        );
-      case 'profile':
-        return (
-          <>
-            <PartnerSection partner={partner} onPartnerUpdate={setPartner} />
-            <ContactSection contacts={contacts} onContactUpdate={setContacts} />
-          </>
-        );
-      default:
-        return (
-          <HeroSection
-            userName={userName}
-            stage={currentStage}
-            progress={progress}
-            cycleDay={cycleDay}
-            cycleStartDate={cycleStart}
-            timeline={timeline}
-          />
-        );
+      case 'home': return <><HeroSection userName={userName} progress={progress} stage={currentStage} cycleDay={cycleDay} cycleStartDate={cycleStart} timeline={timeline} /><IVFTimeline stages={timeline} onStageUpdate={setTimeline} /></>;
+      case 'treatment': return <><HeroSection userName={userName} progress={progress} stage={currentStage} cycleDay={cycleDay} cycleStartDate={cycleStart} timeline={timeline} /><IVFTimeline stages={timeline} onStageUpdate={setTimeline} /><ScanSection scans={scans} onScanUpdate={setScans} /><EmbryoSection embryos={embryos} onEmbryoUpdate={setEmbryos} /></>;
+      case 'medications': return <MedicationSection medications={medications} onMedicationUpdate={setMedications} />;
+      case 'scans': return <ScanSection scans={scans} onScanUpdate={setScans} />;
+      case 'embryos': return <div className="embryo-tracker-page"><EmbryoTracker cycleId={cycleStart} onEmbryoUpdate={(updatedEmbryos) => { setEmbryos(updatedEmbryos); localStorage.setItem(STORAGE_KEYS.EMBRYOS, JSON.stringify(updatedEmbryos)); }} /></div>;
+      case 'insights': return <><HeroSection userName={userName} progress={progress} stage={currentStage} cycleDay={cycleDay} cycleStartDate={cycleStart} timeline={timeline} /><TwoWeekWait cycleId={cycleStart} transferDate={transferStage?.timestamp} /><ProgressSummarySection scans={scans} embryos={embryos} medications={medications} timeline={timeline} cycleStart={cycleStart} /></>;
+      case 'profile': return <><HeroSection userName={userName} progress={progress} stage={currentStage} cycleDay={cycleDay} cycleStartDate={cycleStart} timeline={timeline} /><PartnerSection partner={partner} onPartnerUpdate={setPartner} /><ContactSection contacts={contacts} onContactUpdate={setContacts} /></>;
+      default: return <HeroSection userName={userName} stage={currentStage} progress={progress} cycleDay={cycleDay} cycleStartDate={cycleStart} timeline={timeline} />;
     }
   };
 
