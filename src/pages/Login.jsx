@@ -64,10 +64,12 @@ export default function Login() {
   const [animOut, setAnimOut] = useState(false);
   const [focused, setFocused] = useState(null);
 
+  // ✅ Only clear login-specific data, NOT journey or consents
   useEffect(() => {
     localStorage.removeItem('userAuth');
     localStorage.removeItem('userName');
     localStorage.removeItem('userEmail');
+    // DO NOT remove userJourney or userConsents!
   }, []);
 
   const ready = email.trim() && password.trim();

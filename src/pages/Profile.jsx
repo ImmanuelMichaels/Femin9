@@ -257,11 +257,11 @@ export default function Profile() {
   };
 
   // ── Sign out ───────────────────────────────────────────────────────────────
-  const confirmSignOut = async () => {
-    setModal(null);
-    await logout();
-    navigate('/login');
-  };
+ const confirmSignOut = async () => {
+  setModal(null);
+  await auth.signOut();
+  window.location.href = '/login';
+};
 
   // ── Delete account ─────────────────────────────────────────────────────────
   const confirmDeleteAccount = async () => {

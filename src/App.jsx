@@ -67,14 +67,17 @@ function ProtectedApp() {
     );
   }
 
-  if (!savedJourney) return <Navigate to="/onboarding" replace />;
-  if (!hasConsents) return <Navigate to="/consent" replace />;
+  // ✅ CHECK USER FIRST - if not logged in, go to login
   if (!user) return <Navigate to="/login" replace />;
 
-  // Optional: Require email verification
+  // ✅ User is logged in - check email verification
   if (!user.emailVerified) {
     return <Navigate to="/verify-email" replace />;
   }
+
+  // ✅ Then check journey and consents
+  if (!savedJourney) return <Navigate to="/onboarding" replace />;
+  if (!hasConsents) return <Navigate to="/consent" replace />;
 
   return <AppShell />;
 }
