@@ -47,7 +47,7 @@ export default function BottomNav({ active, setActive }) {
               cursor: 'pointer',
               padding: 'var(--sp-1) var(--sp-2)',
               borderRadius: 'var(--r)',
-              color: on ? 'var(--t)' : 'var(--mt)',
+              color: on ? '#7C3AED' : 'var(--mt)',
               transition: 'all 0.2s',
               WebkitTapHighlightColor: 'transparent',
             }}
@@ -63,7 +63,7 @@ export default function BottomNav({ active, setActive }) {
                   transform: 'translateX(-50%)',
                   width: 20,
                   height: 3,
-                  background: 'var(--t)',
+                  background: '#7C3AED',
                   borderRadius: 3,
                 }} />
               )}

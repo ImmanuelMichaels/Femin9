@@ -255,15 +255,15 @@ export default function CalendarStrip({
 
         .cal-day.active {
           background: #fff;
-          border: 1px solid #d63384;
+          border: 1px solid #7C3AED;
           box-shadow:
-            0 2px 20px rgba(214,51,132,.25);
+            0 2px 20px rgb(106 51 214 / 25%);
           transform: translateY(-3px);
         }
           );
 
           box-shadow:
-            0 12px 30px rgba(214,51,132,.25);
+            0 12px 30px rgb(106 51 214 / 25%);
 
           transform: translateY(-3px);
         }

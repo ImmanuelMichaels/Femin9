@@ -1008,10 +1008,10 @@ export default function Home({ setTab }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-md)' }}>
             <div style={{ fontSize: 32 }}>🚨</div>
             <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 800, color: 'var(--rd)' }}>Emergency Care Needed</p>
+              <p style={{ fontWeight: 800, color: '#4108a5' }}>Emergency Care Needed</p>
               <button
                 onClick={() => setShowSOS(true)}
-                style={{ marginTop: 8, background: 'var(--rd)', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 16px', cursor: 'pointer' }}
+                style={{ marginTop: 8, background: '#4108a5', color: '#fff', border: 'none', borderRadius: 20, padding: '6px 16px', cursor: 'pointer' }}
               >
                 Call Emergency
               </button>

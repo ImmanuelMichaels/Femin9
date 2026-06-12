@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/useApp';
 import { auth, db } from '../context/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -96,11 +96,68 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
   const [billingCycle, setBillingCycle] = useState('monthly');
   const [loading, setLoading] = useState(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [scrollIndex, setScrollIndex] = useState(1); // 0, 1, 2 for free, bloom, bloomPlus
+  const scrollContainerRef = useRef(null);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
   const currentPlanId = subscriptionPlan || 'free';
   const plans = billingCycle === 'monthly' 
     ? PLANS 
     : { free: PLANS.free, bloom: ANNUAL_PLANS.bloom, bloomPlus: ANNUAL_PLANS.bloomPlus };
+  
+  const plansArray = Object.values(plans);
+
+  // Handle scroll position for snap scrolling
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const scrollPosition = container.scrollLeft;
+      const cardWidth = container.clientWidth;
+      const newIndex = Math.round(scrollPosition / cardWidth);
+      if (newIndex !== scrollIndex && newIndex >= 0 && newIndex < plansArray.length) {
+        setScrollIndex(newIndex);
+      }
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [plansArray.length, scrollIndex]);
+
+  // Snap to specific plan
+  const snapToPlan = (index) => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      const cardWidth = container.clientWidth;
+      container.scrollTo({
+        left: index * cardWidth,
+        behavior: 'smooth'
+      });
+    }
+    setScrollIndex(index);
+  };
+
+  // Touch handlers for swipe
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0 && scrollIndex < plansArray.length - 1) {
+        snapToPlan(scrollIndex + 1);
+      } else if (diff < 0 && scrollIndex > 0) {
+        snapToPlan(scrollIndex - 1);
+      }
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
 
   const handleUpgrade = async (planId) => {
     if (planId === currentPlanId) return;
@@ -149,7 +206,7 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
       <div 
         onClick={onClose}
         style={{
-          position: 'fixed',
+          position: 'sticky',
           top: 0,
           left: 0,
           right: 0,
@@ -157,23 +214,25 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
           backgroundColor: 'rgba(0, 0, 0, 0.5)',
           backdropFilter: 'blur(4px)',
           zIndex: 9998,
-          animation: 'fadeIn 0.3s ease-out'
+          animation: 'fadeIn 0.3s ease-out',
+          bottom: '-30%',
         }}
       />
       
       {/* Modal Content */}
       <div style={{
-        position: 'fixed',
+        position: 'absolute',
         top: '50%',
-        left: '50%',
-        transform: 'translate(-50%, -50%)',
+        // left: '50%',
+        // transform: 'translate(-50%, -50%)',
         width: '90%',
         maxWidth: 1200,
-        maxHeight: '90vh',
+        // maxHeight: '90vh',
         overflowY: 'auto',
-        background: 'linear-gradient(135deg, #FCE8EF 0%, #FFF0F5 100%)',
+        background: '#fff',
         borderRadius: 32,
         zIndex: 9999,
+        padding: '20px',
         animation: 'slideUp 0.3s ease-out',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
       }}>
@@ -194,20 +253,20 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#D63A6E',
+            color: '#4108a5',
             transition: 'all 0.2s',
             zIndex: 10,
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'scale(1.1)';
-            e.currentTarget.style.backgroundColor = '#D63A6E';
+            e.currentTarget.style.backgroundColor = '#4108a5';
             e.currentTarget.style.color = 'white';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = 'scale(1)';
             e.currentTarget.style.backgroundColor = 'white';
-            e.currentTarget.style.color = '#D63A6E';
+            e.currentTarget.style.color = '#4108a5';
           }}
         >
           ✕
@@ -216,14 +275,14 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
         {/* Confetti effect */}
         {showConfetti && (
           <div style={{
-            position: 'fixed',
+            position: 'absolute',
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
             pointerEvents: 'none',
             zIndex: 1000,
-            background: 'radial-gradient(circle, rgba(216,58,110,0.2) 0%, transparent 70%)',
+            background: '#4108a5',
             animation: 'pulse 1s ease-out'
           }}>
             <div style={{
@@ -234,7 +293,7 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
               textAlign: 'center'
             }}>
               <div style={{ fontSize: 64, marginBottom: 16, animation: 'bounce 0.5s ease-out' }}>🎉</div>
-              <h2 style={{ color: '#D63A6E', margin: 0, fontSize: 28 }}>Welcome to Bloom+!</h2>
+              <h2 style={{ color: '#4108a5', margin: 0, fontSize: 28 }}>Welcome to Bloom+!</h2>
               <p style={{ color: '#666', fontSize: 16, marginTop: 8 }}>You now have unlimited access to all features</p>
             </div>
           </div>
@@ -244,11 +303,11 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
           <div style={{ maxWidth: 1200, margin: '0 auto' }}>
             {/* Header */}
             <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>🌸</div>
-              <h1 style={{ fontSize: 'clamp(28px,5vw,40px)', color: '#D63A6E', marginBottom: 8 }}>
+              <div style={{ fontSize: 18, marginBottom: 16 }}></div>
+              <h1 style={{ fontSize: 'clamp(18px,2vw,20px)', color: '#4108a5', marginBottom: 8 }}>
                 Choose Your Journey
               </h1>
-              <p style={{ fontSize: 18, color: '#666', maxWidth: 500, margin: '0 auto' }}>
+              <p style={{ fontSize: 12, color: '#666', maxWidth: 500, margin: '0 auto' }}>
                 Hi {userName || 'Mama'}! Pick the plan that gives you the support you deserve.
               </p>
             </div>
@@ -260,8 +319,8 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
                 style={{
                   padding: '10px 24px',
                   borderRadius: 30,
-                  border: billingCycle === 'monthly' ? '2px solid #D63A6E' : '1px solid #ddd',
-                  background: billingCycle === 'monthly' ? '#D63A6E' : 'white',
+                  border: billingCycle === 'monthly' ? '2px solid #4108a5' : '1px solid #ddd',
+                  background: billingCycle === 'monthly' ? '#4108a5' : 'white',
                   color: billingCycle === 'monthly' ? 'white' : '#666',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -275,8 +334,8 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
                 style={{
                   padding: '10px 24px',
                   borderRadius: 30,
-                  border: billingCycle === 'yearly' ? '2px solid #D63A6E' : '1px solid #ddd',
-                  background: billingCycle === 'yearly' ? '#D63A6E' : 'white',
+                  border: billingCycle === 'yearly' ? '2px solid #4108a5' : '1px solid #ddd',
+                  background: billingCycle === 'yearly' ? '#4108a5' : 'white',
                   color: billingCycle === 'yearly' ? 'white' : '#666',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -300,14 +359,51 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
               </button>
             </div>
 
-            {/* Plans Grid */}
+            {/* Dot indicators */}
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-              gap: 24,
-              alignItems: 'stretch'
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 12,
+              marginBottom: 24
             }}>
-              {Object.values(plans).map((plan) => {
+              {plansArray.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => snapToPlan(idx)}
+                  style={{
+                    width: scrollIndex === idx ? 32 : 8,
+                    height: 8,
+                    borderRadius: 4,
+                    background: scrollIndex === idx ? '#4108a5' : '#ddd',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Horizontal Scroll Container */}
+            <div
+              ref={scrollContainerRef}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              style={{
+                display: 'flex',
+                overflowX: 'auto',
+                scrollSnapType: 'x mandatory',
+                scrollBehavior: 'smooth',
+                gap: 24,
+                padding: '20px 0',
+                margin: '0 -4px',
+                cursor: 'grab',
+                scrollbarWidth: 'none', // Hide scrollbar on Firefox
+                msOverflowStyle: 'none', // Hide scrollbar on IE/Edge
+              }}
+              className="hide-scrollbar"
+            >
+              {plansArray.map((plan, idx) => {
                 const isCurrentPlan = plan.id === currentPlanId;
                 const isPopular = plan.popular;
                 const isUpgrading = loading === plan.id;
@@ -316,15 +412,18 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
                   <div
                     key={plan.id}
                     style={{
+                      flex: '0 0 calc(33.333% - 16px)',
+                      minWidth: 350,
+                      scrollSnapAlign: 'start',
                       background: 'white',
                       borderRadius: 32,
                       padding: '28px 24px 32px',
                       boxShadow: isPopular 
-                        ? '0 20px 40px rgba(216,58,110,0.15), 0 0 0 2px #D63A6E' 
+                        ? '0 20px 40px rgb(46 12 129 / 8%), 0 0 0 2px #4108a5' 
                         : '0 10px 30px rgba(0,0,0,0.08)',
                       position: 'relative',
                       transition: 'transform 0.2s, box-shadow 0.2s',
-                      transform: isPopular ? 'scale(1.02)' : 'scale(1)',
+                      transform: isPopular && scrollIndex === idx ? 'scale(1.02)' : 'scale(1)',
                       display: 'flex',
                       flexDirection: 'column'
                     }}
@@ -335,7 +434,7 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
                         top: -12,
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        background: '#D63A6E',
+                        background: '#4108a5',
                         color: 'white',
                         padding: '6px 16px',
                         borderRadius: 30,
@@ -355,7 +454,7 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
 
                     {/* Price */}
                     <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                      <span style={{ fontSize: 48, fontWeight: 800, color: '#D63A6E' }}>{plan.price}</span>
+                      <span style={{ fontSize: 48, fontWeight: 800, color: '#4108a5' }}>{plan.price}</span>
                       <span style={{ color: '#888' }}>{plan.period}</span>
                       {billingCycle === 'yearly' && plan.id !== 'free' && (
                         <p style={{ fontSize: 12, color: '#2E9E67', marginTop: 8 }}>
@@ -366,11 +465,11 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
 
                     {/* Features */}
                     <div style={{ flex: 1, marginBottom: 32 }}>
-                      {PLANS.free.features.map((feature, idx) => {
+                      {PLANS.free.features.map((feature, featureIdx) => {
                         const isIncluded = getFeatureStatus(feature, plan);
                         return (
                           <div
-                            key={idx}
+                            key={featureIdx}
                             style={{
                               display: 'flex',
                               alignItems: 'center',
@@ -405,18 +504,18 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
                         background: isCurrentPlan
                           ? '#E8F7EE'
                           : plan.id === 'bloomPlus'
-                          ? '#D63A6E'
+                          ? '#4108a5'
                           : 'white',
                         color: isCurrentPlan
                           ? '#2E9E67'
                           : plan.id === 'bloomPlus'
                           ? 'white'
-                          : '#D63A6E',
+                          : '#4108a5',
                         border: isCurrentPlan
                           ? '1px solid #2E9E67'
                           : plan.id === 'bloomPlus'
                           ? 'none'
-                          : '2px solid #D63A6E',
+                          : '2px solid #4108a5',
                         transition: 'all 0.2s',
                         opacity: isUpgrading ? 0.7 : 1
                       }}
@@ -436,7 +535,7 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
                           <span style={{
                             width: 16,
                             height: 16,
-                            border: `2px solid ${plan.id === 'bloomPlus' ? 'white' : '#D63A6E'}`,
+                            border: `2px solid ${plan.id === 'bloomPlus' ? 'white' : '#4108a5'}`,
                             borderTopColor: 'transparent',
                             borderRadius: '50%',
                             animation: 'spin 0.8s linear infinite'
@@ -458,8 +557,21 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
               })}
             </div>
 
+            {/* Swipe hint for mobile */}
+            <div style={{ 
+              textAlign: 'center', 
+              marginTop: 16,
+              opacity: 0.6,
+              fontSize: 12,
+              color: '#888'
+            }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                ← Swipe to see more plans →
+              </span>
+            </div>
+
             {/* Footer */}
-            <div style={{ textAlign: 'center', marginTop: 48, padding: 24 }}>
+            <div style={{ textAlign: 'center', marginTop: 32, padding: 24 }}>
               <p style={{ fontSize: 12, color: '#aaa' }}>
                 All plans include a 7-day free trial for Bloom and Bloom+.<br />
                 Cancel anytime. No questions asked.
@@ -470,7 +582,7 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
                   marginTop: 24,
                   background: 'transparent',
                   border: 'none',
-                  color: '#D63A6E',
+                  color: '#4108a5',
                   fontSize: 14,
                   cursor: 'pointer',
                   textDecoration: 'underline',
@@ -516,6 +628,11 @@ export default function SubscriptionPlans({ onClose, onUpgrade }) {
         @keyframes bounce {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-20px); }
+        }
+
+        /* Hide scrollbar but keep functionality */
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
     </>

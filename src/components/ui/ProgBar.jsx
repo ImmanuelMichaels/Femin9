@@ -1,5 +1,5 @@
 // src/components/ui/ProgBar.jsx
-export default function ProgBar({ val, max, col = "var(--t)", height = "8px", showLabel = false }) {
+export default function ProgBar({ val, max, col = "#4108a5", height = "8px", showLabel = false }) {
   const percentage = Math.min((val / max) * 100, 100);
   
   return (

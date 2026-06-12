@@ -3,8 +3,8 @@ import { WCard, SectionTitle, Button } from '../components/ui';
 import { useApp } from '../context/useApp';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, storage } from '../context/firebase';
+import { getDoc, doc, setDoc } from 'firebase/firestore';
 import { updateProfile, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import SubscriptionPlans from '../components/SubscriptionPlans';
 
@@ -23,6 +23,7 @@ const JOURNEY_LABELS = {
   menstrual:  'Menstrual Health',
 };
 
+const FALLBACK_NAME    = 'Mama';
 const FALLBACK_INITIAL = '?';
 
 const NOTIFICATION_ITEMS = [
@@ -31,17 +32,37 @@ const NOTIFICATION_ITEMS = [
   { key: 'marketing',            label: 'Tips & Updates',        desc: 'Wellness tips, offers, and app updates' },
 ];
 
+// Single source of truth for subscription plan pricing/copy.
+// Update here only — referenced by PLAN_LABELS, PLAN_DESCRIPTIONS, and PlanRow.
+const PLANS = {
+  free: {
+    label: 'Bloom Seed (Free)',
+    price: null,
+    desc: 'Free tier · 10 AI messages/day',
+  },
+  bloom: {
+    label: 'Bloom',
+    price: '£4.99/mo',
+    desc: '50 AI messages · PDF exports · Unlimited tracking',
+  },
+  'bloom+': {
+    label: 'Bloom+',
+    price: '£7.99/mo',
+    desc: 'Unlimited AI · Priority support · Annual health review',
+  },
+};
+
 // ── Confirmation modal ─────────────────────────────────────────────────────────
 function ConfirmModal({ title, body, confirmLabel, confirmVariant = 'danger', onConfirm, onCancel, children }) {
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 9999,
-      background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)',
+      position: 'sticky', inset: 0, zIndex: 9999, bottom: '30%',
+      background: '#fff', backdropFilter: 'blur(2px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: 'var(--sp-4)',
     }}>
       <div style={{
-        background: 'var(--warm, #fff)', borderRadius: 'var(--r, 16px)',
+        background: '#fff', borderRadius: 'var(--r, 16px)',
         padding: 'var(--sp-5)', maxWidth: 380, width: '100%',
         boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
       }}>
@@ -65,7 +86,7 @@ function ConfirmModal({ title, body, confirmLabel, confirmVariant = 'danger', on
             onClick={onConfirm}
             style={{
               flex: 1, padding: 'var(--sp-3)', borderRadius: 'var(--r)',
-              background: confirmVariant === 'danger' ? 'var(--rd, #e53935)' : 'var(--sg)',
+              background: confirmVariant === 'danger' ? 'var(--rd, #e53935)' : '#4108a5',
               border: 'none', fontSize: 'var(--fs-sm)', fontWeight: 700,
               cursor: 'pointer', color: '#fff',
             }}
@@ -125,6 +146,8 @@ export default function Profile() {
   const [nameSaving,  setNameSaving]    = useState(false);
 
   // ── Notifications ──────────────────────────────────────────────────────────
+  // notificationsEnabled (overall on/off) lives in AppContext; per-category
+  // breakdown lives here and is persisted to localStorage + Firestore.
   const [notifications, setNotifications] = useState(() => {
     try {
       const saved = localStorage.getItem('notificationPrefs');
@@ -134,8 +157,8 @@ export default function Profile() {
   const [notifSaving, setNotifSaving] = useState(false);
 
   // ── Modals ─────────────────────────────────────────────────────────────────
-  const [modal, setModal] = useState(null); // 'removePhoto' | 'signOut' | 'deleteAccount' | 'upgrade'
-  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false); // NEW: for subscription modal
+  const [modal, setModal] = useState(null); // 'removePhoto' | 'signOut' | 'deleteAccount'
+  const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
   const [deletePassword,    setDeletePassword]    = useState('');
   const [deleteError,       setDeleteError]       = useState(null);
   const [deleteInProgress,  setDeleteInProgress]  = useState(false);
@@ -153,7 +176,6 @@ export default function Profile() {
       const user = auth.currentUser;
       if (!user) return;
       try {
-        const { getDoc } = await import('firebase/firestore');
         const snap = await getDoc(doc(db, 'users', user.uid));
         if (snap.exists() && snap.data().profileImage) {
           setProfileImage(snap.data().profileImage);
@@ -257,11 +279,18 @@ export default function Profile() {
   };
 
   // ── Sign out ───────────────────────────────────────────────────────────────
- const confirmSignOut = async () => {
-  setModal(null);
-  await auth.signOut();
-  window.location.href = '/login';
-};
+  const confirmSignOut = async () => {
+    setModal(null);
+    try {
+      await auth.signOut();
+    } finally {
+      // Clear local app state before navigating so no stale data
+      // leaks into the next session / login screen.
+      clearUserData?.();
+      logout?.();
+      navigate('/login', { replace: true });
+    }
+  };
 
   // ── Delete account ─────────────────────────────────────────────────────────
   const confirmDeleteAccount = async () => {
@@ -284,7 +313,7 @@ export default function Profile() {
 
       await clearUserData();
       await deleteUser(user);
-      navigate('/login');
+      navigate('/login', { replace: true });
     } catch (err) {
       console.error('Delete error:', err);
       const msg =
@@ -305,12 +334,7 @@ export default function Profile() {
   const journeyLabel  = JOURNEY_LABELS[journeyType] ?? journeyType ?? 'No journey set';
   const displayInitial = userName?.charAt(0)?.toUpperCase() || FALLBACK_INITIAL;
 
-  const planLabel = { free: 'Bloom Seed (Free)', bloom: 'Bloom', 'bloom+': 'Bloom+' }[subscriptionPlan] ?? subscriptionPlan;
-  const planDesc  = {
-    free:    'Free tier · 10 AI messages/day',
-    bloom:   '£6.99/month · 50 AI messages · PDF exports',
-    'bloom+':'£12.99/month · Unlimited AI · Priority support',
-  }[subscriptionPlan] ?? '';
+  const currentPlan = PLANS[subscriptionPlan] ?? { label: subscriptionPlan, price: null, desc: '' };
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
@@ -421,7 +445,7 @@ export default function Profile() {
             ) : (
               <>
                 <p style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--dp)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {userName || 'Mama'}
+                  {userName || FALLBACK_NAME}
                   <button
                     onClick={() => { setNewName(userName || ''); setEditingName(true); }}
                     aria-label="Edit name"
@@ -500,7 +524,7 @@ export default function Profile() {
       <SectionTitle title="Privacy Centre 🔒" />
       <WCard>
         <ActionRow icon="📥" label="Download my data" sub="GDPR right to portability" onClick={handleExportData} />
-        <ActionRow icon="📋" label="Manage consent"   sub="Review and update your consents" onClick={() => navigate('/consent')} />
+        <ActionRow icon="📋" label="Manage consent"   sub="Review and update your consents" onClick={() => navigate('/consent')} last />
       </WCard>
 
       {/* ── Subscription ── */}
@@ -508,8 +532,8 @@ export default function Profile() {
       <WCard>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <p style={{ fontWeight: 800, fontSize: 'var(--fs-md)' }}>{planLabel}</p>
-            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)' }}>{planDesc}</p>
+            <p style={{ fontWeight: 800, fontSize: 'var(--fs-md)' }}>{currentPlan.label}</p>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)' }}>{currentPlan.desc}</p>
           </div>
           {subscriptionPlan === 'free' && (
             <Button variant="primary" onClick={() => setShowSubscriptionModal(true)}>
@@ -523,8 +547,8 @@ export default function Profile() {
             marginTop: 'var(--sp-3)', paddingTop: 'var(--sp-3)',
             borderTop: '1px solid var(--border)',
           }}>
-            <PlanRow icon="🌸" name="Bloom"  price="£6.99/mo"  desc="50 AI messages · PDF exports · Unlimited tracking" />
-            <PlanRow icon="✨" name="Bloom+" price="£12.99/mo" desc="Unlimited AI · Priority support · Annual health review" />
+            <PlanRow icon="🌸" name={PLANS.bloom.label}  price={PLANS.bloom.price}  desc={PLANS.bloom.desc} />
+            <PlanRow icon="✨" name={PLANS['bloom+'].label} price={PLANS['bloom+'].price} desc={PLANS['bloom+'].desc} />
           </div>
         )}
       </WCard>
@@ -614,10 +638,10 @@ export default function Profile() {
 
       {/* ── Subscription Modal ── */}
       {showSubscriptionModal && (
-        <SubscriptionPlans 
+        <SubscriptionPlans
           onClose={() => setShowSubscriptionModal(false)}
           onUpgrade={(planId) => {
-            showToast(`Successfully upgraded to ${planId}! 🎉`);
+            showToast(`Successfully upgraded to ${PLANS[planId]?.label ?? planId}! 🎉`);
           }}
         />
       )}
