@@ -22,7 +22,7 @@ const Chat        = lazy(() => import('./Chat'));
 const Safety      = lazy(() => import('./Safety'));
 const TTC         = lazy(() => import('./TTC'));
 const Nursing     = lazy(() => import('./Nursing'));
-const Ivfjourney  = lazy(() => import('./Ivfjourney'));
+const Ivfjourney  = lazy(() => import('./IVFJourney'));
 const AIAssistant = lazy(() => import('./Chat/AIAssistant'));
 const Menopause   = lazy(() => import('./Menopause/Menopause'));
 const WeightLogging = lazy(() => import('./WeightLogging')); 
