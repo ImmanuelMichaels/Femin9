@@ -3,25 +3,25 @@ import React, { createContext, useState, useEffect, useCallback, useContext } fr
 import { auth, db } from './firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-// ✅ CORRECT: Export AppContext as a named export
-export const AppContext = createContext();
+// Create context
+const AppContext = createContext();
 
-// ✅ Export the hook for easy consumption
-export function useApp() {
+// Custom hook
+export const useApp = () => {
   const context = useContext(AppContext);
   if (!context) {
     throw new Error('useApp must be used within AppProvider');
   }
   return context;
-}
+};
 
-export function AppProvider({ children }) {
+export const AppProvider = ({ children }) => {
   // Core journey state
   const [journeyType, setJourneyType] = useState(null);
   const [culture, setCulture] = useState(null);
   const [religion, setReligion] = useState(null);
   const [dietaryPractices, setDietaryPractices] = useState([]);
-  const [hasDietaryPractices, setHasDietaryPractices] = useState(null); // 'yes' | 'no' | null
+  const [hasDietaryPractices, setHasDietaryPractices] = useState(null);
   const [userName, setUserName] = useState('');
   
   // Pregnancy-specific state
@@ -215,7 +215,6 @@ export function AppProvider({ children }) {
     // Pregnancy
     edd, setEdd,
     babyNumber, setBabyNumber,
-    currentWeek: getCurrentWeek(),
     getCurrentWeek,
     getTrimester,
     
@@ -246,7 +245,7 @@ export function AppProvider({ children }) {
       {children}
     </AppContext.Provider>
   );
-}
+};
 
-// Optional: Also export AppContext as default for convenience
+// Default export for backward compatibility
 export default AppContext;
