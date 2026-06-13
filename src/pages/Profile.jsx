@@ -86,7 +86,7 @@ function ConfirmModal({ title, body, confirmLabel, confirmVariant = 'danger', on
             onClick={onConfirm}
             style={{
               flex: 1, padding: 'var(--sp-3)', borderRadius: 'var(--r)',
-              background: confirmVariant === 'danger' ? 'var(--rd, #e53935)' : '#4108a5',
+              background: confirmVariant === 'danger' ? 'var(--rd, #7C3AED)' : '#4108a5',
               border: 'none', fontSize: 'var(--fs-sm)', fontWeight: 700,
               cursor: 'pointer', color: '#fff',
             }}

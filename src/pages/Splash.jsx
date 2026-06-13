@@ -15,7 +15,7 @@ export default function Splash() {
       className="fi"
       style={{
         position: 'fixed', inset: 0,
-        background: 'linear-gradient(160deg,#1a0533 0%,#4a1270 50%,#8b2fc9 100%)',
+        background: 'FEFEFE',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', zIndex: 9999, padding: 'var(--pad-x)',
         overflow: 'hidden',
@@ -36,79 +36,20 @@ export default function Splash() {
           padding: '0 var(--pad-x)',
         }}
       >
-        {/* Logo mark */}
-        <div
-          style={{
-            width: animate ? 'clamp(40px,8vw,56px)' : 'clamp(72px,18vw,96px)',
-            height: animate ? 'clamp(40px,8vw,56px)' : 'clamp(72px,18vw,96px)',
-            borderRadius: 'clamp(12px,3vw,20px)',
-            background: 'rgba(255,255,255,0.12)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginBottom: animate ? 'var(--sp-2)' : 'var(--sp-5)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
-          }}
-        >
-          <svg
-            width={animate ? 'clamp(20px,5vw,32px)' : 'clamp(38px,9vw,52px)'}
-            height={animate ? 'clamp(20px,5vw,32px)' : 'clamp(38px,9vw,52px)'}
-            viewBox="0 0 32 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            {/* Uterus / bloom shape */}
-            <path
-              d="M16 4c-3 0-7 3-7 8s7 12 7 12 7-7 7-12-4-8-7-8z"
-              fill="#e8a0f0"
-              opacity="0.95"
-            />
-            <path
-              d="M10 12c-2-1.5-5 0-5 4s3 6 5 7"
-              stroke="#e8a0f0"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              fill="none"
-            />
-            <path
-              d="M22 12c2-1.5 5 0 5 4s-3 6-5 7"
-              stroke="#e8a0f0"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-              fill="none"
-            />
-          </svg>
-        </div>
 
         {/* Brand name */}
         <div
           className="serif"
           style={{
-            fontSize: animate ? 'var(--fs-xl)' : 'var(--fs-3xl)',
-            color: '#fff',
-            fontStyle: 'italic',
+            width: '250px',
             marginBottom: animate ? 'var(--sp-0)' : 'var(--sp-1)',
             letterSpacing: -0.5,
             transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
-          Femin<b style={{ fontStyle: 'normal', color: '#e8a0f0' }}>9</b>
+          <img src="../../public/logo.png" alt="logo" />
         </div>
 
-        {/* Tagline - fades out as it moves up */}
-        <p
-          style={{
-            color: 'rgba(255,255,255,0.45)',
-            fontSize: 'var(--fs-xs)',
-            letterSpacing: 3,
-            textTransform: 'uppercase',
-            marginBottom: animate ? 'var(--sp-3)' : 'var(--sp-6)',
-            opacity: animate ? 0 : 1,
-            transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-            pointerEvents: 'none',
-          }}
-        >
-          Maternal AI · UK First
-        </p>
 
         {/* Spinner - fades out as it moves up */}
         <div
@@ -142,19 +83,6 @@ export default function Splash() {
           transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.3s',
         }}
       >
-        {['20 Features', 'AI-Powered', 'QR Scanner', 'Offline-First'].map(t => (
-          <span key={t} style={{
-            background: 'rgba(255,255,255,0.08)',
-            color: 'rgba(255,255,255,0.55)',
-            padding: 'clamp(4px,1vw,6px) clamp(10px,2.5vw,14px)',
-            borderRadius: 20,
-            fontSize: 'var(--fs-xs)',
-            fontWeight: 700,
-            border: '1px solid rgba(255,255,255,0.1)',
-          }}>
-            {t}
-          </span>
-        ))}
       </div>
 
       {/* Add keyframes for spinner */}
