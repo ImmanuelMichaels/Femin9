@@ -47,7 +47,7 @@ export default function Splash() {
             transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)',
           }}
         >
-          <img src="../../public/logo.png" alt="logo" />
+          <img src="./logo.png" alt="logo" />
         </div>
 
 
