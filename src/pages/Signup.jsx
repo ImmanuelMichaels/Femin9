@@ -18,28 +18,28 @@ const GoogleG = () => (
 );
 
 const UserIcon = () => (
-  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#d63a6e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#4108a5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
     <circle cx="12" cy="7" r="4"/>
   </svg>
 );
 
 const MailIcon = () => (
-  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#d63a6e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#4108a5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="4" width="20" height="16" rx="3"/>
     <polyline points="2,4 12,13 22,4"/>
   </svg>
 );
 
 const LockIcon = () => (
-  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#d63a6e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#4108a5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <rect x="5" y="11" width="14" height="10" rx="2"/>
     <path d="M8 11V7a4 4 0 0 1 8 0v4"/>
   </svg>
 );
 
 const EyeIcon = ({ open }) => (
-  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#d63a6e" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#4108a5" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     {open ? (
       <>
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -93,7 +93,7 @@ function SuccessSplash({ name }) {
   return (
     <div className="su-splash">
       <div className="su-splash-ring" />
-      <div className="su-splash-emoji">🌸</div>
+      <div className="su-splash-emoji"></div>
       <p className="su-splash-title">Welcome, {name || 'Mama'}!</p>
       <p className="su-splash-sub">Setting up your journey…</p>
     </div>
@@ -170,14 +170,16 @@ export default function Signup() {
       
       await updateProfile(user, { displayName: name.trim().split(' ')[0] });
       
+      // FIX: Create minimal user doc with NO journey data - just onboarding flag
       await setDoc(doc(db, 'users', user.uid), {
         name: name.trim(),
         email: email,
         createdAt: new Date(),
-        journeyType: 'pregnant',
-        culture: null,
         messageCount: 0,
-        plan: 'free'
+        plan: 'free',
+        onboardingComplete: false  // Explicit flag - onboarding will set to true
+        // REMOVED: journeyType: 'pregnant'
+        // REMOVED: culture: null
       });
       
       const firstName = name.trim().split(' ')[0];
@@ -188,9 +190,10 @@ export default function Signup() {
       setLoading(false);
       setSuccess(true);
       
+      // FIX: Navigate to onboarding, NOT verify-email
       setTimeout(() => {
         setAnimOut(true);
-        setTimeout(() => navigate('/verify-email'), 380);
+        setTimeout(() => navigate('/onboarding'), 380);
       }, 1400);
       
     } catch (error) {
@@ -226,14 +229,17 @@ export default function Signup() {
       const user = result.user;
       
       const userDoc = await getDoc(doc(db, 'users', user.uid));
+      
+      // FIX: Only create user doc if it doesn't exist, with NO journey data
       if (!userDoc.exists()) {
         await setDoc(doc(db, 'users', user.uid), {
           name: user.displayName || user.email.split('@')[0],
           email: user.email,
           createdAt: new Date(),
-          journeyType: 'pregnant',
           messageCount: 0,
-          plan: 'free'
+          plan: 'free',
+          onboardingComplete: false  // Explicit flag
+          // REMOVED: journeyType: 'pregnant'
         });
       }
       
@@ -243,6 +249,7 @@ export default function Signup() {
       setLoading(false);
       setSuccess(true);
       
+      // FIX: Navigate to onboarding (already does - keep as is)
       setTimeout(() => {
         setAnimOut(true);
         setTimeout(() => navigate('/onboarding'), 380);

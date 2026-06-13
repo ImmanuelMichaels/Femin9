@@ -1,314 +1,252 @@
-import { createContext, useState, useEffect, useCallback, useRef } from 'react';
-import { auth, db } from '../context/firebase';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+// src/context/AppContext.jsx
+import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
+import { auth, db } from './firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-export const AppContext = createContext(null);
+// ✅ CORRECT: Export AppContext as a named export
+export const AppContext = createContext();
+
+// ✅ Export the hook for easy consumption
+export function useApp() {
+  const context = useContext(AppContext);
+  if (!context) {
+    throw new Error('useApp must be used within AppProvider');
+  }
+  return context;
+}
 
 export function AppProvider({ children }) {
-  const [journeyType, setJourneyType] = useState(
-    () => localStorage.getItem('userJourney') || null
-  );
-  const [userName, setUserName] = useState(
-    () => localStorage.getItem('userName') || ''
-  );
-  const [culture, setCulture] = useState(
-    () => localStorage.getItem('userCulture') || 'west_central_african'
-  );
+  // Core journey state
+  const [journeyType, setJourneyType] = useState(null);
+  const [culture, setCulture] = useState(null);
+  const [religion, setReligion] = useState(null);
+  const [dietaryPractices, setDietaryPractices] = useState([]);
+  const [hasDietaryPractices, setHasDietaryPractices] = useState(null); // 'yes' | 'no' | null
+  const [userName, setUserName] = useState('');
+  
+  // Pregnancy-specific state
+  const [edd, setEdd] = useState(null);
+  const [babyNumber, setBabyNumber] = useState(null);
+  
+  // Mom-specific state
+  const [babyAgeDays, setBabyAgeDays] = useState(null);
+  const [babyBirthDate, setBabyBirthDate] = useState(null);
+  const [feedingMethod, setFeedingMethod] = useState(null);
+  
+  // Conceive-specific state
+  const [cycleLength, setCycleLength] = useState(null);
+  const [periodLength, setPeriodLength] = useState(null);
+  
+  // IVF-specific state
+  const [treatmentType, setTreatmentType] = useState(null);
+  const [ivfCycleNumber, setIvfCycleNumber] = useState(null);
+  
+  // Menopause-specific state
+  const [menopauseStage, setMenopauseStage] = useState(null);
+  const [menopauseSymptoms, setMenopauseSymptoms] = useState([]);
+  
+  // UI state
   const [showSOS, setShowSOS] = useState(false);
-  const [edd, setEdd] = useState(
-    () => localStorage.getItem('edd') || ''
-  );
-  const [babyAgeDays, setBabyAgeDays] = useState(() => {
-    const saved = localStorage.getItem('babyAgeDays');
-    return saved ? parseInt(saved) : 0;
-  });
-  const [cycleLength, setCycleLength] = useState(() => {
-    const saved = localStorage.getItem('cycleLength');
-    return saved ? parseInt(saved) : 28;
-  });
-  const [periodLength, setPeriodLength] = useState(() => {
-    const saved = localStorage.getItem('periodLength');
-    return saved ? parseInt(saved) : 5;
-  });
-  const [lastPeriodStart, setLastPeriodStart] = useState(
-    () => localStorage.getItem('lastPeriodStart') || ''
-  );
-  const [subscriptionPlan, setSubscriptionPlan] = useState(
-    () => localStorage.getItem('subscriptionPlan') || 'free'
-  );
-  const [notificationsEnabled, setNotificationsEnabled] = useState(
-    () => localStorage.getItem('notificationsEnabled') === 'true'
-  );
-  const [isSyncing, setIsSyncing] = useState(false);
-
-  const [babyNumber, setBabyNumber] = useState(
-    () => localStorage.getItem('babyNumber') || ''
-  );
-  const [babyBirthDate, setBabyBirthDate] = useState(
-    () => localStorage.getItem('babyBirthDate') || ''
-  );
-  const [treatmentType, setTreatmentType] = useState(
-    () => localStorage.getItem('treatmentType') || ''
-  );
-  const [ivfCycleNumber, setIvfCycleNumber] = useState(
-    () => localStorage.getItem('ivfCycleNumber') || ''
-  );
-  const [menopauseStage, setMenopauseStage] = useState(
-    () => localStorage.getItem('menopauseStage') || ''
-  );
-  const [menopauseSymptoms, setMenopauseSymptoms] = useState(() => {
-    try {
-      const saved = localStorage.getItem('menopauseSymptoms');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
-  });
-  const [feedingMethod, setFeedingMethod] = useState(
-    () => localStorage.getItem('feedingMethod') || ''
-  );
-
-  const isSyncingRef = useRef(false);
-
-  // ── localStorage persistence ──────────────────────────────────────────────
-  useEffect(() => {
-    if (journeyType) localStorage.setItem('userJourney', journeyType);
-    else localStorage.removeItem('userJourney');
-  }, [journeyType]);
-  useEffect(() => { localStorage.setItem('userName', userName); }, [userName]);
-  useEffect(() => { localStorage.setItem('userCulture', culture); }, [culture]);
-  useEffect(() => { if (edd) localStorage.setItem('edd', edd); }, [edd]);
-  useEffect(() => { localStorage.setItem('babyAgeDays', babyAgeDays); }, [babyAgeDays]);
-  useEffect(() => { localStorage.setItem('cycleLength', cycleLength); }, [cycleLength]);
-  useEffect(() => { localStorage.setItem('periodLength', periodLength); }, [periodLength]);
-  useEffect(() => { if (lastPeriodStart) localStorage.setItem('lastPeriodStart', lastPeriodStart); }, [lastPeriodStart]);
-  useEffect(() => { localStorage.setItem('subscriptionPlan', subscriptionPlan); }, [subscriptionPlan]);
-  useEffect(() => { localStorage.setItem('notificationsEnabled', notificationsEnabled); }, [notificationsEnabled]);
-  useEffect(() => { if (babyNumber) localStorage.setItem('babyNumber', babyNumber); }, [babyNumber]);
-  useEffect(() => { if (babyBirthDate) localStorage.setItem('babyBirthDate', babyBirthDate); }, [babyBirthDate]);
-  useEffect(() => { if (treatmentType) localStorage.setItem('treatmentType', treatmentType); }, [treatmentType]);
-  useEffect(() => { if (ivfCycleNumber) localStorage.setItem('ivfCycleNumber', ivfCycleNumber); }, [ivfCycleNumber]);
-  useEffect(() => { if (menopauseStage) localStorage.setItem('menopauseStage', menopauseStage); }, [menopauseStage]);
-  useEffect(() => { localStorage.setItem('menopauseSymptoms', JSON.stringify(menopauseSymptoms)); }, [menopauseSymptoms]);
-  useEffect(() => { if (feedingMethod) localStorage.setItem('feedingMethod', feedingMethod); }, [feedingMethod]);
-
-  // ── Firestore sync ────────────────────────────────────────────────────────
-  const syncToFirestore = useCallback(async (data) => {
-    const user = auth.currentUser;
-    if (!user || isSyncingRef.current) return;
-    isSyncingRef.current = true;
-    setIsSyncing(true);
-    try {
-      const userRef = doc(db, 'users', user.uid);
-      await setDoc(userRef, {
-        appData: {
-          ...data,
-          localUpdatedAt: new Date().toISOString(),
-        },
-        lastSync: new Date().toISOString(),
-      }, { merge: true });
-    } catch (err) {
-      console.error('Sync error:', err);
-    } finally {
-      isSyncingRef.current = false;
-      setIsSyncing(false);
-    }
-  }, []);
-
-  const loadFromFirestore = useCallback(async () => {
-    const user = auth.currentUser;
-    if (!user) return null;
-    setIsSyncing(true);
-    try {
-      const userRef = doc(db, 'users', user.uid);
-      const docSnap = await getDoc(userRef);
-      if (!docSnap.exists() || !docSnap.data().appData) return null;
-
-      const data = docSnap.data().appData;
-      const localTs = localStorage.getItem('localUpdatedAt');
-      const firestoreTs = data.localUpdatedAt;
-      const localIsNewer = localTs && firestoreTs && localTs >= firestoreTs;
-
-      if (localIsNewer) {
-        console.info('[AppContext] Local data is newer than Firestore — skipping restore');
-        return null;
-      }
-
-      if (data.journeyType) setJourneyType(data.journeyType);
-      if (data.userName) setUserName(data.userName);
-      if (data.culture) setCulture(data.culture);
-      if (data.edd) setEdd(data.edd);
-      if (data.babyAgeDays) setBabyAgeDays(data.babyAgeDays);
-      if (data.cycleLength) setCycleLength(data.cycleLength);
-      if (data.periodLength) setPeriodLength(data.periodLength);
-      if (data.lastPeriodStart) setLastPeriodStart(data.lastPeriodStart);
-      if (data.subscriptionPlan) setSubscriptionPlan(data.subscriptionPlan);
-      if (data.notificationsEnabled !== undefined) setNotificationsEnabled(data.notificationsEnabled);
-      if (data.babyNumber) setBabyNumber(data.babyNumber);
-      if (data.babyBirthDate) setBabyBirthDate(data.babyBirthDate);
-      if (data.treatmentType) setTreatmentType(data.treatmentType);
-      if (data.ivfCycleNumber) setIvfCycleNumber(data.ivfCycleNumber);
-      if (data.menopauseStage) setMenopauseStage(data.menopauseStage);
-      if (data.menopauseSymptoms) setMenopauseSymptoms(data.menopauseSymptoms);
-      if (data.feedingMethod) setFeedingMethod(data.feedingMethod);
-
-      return data;
-    } catch (err) {
-      console.error('Load error:', err);
-      return null;
-    } finally {
-      setIsSyncing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (user) => {
-      if (user) loadFromFirestore();
-    });
-    return () => unsub();
-  }, [loadFromFirestore]);
-
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const now = new Date().toISOString();
-    localStorage.setItem('localUpdatedAt', now);
-
-    const timeout = setTimeout(() => {
-      syncToFirestore({
-        journeyType, userName, culture, edd, babyAgeDays,
-        cycleLength, periodLength, lastPeriodStart,
-        subscriptionPlan, notificationsEnabled,
-        babyNumber, babyBirthDate, treatmentType,
-        ivfCycleNumber, menopauseStage, menopauseSymptoms, feedingMethod,
-      });
-    }, 1000);
-
-    return () => clearTimeout(timeout);
-  }, [
-    journeyType, userName, culture, edd, babyAgeDays,
-    cycleLength, periodLength, lastPeriodStart,
-    subscriptionPlan, notificationsEnabled, syncToFirestore,
-    babyNumber, babyBirthDate, treatmentType,
-    ivfCycleNumber, menopauseStage, menopauseSymptoms, feedingMethod,
-  ]);
-
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Helper: Get current week based on EDD
   const getCurrentWeek = useCallback(() => {
-    if (journeyType !== 'pregnant') return null;
-    if (edd) {
-      const diffDays = Math.ceil((new Date(edd) - new Date()) / (1000 * 60 * 60 * 24));
-      const weeks = 40 - Math.floor(diffDays / 7);
-      return Math.max(1, Math.min(42, weeks));
-    }
-    return 26;
+    if (journeyType !== 'pregnant' || !edd) return null;
+    
+    const today = new Date();
+    const dueDate = new Date(edd);
+    const diffTime = dueDate - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const weeksAlong = 40 - Math.ceil(diffDays / 7);
+    
+    return Math.min(40, Math.max(0, weeksAlong));
   }, [journeyType, edd]);
-
+  
+  // Helper: Get trimester based on current week
   const getTrimester = useCallback(() => {
     const week = getCurrentWeek();
     if (!week) return null;
-    if (week <= 13) return 1;
+    
+    if (week <= 12) return 1;
     if (week <= 27) return 2;
     return 3;
   }, [getCurrentWeek]);
-
-  const getAiMessageLimit = useCallback(() => {
-    switch (subscriptionPlan) {
-      case 'bloom': return 50;
-      case 'bloom+': return Infinity;
-      default: return 10;
-    }
-  }, [subscriptionPlan]);
-
-  // ✅ FIXED: clearUserData - restored localStorage save logic
-  const clearUserData = useCallback(async () => {
-    // Save items we want to keep BEFORE clearing
-    const userAuth = localStorage.getItem('userAuth');
-    const userConsents = localStorage.getItem('userConsents');
-    
-    // Clear Firestore data first (while still authenticated)
-    const user = auth.currentUser;
-    if (user) {
-      try {
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, { appData: null, lastSync: new Date().toISOString() }, { merge: true });
-      } catch (err) {
-        console.error('Firestore clear error:', err);
+  
+  // Load user data from Firestore
+  const loadUserData = useCallback(async (userId) => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        
+        setJourneyType(data.journeyType || null);
+        setCulture(data.culture || null);
+        setReligion(data.religion || null);
+        setDietaryPractices(data.dietaryPractices || []);
+        setHasDietaryPractices(data.hasDietaryPractices || null);
+        setUserName(data.name || '');
+        
+        setEdd(data.edd || null);
+        setBabyNumber(data.babyNumber || null);
+        setBabyAgeDays(data.babyAgeDays || null);
+        setBabyBirthDate(data.babyBirthDate || null);
+        setFeedingMethod(data.feedingMethod || null);
+        setCycleLength(data.cycleLength || null);
+        setPeriodLength(data.periodLength || null);
+        setTreatmentType(data.treatmentType || null);
+        setIvfCycleNumber(data.ivfCycleNumber || null);
+        setMenopauseStage(data.menopauseStage || null);
+        setMenopauseSymptoms(data.menopauseSymptoms || []);
+        
+        // Save to localStorage for quick access
+        if (data.journeyType) localStorage.setItem('userJourney', data.journeyType);
+        if (data.name) localStorage.setItem('userName', data.name);
       }
+    } catch (error) {
+      console.error('Failed to load user data:', error);
+    } finally {
+      setIsLoading(false);
     }
-    
-    // Reset all states
-    setJourneyType(null);
-    setUserName('');
-    setCulture('west_central_african');
-    setEdd('');
-    setBabyAgeDays(0);
-    setCycleLength(28);
-    setPeriodLength(5);
-    setLastPeriodStart('');
-    setSubscriptionPlan('free');
-    setNotificationsEnabled(false);
-    setBabyNumber('');
-    setBabyBirthDate('');
-    setTreatmentType('');
-    setIvfCycleNumber('');
-    setMenopauseStage('');
-    setMenopauseSymptoms([]);
-    setFeedingMethod('');
-    
-    // Clear localStorage
-    localStorage.clear();
-    
-    // ✅ RESTORE the items we want to keep
-    if (userAuth) localStorage.setItem('userAuth', userAuth);
-    if (userConsents) localStorage.setItem('userConsents', userConsents);
   }, []);
-
-  // ✅ FIXED: logout - proper order and error handling
-  const logout = useCallback(async () => {
+  
+  // Sync to Firestore (debounced)
+  const syncToFirestore = useCallback(async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    
     try {
-      await auth.signOut();
-    } catch (e) {
-      console.error('Sign out error:', e);
-      throw e;
+      const userData = {
+        journeyType,
+        culture,
+        religion,
+        dietaryPractices,
+        hasDietaryPractices,
+        name: userName,
+        edd,
+        babyNumber,
+        babyAgeDays,
+        babyBirthDate,
+        feedingMethod,
+        cycleLength,
+        periodLength,
+        treatmentType,
+        ivfCycleNumber,
+        menopauseStage,
+        menopauseSymptoms,
+        lastUpdated: new Date()
+      };
+      
+      // Remove undefined/null values
+      Object.keys(userData).forEach(key => {
+        if (userData[key] === undefined) delete userData[key];
+      });
+      
+      await setDoc(doc(db, 'users', user.uid), userData, { merge: true });
+    } catch (error) {
+      console.error('Failed to sync to Firestore:', error);
     }
-    try {
-      await clearUserData();
-    } catch (e) {
-      console.error('Clear data error:', e);
-    }
-  }, [clearUserData]);
-
+  }, [
+    journeyType, culture, religion, dietaryPractices, hasDietaryPractices, userName,
+    edd, babyNumber, babyAgeDays, babyBirthDate, feedingMethod,
+    cycleLength, periodLength, treatmentType, ivfCycleNumber,
+    menopauseStage, menopauseSymptoms
+  ]);
+  
+  // Debounced sync (1 second delay)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (auth.currentUser) {
+        syncToFirestore();
+      }
+    }, 1000);
+    
+    return () => clearTimeout(timeoutId);
+  }, [
+    journeyType, culture, religion, dietaryPractices, hasDietaryPractices, userName,
+    edd, babyNumber, babyAgeDays, babyBirthDate, feedingMethod,
+    cycleLength, periodLength, treatmentType, ivfCycleNumber,
+    menopauseStage, menopauseSymptoms, syncToFirestore
+  ]);
+  
+  // Listen to auth state
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        await loadUserData(user.uid);
+      } else {
+        // Reset all state on logout
+        setJourneyType(null);
+        setCulture(null);
+        setReligion(null);
+        setDietaryPractices([]);
+        setHasDietaryPractices(null);
+        setUserName('');
+        setEdd(null);
+        setBabyNumber(null);
+        setBabyAgeDays(null);
+        setBabyBirthDate(null);
+        setFeedingMethod(null);
+        setCycleLength(null);
+        setPeriodLength(null);
+        setTreatmentType(null);
+        setIvfCycleNumber(null);
+        setMenopauseStage(null);
+        setMenopauseSymptoms([]);
+        setIsLoading(false);
+        
+        // Clear localStorage
+        localStorage.removeItem('userJourney');
+        localStorage.removeItem('userName');
+      }
+    });
+    
+    return () => unsubscribe();
+  }, [loadUserData]);
+  
   const value = {
+    // Core
     journeyType, setJourneyType,
-    userName, setUserName,
     culture, setCulture,
-    showSOS, setShowSOS,
+    religion, setReligion,
+    dietaryPractices, setDietaryPractices,
+    hasDietaryPractices, setHasDietaryPractices,
+    userName, setUserName,
+    
+    // Pregnancy
     edd, setEdd,
+    babyNumber, setBabyNumber,
+    currentWeek: getCurrentWeek(),
     getCurrentWeek,
     getTrimester,
+    
+    // Mom
     babyAgeDays, setBabyAgeDays,
+    babyBirthDate, setBabyBirthDate,
+    feedingMethod, setFeedingMethod,
+    
+    // Conceive
     cycleLength, setCycleLength,
     periodLength, setPeriodLength,
-    lastPeriodStart, setLastPeriodStart,
-    subscriptionPlan, setSubscriptionPlan,
-    getAiMessageLimit,
-    notificationsEnabled, setNotificationsEnabled,
-    clearUserData,
-    logout,
-    loadFromFirestore,
-    isSyncing,
-    babyNumber, setBabyNumber,
-    babyBirthDate, setBabyBirthDate,
+    
+    // IVF
     treatmentType, setTreatmentType,
     ivfCycleNumber, setIvfCycleNumber,
+    
+    // Menopause
     menopauseStage, setMenopauseStage,
     menopauseSymptoms, setMenopauseSymptoms,
-    feedingMethod, setFeedingMethod,
+    
+    // UI
+    showSOS, setShowSOS,
+    isLoading
   };
-
+  
   return (
     <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );
 }
+
+// Optional: Also export AppContext as default for convenience
+export default AppContext;

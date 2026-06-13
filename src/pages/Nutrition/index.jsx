@@ -1,9 +1,19 @@
+// src/pages/Nutrition.jsx
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { WCard, SectionTitle, Tag, Pill, IconBox } from '../../components/ui';
 import { useApp } from '../../context/useApp';
+import { isFoodAllowed, parseFoodString, filterAllowedFoods } from '../../utils/dietaryFilters';
 
 export default function Nutrition() {
-  const { journeyType, culture, getCurrentWeek, getTrimester, babyAgeDays, setShowSOS } = useApp();
+  const { 
+    journeyType, 
+    culture, 
+    getCurrentWeek, 
+    getTrimester, 
+    babyAgeDays, 
+    setShowSOS,
+    dietaryPractices
+  } = useApp();
   
   // Safe display values
   const currentWeek = getCurrentWeek();
@@ -241,7 +251,7 @@ export default function Nutrition() {
     return gaps;
   }, [nutritionalInsights, journeyType]);
   
-  // Get meal suggestions based on user's preferences and history
+  // ========== FIX #1 & #2: Declare getMealSuggestions FIRST ==========
   const getMealSuggestions = useCallback(() => {
     if (favoriteFoods.length === 0) {
       return [{
@@ -258,52 +268,147 @@ export default function Nutrition() {
     }));
   }, [favoriteFoods]);
   
-  // Handle craving analysis with REAL context
+  // ========== FIX #1 & #3: Filtered meal suggestions with correct logic ==========
+  const filteredMealSuggestions = useMemo(() => {
+    const suggestions = getMealSuggestions();
+    if (!suggestions.length) return [];
+    
+    return suggestions.filter(suggestion => {
+      const match = suggestion.name.match(/Try (.+?) with/);
+      if (match) {
+        const suggestedFood = match[1].toLowerCase();
+        const foodParts = suggestedFood.split(' ');
+        
+        // ALL parts must be allowed - use .every(), not .some()
+        const isAllowed = isFoodAllowed(suggestedFood, dietaryPractices) &&
+                         foodParts.every(part => isFoodAllowed(part, dietaryPractices));
+        return isAllowed;
+      }
+      return true; // Keep non-food suggestions
+    });
+  }, [getMealSuggestions, dietaryPractices]);
+  
+  // ========== FIX #6: Filtered nutritional gaps with proper handling ==========
+  const filteredNutritionalGaps = useMemo(() => {
+    const gaps = nutritionalGaps;
+    if (!gaps.length) return [];
+    
+    return gaps.map(gap => {
+      const foods = parseFoodString(gap.foods);
+      const allowedFoods = filterAllowedFoods(foods, dietaryPractices);
+      
+      if (allowedFoods.length === 0) {
+        return {
+          ...gap,
+          foods: "Ask your healthcare provider for alternatives that fit your diet",
+          hasRestrictions: true,
+          noAllowedFoods: true
+        };
+      }
+      
+      return {
+        ...gap,
+        foods: allowedFoods.join(', '),
+        hasRestrictions: foods.length !== allowedFoods.length,
+        noAllowedFoods: false
+      };
+    });
+    // FIX #5: Removed dead .filter(gap => gap !== null)
+  }, [nutritionalGaps, dietaryPractices]);
+  
+  // ========== FIX #7: Craving analysis with noAllowedFoods propagation ==========
   const analyseCraving = useCallback(() => {
     if (!craving.trim()) return;
     
-    const matchingGap = nutritionalGaps.find(gap => 
+    const matchingGap = filteredNutritionalGaps.find(gap => 
       craving.toLowerCase().includes(gap.nutrient.toLowerCase())
     );
     
+    let result;
+    
     if (matchingGap) {
-      setCravingResult({
+      result = {
         deficiency: `You might need more ${matchingGap.nutrient}`,
         food: matchingGap.foods,
         urgent: matchingGap.nutrient === "Iron" && matchingGap.current < 15,
-        basedOnData: true
-      });
+        basedOnData: true,
+        hasRestrictions: matchingGap.hasRestrictions,
+        noAllowedFoods: matchingGap.noAllowedFoods || false
+      };
     } else if (nutritionalInsights && nutritionalInsights.daysTracked < 3) {
-      setCravingResult({
+      result = {
         deficiency: "Not enough data yet",
         food: "Log more meals to see personalized insights",
         urgent: false,
-        basedOnData: false
-      });
+        basedOnData: false,
+        hasRestrictions: false,
+        noAllowedFoods: false
+      };
     } else {
-      setCravingResult({
+      result = {
         deficiency: "No clear deficiency detected",
         food: "Your cravings might be emotional or habitual",
         urgent: false,
-        basedOnData: true
-      });
+        basedOnData: true,
+        hasRestrictions: false,
+        noAllowedFoods: false
+      };
     }
     
-    if (cravingResult?.urgent && setShowSOS) {
+    setCravingResult(result);
+    if (result.urgent && setShowSOS) {
       setShowSOS(true);
     }
-  }, [craving, nutritionalGaps, nutritionalInsights, cravingResult, setShowSOS]);
+  }, [craving, filteredNutritionalGaps, nutritionalInsights, setShowSOS]);
+  
+  // ========== Helper for alternative foods with better keyword matching ==========
+  const getAlternativeFoods = useCallback((originalFood, practices) => {
+    const alternatives = {
+      beef: ["lentils", "mushrooms", "beans", "tofu", "tempeh"],
+      pork: ["chicken", "turkey", "tofu", "tempeh", "beans", "lentils"],
+      chicken: ["tofu", "tempeh", "beans", "lentils", "mushrooms", "seitan"],
+      fish: ["tofu", "beans", "lentils", "chickpeas", "nuts", "seeds", "tempeh"],
+      milk: ["soy milk", "oat milk", "almond milk", "coconut milk", "fortified alternatives"],
+      cheese: ["nutritional yeast", "vegan cheese", "tofu-based alternatives", "cashew cheese"],
+      eggs: ["tofu scramble", "mashed bananas (baking)", "flax eggs", "chickpea flour", "aquafaba"],
+    };
+    
+    const originalKey = Object.keys(alternatives).find(key => {
+      const words = originalFood.toLowerCase().split(/\s+/);
+      return words.includes(key) || 
+             (originalFood.toLowerCase().includes(key) && 
+              !originalFood.toLowerCase().includes(`no ${key}`) && 
+              !originalFood.toLowerCase().includes(`${key}-free`));
+    });
+    
+    if (originalKey && alternatives[originalKey]) {
+      const allowed = filterAllowedFoods(alternatives[originalKey], practices);
+      return allowed.length > 0 ? allowed.join(', ') : "beans, lentils, tofu, nuts, seeds, or vegetables";
+    }
+    
+    return "beans, lentils, tofu, nuts, seeds, or vegetables";
+  }, []);
   
   // Handle meal swap with REAL persistence
   const handleSwapMeal = useCallback((mealItem) => {
     setSelectedMealItem(mealItem);
+    
+    // Generate alternatives based on dietary practices
+    let alternativeName = `Alternative to ${mealItem.name}`;
+    let alternativePrep = "Try a different preparation method";
+    
+    if (!isFoodAllowed(mealItem.name, dietaryPractices)) {
+      alternativeName = `${mealItem.name} not suitable for your dietary preferences`;
+      alternativePrep = `Based on your preferences (${dietaryPractices.join(', ')}), here are some alternatives: ${getAlternativeFoods(mealItem.name, dietaryPractices)}`;
+    }
+    
     setSwapOption({
-      name: `Alternative to ${mealItem.name}`,
+      name: alternativeName,
       nutrients: "Based on your preferences",
-      prep: "Try a different preparation method"
+      prep: alternativePrep
     });
     setShowSwapModal(true);
-  }, []);
+  }, [dietaryPractices, getAlternativeFoods]);
   
   // Apply swap to REAL data
   const handleApplySwap = useCallback(() => {
@@ -389,6 +494,18 @@ export default function Nutrition() {
     <div className="page-pad">
       <SectionTitle title="🥗 Nutrition" subtitle="Personalized from your tracked data" />
 
+      {/* Show dietary practices summary if any */}
+      {dietaryPractices && dietaryPractices.length > 0 && (
+        <WCard style={{ marginBottom: "var(--gap-md)", background: "var(--lvl)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-sm)", flexWrap: "wrap" }}>
+            <span style={{ fontWeight: 600, fontSize: "var(--fs-sm)" }}>Your dietary preferences:</span>
+            {dietaryPractices.map(practice => (
+              <Tag key={practice} label={practice} bg="var(--warm)" tc="var(--dp)" />
+            ))}
+          </div>
+        </WCard>
+      )}
+
       {/* Real Data Summary */}
       {nutritionalInsights && nutritionalInsights.daysTracked > 0 ? (
         <WCard style={{ marginBottom: "var(--gap-md)", background: "var(--lvl)" }}>
@@ -419,23 +536,33 @@ export default function Nutrition() {
         </WCard>
       )}
 
-      {/* Nutritional Gaps - Based on REAL data */}
-      {nutritionalGaps.length > 0 && (
+      {/* Nutritional Gaps - NOW FILTERED */}
+      {filteredNutritionalGaps.length > 0 && (
         <WCard style={{ marginBottom: "var(--gap-md)", background: "var(--warm)", border: "1px solid var(--border2)" }}>
           <p style={{ fontWeight: 800, marginBottom: "var(--sp-2)" }}>⚠️ Nutritional Gaps Detected</p>
-          {nutritionalGaps.map((gap, i) => (
+          {filteredNutritionalGaps.map((gap, i) => (
             <div key={i} style={{ marginBottom: "var(--sp-3)" }}>
               <p style={{ fontWeight: 700, fontSize: "var(--fs-sm)" }}>
                 Low {gap.nutrient}: {gap.current}/{gap.target} {gap.unit}
               </p>
               <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>{gap.message}</p>
               <Tag label={`Eat: ${gap.foods}`} bg="var(--sgl)" tc="var(--sg)" />
+              {gap.noAllowedFoods && (
+                <p style={{ fontSize: "var(--fs-2xs)", color: "var(--rd)", marginTop: "var(--sp-1)" }}>
+                  ⚠️ Your dietary preferences limit standard recommendations. Please consult a healthcare provider.
+                </p>
+              )}
+              {gap.hasRestrictions && !gap.noAllowedFoods && (
+                <p style={{ fontSize: "var(--fs-2xs)", color: "var(--mt)", marginTop: "var(--sp-1)" }}>
+                  ✨ Some foods filtered to match your dietary preferences
+                </p>
+              )}
             </div>
           ))}
         </WCard>
       )}
 
-      {/* FIX: Date selector with live sync */}
+      {/* Date selector */}
       <SectionTitle title={`📅 ${formatDisplayDate(selectedDate)}`} />
       
       {/* Date navigation controls */}
@@ -570,12 +697,12 @@ export default function Nutrition() {
         </WCard>
       )}
 
-      {/* AI Suggestions Based on REAL Data */}
-      {favoriteFoods.length > 0 && (
+      {/* AI Suggestions Based on REAL Data - NOW FILTERED */}
+      {filteredMealSuggestions.length > 0 && (
         <>
           <SectionTitle title="💡 Based on Your Eating Patterns" />
           <div style={{ display: "flex", gap: "var(--gap-md)", overflowX: "auto", paddingBottom: "var(--sp-2)" }}>
-            {getMealSuggestions().map((suggestion, i) => (
+            {filteredMealSuggestions.map((suggestion, i) => (
               <WCard key={i} style={{ minWidth: 200, flexShrink: 0 }}>
                 <p style={{ fontWeight: 800, fontSize: "var(--fs-sm)" }}>{suggestion.name}</p>
                 <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", marginTop: "var(--sp-1)" }}>
@@ -625,7 +752,13 @@ export default function Nutrition() {
           <div style={{ marginTop: "var(--sp-3)", padding: "var(--sp-3)", background: "var(--lvl)", borderRadius: "var(--r)" }}>
             <p style={{ fontWeight: 700 }}>{cravingResult.deficiency}</p>
             <p style={{ fontSize: "var(--fs-sm)" }}>💡 {cravingResult.food}</p>
-            {cravingResult.basedOnData && (
+            {cravingResult.noAllowedFoods && (
+              <Tag label="⚠️ Consult a healthcare provider - standard options limited by your diet" bg="var(--rdl)" tc="var(--rd)" />
+            )}
+            {cravingResult.hasRestrictions && !cravingResult.noAllowedFoods && (
+              <Tag label="✨ Filtered to match your preferences" bg="var(--sgl)" tc="var(--sg)" />
+            )}
+            {cravingResult.basedOnData && !cravingResult.hasRestrictions && !cravingResult.noAllowedFoods && (
               <Tag label="Based on your data" bg="var(--sgl)" tc="var(--sg)" />
             )}
           </div>

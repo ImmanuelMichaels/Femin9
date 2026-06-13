@@ -1,6 +1,9 @@
+// src/pages/Onboarding.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/useApp';
+import { auth, db } from '../context/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import './Onboarding.css';
 
 /* ── per-card config ── */
@@ -76,6 +79,23 @@ const CULTURES = [
   { id: 'prefer_not', label: 'Prefer not to say', emoji: '🤐', flag: '' }
 ];
 
+// Religion options - for cultural context only, no dietary assumptions
+const RELIGIONS = [
+  { id: 'christianity', label: 'Christianity' },
+  { id: 'islam', label: 'Islam' },
+  { id: 'hinduism', label: 'Hinduism' },
+  { id: 'judaism', label: 'Judaism' },
+  { id: 'buddhism', label: 'Buddhism' },
+  { id: 'traditional_african', label: 'Traditional African Religion' },
+  { id: 'other', label: 'Other' },
+  { id: 'prefer_not', label: 'Prefer not to say' }
+];
+
+// Dietary practices options
+const DIETARY_PRACTICES = [
+  'Halal', 'Kosher', 'No pork', 'No beef', 'Vegetarian', 'Vegan', 'No alcohol', 'Other'
+];
+
 // Personalisation questions based on journey
 const getPersonalisationQuestions = (journeyType) => {
   const questions = {
@@ -145,30 +165,6 @@ const ShieldIcon = () => (
   </svg>
 );
 
-const Logo = () => (
-  <svg width="26" height="26" viewBox="0 0 32 32" fill="none">
-    <path
-      d="M16 4c-3 0-7 3-7 8s7 12 7 12 7-7 7-12-4-8-7-8z"
-      fill="#c46db0"
-      opacity="0.9"
-    />
-    <path
-      d="M10 12c-2-1.5-5 0-5 4s3 6 5 7"
-      stroke="#c46db0"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      fill="none"
-    />
-    <path
-      d="M22 12c2-1.5 5 0 5 4s-3 6-5 7"
-      stroke="#c46db0"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      fill="none"
-    />
-  </svg>
-);
-
 // Step indicator
 const StepIndicator = ({ currentStep, totalSteps }) => (
   <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 24 }}>
@@ -179,7 +175,7 @@ const StepIndicator = ({ currentStep, totalSteps }) => (
           width: i === currentStep ? 24 : 8,
           height: 8,
           borderRadius: 4,
-          background: i === currentStep ? 'var(--t)' : 'var(--border)',
+          background: i === currentStep ? '#4108a5' : 'var(--border)',
           transition: 'all 0.3s'
         }}
       />
@@ -203,7 +199,10 @@ export default function Onboarding() {
     setBabyBirthDate,
     setMenopauseStage,
     setMenopauseSymptoms,
-    setFeedingMethod
+    setFeedingMethod,
+    setReligion,
+    setDietaryPractices: setDietaryPracticesGlobal,
+    setHasDietaryPractices: setHasDietaryPracticesGlobal
   } = useApp();
   const navigate = useNavigate();
   
@@ -216,6 +215,11 @@ export default function Onboarding() {
   const [userName, setLocalName] = useState('');
   const [clickedCard, setClickedCard] = useState(null);
   const [error, setError] = useState(null);
+  
+  // Religion and dietary practices state
+  const [religion, setLocalReligion] = useState('');
+  const [hasDietaryPractices, setHasDietaryPractices] = useState(null); // 'yes' | 'no' | null
+  const [dietaryPractices, setDietaryPractices] = useState([]);
   
   const personalisationQuestions = selectedJourney 
     ? getPersonalisationQuestions(selectedJourney) 
@@ -257,10 +261,23 @@ export default function Onboarding() {
     setError(null);
     
     try {
+      // Get current user
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('No authenticated user found. Please sign up first.');
+      }
+      
       // Save all data to context
       setJourneyType(selectedJourney);
       setCulture(selectedCulture);
       if (userName) setUserName(userName);
+      
+      // Save religion and dietary practices
+      if (religion) setReligion(religion);
+      if (hasDietaryPractices) setHasDietaryPracticesGlobal(hasDietaryPractices);
+      if (hasDietaryPractices === 'yes' && dietaryPractices.length > 0) {
+        setDietaryPracticesGlobal(dietaryPractices);
+      }
       
       // Journey-specific data
       if (selectedJourney === 'pregnant') {
@@ -294,17 +311,31 @@ export default function Onboarding() {
         if (personalisation.symptoms) setMenopauseSymptoms(personalisation.symptoms);
       }
       
+      // === CRITICAL FIX: Save to Firestore with onboardingComplete flag ===
+      await setDoc(doc(db, 'users', user.uid), {
+        name: userName.trim(),
+        email: user.email,
+        journeyType: selectedJourney,
+        culture: selectedCulture,
+        religion: religion || null,
+        hasDietaryPractices: hasDietaryPractices,
+        dietaryPractices: hasDietaryPractices === 'yes' ? dietaryPractices : [],
+        onboardingComplete: true,  // MARK ONBOARDING AS COMPLETE
+        updatedAt: new Date(),
+        // Preserve existing fields
+        messageCount: 0,
+        plan: 'free'
+      }, { merge: true });  // Use merge to preserve any existing fields
+      
       // Save journey to localStorage
       localStorage.setItem('userJourney', selectedJourney);
-      
-      // Check existing session and navigate accordingly
-      const hasConsents = localStorage.getItem('userConsents');
-      const isLoggedIn = localStorage.getItem('userAuth');
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
+      localStorage.setItem('userName', userName.trim());
       
       setLoading(false);
+      
+      // Navigate based on consent status
+      const hasConsents = localStorage.getItem('userConsents');
+      const isLoggedIn = localStorage.getItem('userAuth');
       
       if (hasConsents && isLoggedIn) {
         navigate(`/app/${selectedJourney}`);
@@ -315,7 +346,7 @@ export default function Onboarding() {
       }
     } catch (err) {
       console.error('Onboarding complete error:', err);
-      setError('Something went wrong. Please check your connection and try again.');
+      setError(err.message || 'Something went wrong. Please check your connection and try again.');
       setLoading(false);
     }
   };
@@ -383,7 +414,7 @@ export default function Onboarding() {
           gap: 4
         }}
       >
-        ← Back
+        {'<'} Back
       </button>
       
       <h1 className="ob-heading" style={{ fontSize: 'var(--fs-2xl)' }}>
@@ -404,8 +435,8 @@ export default function Onboarding() {
               gap: 16,
               padding: '16px 20px',
               borderRadius: 'var(--r)',
-              background: selectedCulture === culture.id ? 'var(--sgl)' : 'var(--card)',
-              border: selectedCulture === culture.id ? `2px solid var(--sg)` : '1px solid var(--border)',
+              background: selectedCulture === culture.id ? 'rgb(154 61 222 / 11%)' : 'var(--card)',
+              border: selectedCulture === culture.id ? `2px solid #9a3dde` : '1px solid var(--border)',
               cursor: 'pointer',
               width: '100%',
               textAlign: 'left'
@@ -439,7 +470,7 @@ export default function Onboarding() {
         style={{
           width: '100%',
           padding: 'var(--sp-4)',
-          background: 'var(--dp)',
+          background: '#4108a5',
           color: '#fff',
           border: 'none',
           borderRadius: 'var(--r)',
@@ -450,7 +481,7 @@ export default function Onboarding() {
           minHeight: 'var(--touch)'
         }}
       >
-        Continue →
+        Continue {'>'}
       </button>
     </div>
   );
@@ -472,7 +503,7 @@ export default function Onboarding() {
           gap: 4
         }}
       >
-        ← Back
+        {'<'} Back
       </button>
       
       <h1 className="ob-heading" style={{ fontSize: 'var(--fs-2xl)' }}>
@@ -486,7 +517,7 @@ export default function Onboarding() {
       {error && (
         <div style={{
           background: 'var(--rdl)',
-          color: 'var(--rd)',
+          color: '#4108a5',
           padding: 'var(--sp-3)',
           borderRadius: 'var(--r)',
           marginBottom: 24,
@@ -516,6 +547,97 @@ export default function Onboarding() {
             background: 'var(--bg)'
           }}
         />
+      </div>
+
+      {/* Religion - optional, for cultural context only */}
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--dp)', display: 'block', marginBottom: 8 }}>
+          What is your religion? (Optional)
+        </label>
+        <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', marginBottom: 8 }}>
+          This helps us provide culturally relevant health information and nutrition guidance. We will not make assumptions about your beliefs or dietary practices.
+        </p>
+        <select
+          value={religion}
+          onChange={(e) => setLocalReligion(e.target.value)}
+          style={{
+            width: '100%',
+            padding: 'var(--sp-3)',
+            borderRadius: 'var(--r)',
+            border: '1px solid var(--border)',
+            fontSize: 'var(--fs-base)',
+            background: 'var(--bg)'
+          }}
+        >
+          <option value="">Select one</option>
+          {RELIGIONS.map(r => (
+            <option key={r.id} value={r.id}>{r.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Dietary practices follow-up */}
+      <div style={{ marginBottom: 24 }}>
+        <label style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--dp)', display: 'block', marginBottom: 8 }}>
+          Do any religious or cultural practices influence the foods you eat?
+        </label>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {['yes', 'no'].map(opt => (
+            <button
+              key={opt}
+              onClick={() => {
+                setHasDietaryPractices(opt);
+                if (opt === 'no') setDietaryPractices([]);
+              }}
+              style={{
+                padding: '8px 20px',
+                borderRadius: 30,
+                background: hasDietaryPractices === opt ? '#4108a5' : 'var(--warm)',
+                color: hasDietaryPractices === opt ? '#fff' : 'var(--md)',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 'var(--fs-sm)',
+                textTransform: 'capitalize'
+              }}
+            >
+              {opt}
+            </button>
+          ))}
+        </div>
+
+        {hasDietaryPractices === 'yes' && (
+          <div style={{ marginTop: 16 }}>
+            <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', marginBottom: 8 }}>
+              Select any dietary practices that apply to you
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {DIETARY_PRACTICES.map(practice => {
+                const selected = dietaryPractices.includes(practice);
+                return (
+                  <button
+                    key={practice}
+                    onClick={() => {
+                      setDietaryPractices(prev =>
+                        selected ? prev.filter(p => p !== practice) : [...prev, practice]
+                      );
+                    }}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 30,
+                      background: selected ? '#4108a5' : 'var(--warm)',
+                      color: selected ? '#fff' : 'var(--md)',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: 'var(--fs-sm)'
+                    }}
+                  >
+                    {practice}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
       
       {/* Journey-specific questions */}
@@ -598,7 +720,7 @@ export default function Onboarding() {
                     style={{
                       padding: '8px 16px',
                       borderRadius: 30,
-                      background: selected ? 'var(--t)' : 'var(--warm)',
+                      background: selected ? '#4108a5' : 'var(--warm)',
                       color: selected ? '#fff' : 'var(--md)',
                       border: 'none',
                       cursor: 'pointer',
@@ -620,7 +742,7 @@ export default function Onboarding() {
         style={{
           width: '100%',
           padding: 'var(--sp-4)',
-          background: 'var(--dp)',
+          background: '#4108a5',
           color: '#fff',
           border: 'none',
           borderRadius: 'var(--r)',
@@ -636,7 +758,7 @@ export default function Onboarding() {
           gap: 12
         }}
       >
-        {loading ? <Spinner /> : 'Continue →'}
+        {loading ? <Spinner /> : 'Continue >'}
       </button>
     </div>
   );

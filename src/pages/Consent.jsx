@@ -148,7 +148,6 @@ export default function Consent() {
     <div className="ob-root">
       <div className="ob-logo">
         <ShieldIcon />
-        <span className="ob-logo-text" style={{ marginLeft: 8 }}>Femin9</span>
       </div>
 
       <h1 className="ob-heading" style={{ fontSize: 'var(--fs-2xl)' }}>
@@ -269,7 +268,7 @@ export default function Consent() {
             gap: 12
           }}
         >
-          {loading ? 'Saving...' : 'Continue to Login →'}
+          {loading ? 'Saving...' : 'Continue to Login >'}
         </button>
 
         <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mt)', textAlign: 'center', marginTop: 24 }}>

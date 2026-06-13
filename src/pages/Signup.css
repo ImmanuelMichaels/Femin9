@@ -7,7 +7,7 @@
   align-items: flex-start;
   justify-content: center;
   padding: 28px 16px 48px;
-  background: linear-gradient(155deg, #fff5f8 0%, #fce8f1 45%, #f9e0ee 100%);
+  background: #ffffff;
   font-family: 'Poppins', sans-serif;
   overflow-y: auto;
 }
@@ -20,8 +20,7 @@
   border-radius: 28px;
   padding: 34px 26px 28px;
   box-shadow:
-    0 12px 48px rgba(214, 58, 110, 0.10),
-    0 2px 8px rgba(0, 0, 0, 0.05);
+     0 12px 48px rgb(104 58 214 / 10%), 0 2px 8px rgb(0 0 0 / 5%);
   animation: suCardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -39,13 +38,13 @@
 .su-brand-mark {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, #d63a6e 0%, #e07b9a 100%);
+  background: linear-gradient(135deg, #4108a5 0%, #997be0 100%);
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  box-shadow: 0 6px 20px rgba(214, 58, 110, 0.30);
+  box-shadow: 0 6px 20px rgba(92, 58, 214, 0.3);
   animation: suMarkFloat 3.5s ease-in-out infinite;
 }
 
@@ -111,8 +110,8 @@
 
 .su-social-btn:hover {
   background: #fff5f8;
-  border-color: #d63a6e;
-  box-shadow: 0 2px 12px rgba(214, 58, 110, 0.08);
+  border-color: #4108a5;
+  box-shadow: 0 2px 12px rgba(113, 58, 214, 0.08);
   transform: translateY(-1px);
 }
 
@@ -141,7 +140,7 @@
 .su-divider-text {
   font-size: 10.5px;
   font-weight: 500;
-  color: #c0a0b0;
+  color: #a5a0c0;
   white-space: nowrap;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -163,7 +162,7 @@
 .su-label {
   font-size: 12px;
   font-weight: 600;
-  color: #6b4a5a;
+  color: #534a6b;
   letter-spacing: 0.3px;
   text-transform: uppercase;
 }
@@ -181,15 +180,16 @@
 }
 
 .su-input-wrap--focus {
-  border-color: #d63a6e;
+  border-color: #4108a5;
   background: #ffffff;
-  box-shadow: 0 0 0 3px rgba(214, 58, 110, 0.10);
+  box-shadow: 0 0 0 3px     0 10px 25px rgba(15,23,42,.05),
+    0 4px 12px rgba(15,23,42,.04);
 }
 
 .su-input-wrap--error {
-  border-color: #f43f5e;
+  border-color: #4108a5;
   background: #fff8f9;
-  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.08);
+  box-shadow: 0 0 0 3px rgba(132, 63, 244, 0.08);
 }
 
 .su-input-wrap--valid {
@@ -218,7 +218,7 @@
 }
 
 .su-input::placeholder {
-  color: #c4a8b4;
+  color: #b0a8c4;
 }
 
 .su-eye {
@@ -248,7 +248,7 @@
 /* Error text */
 .su-error {
   font-size: 11.5px;
-  color: #f43f5e;
+  color: #4108a5;
   font-weight: 500;
   padding-left: 2px;
   animation: suShake 0.3s ease;
@@ -306,7 +306,7 @@
   align-items: center;
   gap: 8px;
   font-size: 11.5px;
-  color: #c0a0b0;
+  color: #aaa0c0;
   transition: color 0.2s;
 }
 
@@ -335,7 +335,7 @@
 .su-checkbox {
   width: 20px;
   height: 20px;
-  border: 1.5px solid #e0c0cc;
+  border: 1.5px solid #c5c0e0;
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -349,17 +349,17 @@
 }
 
 .su-checkbox:hover {
-  border-color: #d63a6e;
+  border-color: #4108a5;
 }
 
 .su-checkbox--checked {
-  background: #d63a6e;
-  border-color: #d63a6e;
+  background: #4108a5;
+  border-color: #4108a5;
 }
 
 .su-terms-text {
   font-size: 12px;
-  color: #9a7a88;
+  color: #887a9a;
   line-height: 1.55;
 }
 
@@ -368,7 +368,7 @@
   border: none;
   font-size: 12px;
   font-family: 'Poppins', sans-serif;
-  color: #d63a6e;
+  color: #4108a5;
   font-weight: 600;
   cursor: pointer;
   padding: 0;
@@ -380,8 +380,8 @@
 .su-submit {
   height: 52px;
   width: 100%;
-  background: linear-gradient(135deg, #d63a6e 0%, #c0306090 100%);
-  background: #d63a6e;
+  background: linear-gradient(135deg, #4108a5 0%, #6230c090 100%);
+  background: #4108a5;
   border: none;
   border-radius: 14px;
   font-size: 15px;
@@ -395,23 +395,23 @@
   gap: 8px;
   transition: all 0.22s ease;
   margin-top: 4px;
-  box-shadow: 0 6px 20px rgba(214, 58, 110, 0.30);
+  box-shadow: 0 6px 20px rgba(92, 58, 214, 0.3);
   letter-spacing: 0.2px;
 }
 
 .su-submit:hover:not(.su-submit--dim) {
-  background: #bf3060;
+  background: #5630bf;
   transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(214, 58, 110, 0.38);
+  box-shadow: 0 10px 28px rgba(105, 58, 214, 0.38);
 }
 
 .su-submit:active:not(.su-submit--dim) {
   transform: translateY(0);
-  box-shadow: 0 4px 14px rgba(214, 58, 110, 0.25);
+  box-shadow: 0 4px 14px rgba(92, 58, 214, 0.25);
 }
 
 .su-submit--dim {
-  background: #e8b4c8;
+  background: #bfb4e8;
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -444,7 +444,7 @@
 .su-footer {
   text-align: center;
   font-size: 13px;
-  color: #9a7a88;
+  color: #7f7a9a;
   margin-top: 20px;
 }
 
@@ -453,7 +453,7 @@
   border: none;
   font-size: 13px;
   font-weight: 700;
-  color: #d63a6e;
+  color: #4108a5;
   font-family: 'Poppins', sans-serif;
   cursor: pointer;
   padding: 0;
@@ -471,7 +471,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(155deg, #fff5f8 0%, #fce8f1 50%, #f9e0ee 100%);
+  background: linear-gradient(155deg, #fff5f8 0%, #ece8fc 50%, #e5e0f9 100%);
   font-family: 'Poppins', sans-serif;
   animation: suSplashIn 0.4s ease;
   text-align: center;
@@ -487,7 +487,7 @@
   width: 96px;
   height: 96px;
   border-radius: 50%;
-  border: 3px solid #d63a6e;
+  border: 3px solid #643ad6;
   margin: 0 auto 0;
   animation: suRingPulse 1.2s ease-out infinite;
   position: absolute;
@@ -520,6 +520,6 @@
 
 .su-splash-sub {
   font-size: 14px;
-  color: #9a7a88;
+  color: #7f7a9a;
   margin: 0;
 }

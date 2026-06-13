@@ -187,7 +187,7 @@ export default function Health() {
           onClick={() => { setScanResult(null); setView('menu'); setSelectedDrug(''); stopCam(); }}
           style={{ background: 'none', border: 'none', color: 'var(--t)', fontWeight: 800, fontSize: 'var(--fs-md)', marginBottom: 'var(--sp-4)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
         >
-          ← Back to Health Tools
+          {'<'} Back
         </button>
 
         {scanResult.type === 'drug' && (
