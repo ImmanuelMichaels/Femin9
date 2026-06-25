@@ -9,7 +9,7 @@ import Consent from './pages/Consent';
 import Signup from './pages/Signup';
 import Login from './pages/Login';
 import VerifyEmail from './pages/VerifyEmail';
-import JourneySelect from './pages/JourneySelect';
+import JourneySelect from './pages/Journeyselect';
 import AppShell from './pages/AppShell';
 import { AppProvider } from './context/AppContext';
 import { useApp } from './context/useApp';

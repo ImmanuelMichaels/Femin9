@@ -1,7 +1,7 @@
 // WeightLogging.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/useApp';
-import { lsGet, lsSet, lsAppend } from '../../utils/storage';
+import { lsGet, lsSet, lsAppend } from '../utils/storage';
 import './WeightLogging.css';
 
 export default function WeightLogging() {
