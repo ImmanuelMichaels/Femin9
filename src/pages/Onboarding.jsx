@@ -436,7 +436,7 @@ export default function Onboarding() {
 
   const renderAuthGate = () => (
     <div style={{
-      display: 'flex', justifyContent: 'center', gap: 12,
+      display: 'flex', flexDirection: 'column', gap: '20', justifyContent: 'center', gap: 12,
       marginBottom: 32, padding: '16px',
       background: 'var(--warm)', borderRadius: 'var(--r)',
       border: '1px solid var(--border)',

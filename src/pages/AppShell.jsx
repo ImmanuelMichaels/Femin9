@@ -1,13 +1,15 @@
+// AppShell.jsx
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { useParams, useNavigate } from 'react-router-dom'; // ✅ Add useNavigate
+import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/useApp';
 import Header from '../components/layout/Header';
 import BottomNav from '../components/nav/BottomNav';
 import EmergencyModal from '../components/modals/EmergencyModal';
 import SubscriptionPlans from '../components/SubscriptionPlans';
 import { BLOOM_KB } from '../data/journey';
-import { lsGet, lsSet } from '../utils/storage';
-import EPDSClinicalModal from '../components/modals/EPDSClinicalModal'; // ✅ Import new modal
+import EPDSClinicalModal from '../components/modals/EPDSClinicalModal';
+import { auth, db } from '../context/firebase';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 // ── Lazy loaded pages ────────────────────────────────────────────────────────
 const Home        = lazy(() => import('./Home'));
@@ -66,7 +68,7 @@ const JOURNEY_KEY_MAP = {
   menopause: 'menopause',
 };
 
-// Base tabs available to all journeys - INCLUDING TTC features
+// Base tabs available to all journeys
 const BASE_TABS = new Set([
   'home', 'menu', 'settings', 'insights', 'profile', 
   'chat', 'assistant', 'vitals', 'calendar', 'nutrition', 
@@ -130,37 +132,131 @@ function Spinner() {
 
 export default function AppShell() {
   const { journey } = useParams();
-  const navigate = useNavigate(); // ✅ Added for upgrade navigation
-  const { journeyType, setJourneyType, showSOS, setShowSOS } = useApp();
+  const navigate = useNavigate();
+  const { 
+    journeyType, 
+    setJourneyType,
+    showSOS, 
+    setShowSOS,
+    userId,
+    updateJourneyType,
+    updateUserName,
+    updateCulture,
+    updateDietaryPractices,
+    updateEdd,
+    updateBabyNumber,
+    updateBabyBirthDate,
+    updateCycleLength,
+    updatePeriodLength,
+    updateTreatmentType,
+    updateIvfCycleNumber,
+    updateMenopauseStage,
+    updateMenopauseSymptoms,
+    updateFeedingMethod,
+  } = useApp();
 
   const [showEPDS, setShowEPDS] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
-  const [epdsScore, setEpdsScore] = useState(null); // ✅ New state for score
+  const [epdsScore, setEpdsScore] = useState(null);
+  const [tab, setTabState] = useState('home');
 
-  // Sync URL journey with context + localStorage
+  // ── Sync URL journey with context ──
   useEffect(() => {
     if (journey) {
       const validJourneys = ['pregnant', 'ivf', 'conceive', 'mom', 'menopause'];
       
-      if (validJourneys.includes(journey)) {
-        setJourneyType(journey);
-        localStorage.setItem('userJourney', journey);
+      if (validJourneys.includes(journey) && journey !== journeyType) {
+        updateJourneyType(journey);
       }
     }
-  }, [journey, setJourneyType]);
+  }, [journey, journeyType, updateJourneyType]);
 
+  // ── EPDS Check - Using Firestore ──
+  useEffect(() => {
+    if (journeyType !== 'mom' || !userId) return;
+
+    const checkEPDS = async () => {
+      try {
+        const userRef = doc(db, 'users', userId);
+        const userSnap = await getDoc(userRef);
+        const data = userSnap.data();
+        
+        if (!data) return;
+        
+        const postnatalDay = data.postnatalDay || 0;
+        const epdsScreened = data.epdsScreened || {};
+
+        // Checkpoint windows
+        const checkpoints = [
+          { key: 'week2', from: 14, to: 20 },
+          { key: 'week6', from: 40, to: 50 },
+          { key: 'week12', from: 84, to: 100 },
+        ];
+
+        const checkpoint = checkpoints.find(
+          c => postnatalDay >= c.from && postnatalDay <= c.to && !epdsScreened[c.key]
+        );
+
+        if (checkpoint) {
+          // Small delay before showing EPDS
+          const timer = setTimeout(() => setShowEPDS(true), 1500);
+          return () => clearTimeout(timer);
+        }
+      } catch (error) {
+        console.error('Error checking EPDS:', error);
+      }
+    };
+
+    checkEPDS();
+  }, [journeyType, userId]);
+
+  // ── Handle EPDS Complete ──
+  const handleEPDSComplete = async (score) => {
+    setShowEPDS(false);
+    setEpdsScore(score);
+
+    if (!userId) return;
+
+    try {
+      const userRef = doc(db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+      const data = userSnap.data() || {};
+      const postnatalDay = data.postnatalDay || 0;
+
+      const epdsScreened = data.epdsScreened || {};
+      
+      // Mark the appropriate checkpoint as screened
+      if (postnatalDay >= 14 && postnatalDay <= 20) {
+        epdsScreened.week2 = true;
+      } else if (postnatalDay >= 40 && postnatalDay <= 50) {
+        epdsScreened.week6 = true;
+      } else if (postnatalDay >= 84 && postnatalDay <= 100) {
+        epdsScreened.week12 = true;
+      }
+
+      await setDoc(userRef, { 
+        epdsScreened,
+        epdsScore: score,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    } catch (error) {
+      console.error('Error saving EPDS result:', error);
+    }
+  };
+
+  // ── Get allowed tabs ──
   const journeyKey = JOURNEY_KEY_MAP[journeyType] ?? journeyType;
   const allowed = BLOOM_KB[journeyKey]?.tabs ?? [];
   const blockedTabs = getBlockedTabsForJourney(journeyType);
 
-  // Check if a tab is allowed for current journey
+  // ── Check if tab is allowed ──
   const isTabAllowed = (tabId) => {
     if (BASE_TABS.has(tabId)) return true;
     if (blockedTabs.has(tabId)) return false;
     return allowed.includes(tabId);
   };
 
-  // Get initial tab that is allowed for this journey
+  // ── Get initial tab ──
   const getInitialTab = () => {
     const mappedTab = JOURNEY_TAB_MAP[journeyType] || 'home';
     
@@ -170,52 +266,29 @@ export default function AppShell() {
     return 'home';
   };
 
-  const [tab, setTabState] = useState(getInitialTab);
+  // ── Set initial tab when journey changes ──
+  useEffect(() => {
+    const initialTab = getInitialTab();
+    setTabState(initialTab);
+  }, [journeyType]);
 
+  // ── Tab handlers ──
   const handleSetTab = (id) => {
     if (isTabAllowed(id)) {
       setTabState(id);
     }
   };
 
+  // ── Subscription handlers ──
   const handleUpgrade = () => setShowSubscription(true);
   const handleSubscriptionClose = () => setShowSubscription(false);
-
-  // ✅ NEW EPDS useEffect with checkpoint windows
-  useEffect(() => {
-    if (journeyType !== 'mom') return;
-
-    const postnatalDay = parseInt(lsGet('postnatalDay', 0), 10);
-
-    // Checkpoint windows — open-ended so missing exact day still triggers
-    const checkpoints = [
-      { key: 'epds_screened_week2',  from: 14, to: 20  },
-      { key: 'epds_screened_week6',  from: 40, to: 50  },
-      { key: 'epds_screened_week12', from: 84, to: 100 },
-    ];
-
-    const checkpoint = checkpoints.find(
-      c => postnatalDay >= c.from && postnatalDay <= c.to && !lsGet(c.key, false)
-    );
-
-    if (!checkpoint) return;
-
-    const t = setTimeout(() => setShowEPDS(true), 1500);
-    return () => clearTimeout(t);
-  }, [journeyType]);
-
-  // ✅ NEW handleEPDSComplete with checkpoint marking
-  const handleEPDSComplete = (score) => {
-    setShowEPDS(false);
-    setEpdsScore(score);
-
-    // Mark this checkpoint as screened
-    const postnatalDay = parseInt(lsGet('postnatalDay', 0), 10);
-    if (postnatalDay >= 14 && postnatalDay <= 20)  lsSet('epds_screened_week2',  true);
-    if (postnatalDay >= 40 && postnatalDay <= 50)  lsSet('epds_screened_week6',  true);
-    if (postnatalDay >= 84 && postnatalDay <= 100) lsSet('epds_screened_week12', true);
+  
+  const handleUpgradeSuccess = () => {
+    handleSubscriptionClose();
+    navigate('/app/' + journeyType + '?upgraded=1');
   };
 
+  // ── Render page based on tab ──
   const renderPage = () => {
     if (!isTabAllowed(tab)) {
       return <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
@@ -271,7 +344,7 @@ export default function AppShell() {
       <div className="app-frame fu">
         {showSOS && <EmergencyModal onClose={() => setShowSOS(false)} />}
 
-        {/* ✅ Updated EPDS Questionnaire overlay */}
+        {/* EPDS Questionnaire Overlay */}
         {showEPDS && (
           <div style={{ 
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', 
@@ -289,7 +362,7 @@ export default function AppShell() {
           </div>
         )}
 
-        {/* ✅ New EPDS Clinical Results Modal */}
+        {/* EPDS Clinical Results Modal */}
         {epdsScore !== null && (
           <EPDSClinicalModal
             score={epdsScore}
@@ -297,6 +370,7 @@ export default function AppShell() {
           />
         )}
 
+        {/* Subscription Modal */}
         {showSubscription && (
           <div style={{
             position: 'fixed',
@@ -333,11 +407,7 @@ export default function AppShell() {
             <Suspense fallback={<Spinner />}>
               <SubscriptionPlans 
                 onClose={handleSubscriptionClose} 
-                onUpgrade={() => {
-                  handleSubscriptionClose();
-                  // ✅ Replace alert with navigation
-                  navigate('/app/' + journeyType + '?upgraded=1');
-                }} 
+                onUpgrade={handleUpgradeSuccess} 
               />
             </Suspense>
           </div>
