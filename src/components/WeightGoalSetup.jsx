@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { WCard, SectionTitle } from '../components/ui';
+import { lsGet, lsSet } from '../utils/storage';
 
 export default function WeightGoalSetup({ onComplete, onSkip }) {
   const [startWeight, setStartWeight] = useState('');
@@ -8,17 +9,15 @@ export default function WeightGoalSetup({ onComplete, onSkip }) {
   const [journeyType, setJourneyType] = useState('');
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('journeyType');
-      setJourneyType(saved || '');
-      
-      const goals = JSON.parse(localStorage.getItem('weightGoals') || '{}');
-      if (goals.startWeight) setStartWeight(goals.startWeight);
-      if (goals.targetWeight) setTargetWeight(goals.targetWeight);
-      if (goals.prePregnancyWeight) setPrePregnancyWeight(goals.prePregnancyWeight);
-    } catch (error) {
-      console.error('Failed to load weight goals:', error);
-    }
+    // Load journey type
+    const savedJourney = lsGet('journeyType', '');
+    setJourneyType(savedJourney);
+    
+    // Load weight goals
+    const goals = lsGet('weightGoals', {});
+    if (goals.startWeight) setStartWeight(goals.startWeight);
+    if (goals.targetWeight) setTargetWeight(goals.targetWeight);
+    if (goals.prePregnancyWeight) setPrePregnancyWeight(goals.prePregnancyWeight);
   }, []);
 
   const handleSave = () => {
@@ -29,7 +28,7 @@ export default function WeightGoalSetup({ onComplete, onSkip }) {
       updatedAt: new Date().toISOString()
     };
     
-    localStorage.setItem('weightGoals', JSON.stringify(goals));
+    lsSet('weightGoals', goals);
     window.dispatchEvent(new Event('weightGoalsUpdated'));
     
     if (onComplete) onComplete();

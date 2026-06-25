@@ -6,6 +6,7 @@ import HealthInsightPanel from '../../components/cards/HealthInsightPanel';
 import { DRUGS, DRUG_DB, getDrugByName, TRADITIONAL } from '../../data/drugs';
 import { useApp } from '../../context/useApp';
 import { useHealthData } from '../../hooks/useHealthData';
+import { lsGet, lsSet } from '../../utils/storage';
 
 // ─── Journey-aware scan tool descriptions ────────────────────────────────────
 
@@ -59,10 +60,9 @@ export default function Health() {
   const [isScanning, setIsScanning] = useState(false);
   const [cameraError, setCameraError] = useState(null);
   const [selectedDrug, setSelectedDrug] = useState('');
-  const [searchHistory, setSearchHistory] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('drugSearchHistory') || '[]'); }
-    catch { return []; }
-  });
+  const [searchHistory, setSearchHistory] = useState(() => 
+    lsGet('drugSearchHistory', [])
+  );
 
   const streamRef = useRef(null);
   const intRef    = useRef(null);
@@ -90,8 +90,9 @@ export default function Health() {
 
   useEffect(() => () => stopCam(), [stopCam]);
 
+  // Save search history using safe storage
   useEffect(() => {
-    localStorage.setItem('drugSearchHistory', JSON.stringify(searchHistory.slice(0, 10)));
+    lsSet('drugSearchHistory', searchHistory.slice(0, 10));
   }, [searchHistory]);
 
   const startCamera = async () => {

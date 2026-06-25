@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/useApp';
+import { lsGet, lsSet, lsAppend } from '../../utils/storage';
 
 export default function EmergencyModal({ onClose }) {
   const { userName, journeyType, setShowSOS } = useApp();
@@ -10,27 +11,17 @@ export default function EmergencyModal({ onClose }) {
   const [locationError, setLocationError] = useState(null);
   const [calling, setCalling] = useState(false);
   
-  // Get emergency contacts based on region (default to Nigeria)
+  // UK Emergency Contacts
   const emergencyContacts = {
-    nigeria: {
-      ambulance: { name: "NEMA / Ambulance", number: "112", description: "National Emergency Number" },
-      police: { name: "Nigeria Police", number: "199", description: "Emergency Police Response" },
-      lagos: { name: "LASEMA", number: "767", description: "Lagos State Emergency" },
-      doctor: { name: "Dr. Okonkwo", number: "0803 123 4567", description: "Your Primary Contact" },
-      hospital: { name: "Lagos University Teaching Hospital (LUTH)", number: "01-1234567", description: "Nearest Hospital" },
-      partner: { name: "Emeka (Partner)", number: "0803 123 4568", description: "Emergency Contact" }
-    },
-    uk: {
-      ambulance: { name: "Ambulance", number: "999", description: "Emergency Services" },
-      police: { name: "Police", number: "999", description: "Emergency Police Response" },
-      nhs111: { name: "NHS 111", number: "111", description: "Non-Emergency Medical Advice" },
-      hospital: { name: "Nearest A&E", number: "999", description: "Accident & Emergency" }
-    }
+    ambulance: { name: "Ambulance", number: "999", description: "Life-threatening emergencies" },
+    police: { name: "Police", number: "999", description: "Emergency Police Response" },
+    fire: { name: "Fire Brigade", number: "999", description: "Fire emergencies" },
+    nhs111: { name: "NHS 111", number: "111", description: "Medical advice when it's not an emergency" },
+    samaritans: { name: "Samaritans", number: "116 123", description: "24/7 confidential emotional support" },
+    mentalHealth: { name: "NHS Mental Health Crisis Line", number: "111 (option 2)", description: "24/7 mental health support" },
+    domesticAbuse: { name: "National Domestic Abuse Helpline", number: "0808 2000 247", description: "24/7 confidential support" },
+    hospital: { name: "Nearest A&E", number: "999", description: "Accident & Emergency" }
   };
-  
-  // Get user's region (default to Nigeria)
-  const region = 'nigeria'; // This could be determined by user's location or preference
-  const contacts = emergencyContacts[region];
   
   // Get GPS location
   useEffect(() => {
@@ -67,13 +58,15 @@ export default function EmergencyModal({ onClose }) {
   
   const makeEmergencyCall = () => {
     setCalling(true);
-    const phoneNumber = selectedEmergency === 'ambulance' ? contacts.ambulance.number :
-                        selectedEmergency === 'police' ? contacts.police.number :
-                        selectedEmergency === 'hospital' ? contacts.hospital.number :
-                        contacts.ambulance.number;
+    const phoneNumber = selectedEmergency === 'ambulance' ? emergencyContacts.ambulance.number :
+                        selectedEmergency === 'police' ? emergencyContacts.police.number :
+                        selectedEmergency === 'hospital' ? emergencyContacts.hospital.number :
+                        selectedEmergency === 'mentalHealth' ? emergencyContacts.mentalHealth.number :
+                        emergencyContacts.ambulance.number;
     
     // For web, we can only open tel: link
-    window.location.href = `tel:${phoneNumber.replace(/\s/g, '')}`;
+    const cleanNumber = phoneNumber.replace(/\s/g, '').replace(/\(option.*\)/g, '').trim();
+    window.location.href = `tel:${cleanNumber}`;
     
     setTimeout(() => {
       setCalling(false);
@@ -87,18 +80,13 @@ export default function EmergencyModal({ onClose }) {
     // Start countdown for auto-call
     setCountdown(3);
     
-    // In a real app, you would:
-    // 1. Send SMS to emergency contacts with location
-    // 2. Send push notification to partner app
-    // 3. Alert nearest hospital via API
-    
     // Simulate sending alerts
     console.log(`🚨 EMERGENCY ALERT: ${label}`);
     console.log(`👤 User: ${userName}`);
     console.log(`📍 Location: ${location ? `${location.lat}, ${location.lng}` : 'Unknown'}`);
     console.log(`📱 Journey: ${journeyType}`);
     
-    // Store emergency log
+    // Store emergency log using safe storage
     const emergencyLog = {
       id: Date.now(),
       type: type,
@@ -108,12 +96,13 @@ export default function EmergencyModal({ onClose }) {
       journeyType: journeyType
     };
     
-    const savedLogs = JSON.parse(localStorage.getItem('emergencyLogs') || '[]');
-    localStorage.setItem('emergencyLogs', JSON.stringify([emergencyLog, ...savedLogs]));
+    // Use lsAppend to safely add to emergency logs with cap
+    lsAppend('emergencyLogs', emergencyLog, 50);
   };
   
   const handleCallNow = (number, name) => {
-    window.location.href = `tel:${number.replace(/\s/g, '')}`;
+    const cleanNumber = number.replace(/\s/g, '').replace(/\(option.*\)/g, '').trim();
+    window.location.href = `tel:${cleanNumber}`;
   };
   
   const handleShareLocation = () => {
@@ -138,11 +127,11 @@ export default function EmergencyModal({ onClose }) {
   const emergencyOptions = [
     { icon: "🩸", label: "Heavy Bleeding", type: "ambulance", bg: "var(--rdl)", color: "var(--rd)", urgent: true },
     { icon: "💔", label: "Chest Pain / High BP", type: "ambulance", bg: "var(--rdl)", color: "var(--rd)", urgent: true },
-    { icon: "🤰", label: "Labour Signs", type: "hospital", bg: "var(--gdl)", color: "var(--gd)", urgent: false },
-    { icon: "🧠", label: "Severe Headache", type: "doctor", bg: "var(--gdl)", color: "var(--gd)", urgent: false },
-    { icon: "👶", label: "Baby Not Moving", type: "hospital", bg: "var(--rdl)", color: "var(--rd)", urgent: true },
-    { icon: "🌡️", label: "High Fever", type: "doctor", bg: "var(--gdl)", color: "var(--gd)", urgent: false },
-    { icon: "😰", label: "Mental Health Crisis", type: "police", bg: "var(--lvl)", color: "var(--lv)", urgent: true },
+    { icon: "🤰", label: "Labour Signs", type: "ambulance", bg: "var(--gdl)", color: "var(--gd)", urgent: false },
+    { icon: "🧠", label: "Severe Headache", type: "nhs111", bg: "var(--gdl)", color: "var(--gd)", urgent: false },
+    { icon: "👶", label: "Baby Not Moving", type: "ambulance", bg: "var(--rdl)", color: "var(--rd)", urgent: true },
+    { icon: "🌡️", label: "High Fever", type: "nhs111", bg: "var(--gdl)", color: "var(--gd)", urgent: false },
+    { icon: "😰", label: "Mental Health Crisis", type: "mentalHealth", bg: "var(--lvl)", color: "var(--lv)", urgent: true },
     { icon: "🚗", label: "Accident / Injury", type: "ambulance", bg: "var(--rdl)", color: "var(--rd)", urgent: true }
   ];
   
@@ -189,7 +178,7 @@ export default function EmergencyModal({ onClose }) {
             fontStyle: "italic" 
           }}>Emergency Help</h2>
           <p style={{ fontSize: "var(--fs-sm)", color: "var(--mt)", lineHeight: 1.6 }}>
-            Select your emergency type. We will alert your emergency contacts and nearest hospital with your location.
+            Select your emergency type. We will alert emergency services with your location.
           </p>
         </div>
         
@@ -276,10 +265,10 @@ export default function EmergencyModal({ onClose }) {
               ✅ Emergency Alert Sent
             </p>
             <p style={{ fontSize: "var(--fs-xs)", color: "var(--md)", marginBottom: "var(--sp-1)" }}>
-              📍 GPS location shared with {contacts.partner?.name || "emergency contacts"}
+              📍 GPS location shared with emergency services
             </p>
             <p style={{ fontSize: "var(--fs-xs)", color: "var(--md)", marginBottom: "var(--sp-1)" }}>
-              🏥 Alerting {contacts.hospital.name}
+              🏥 Alerting {emergencyContacts.hospital.name}
             </p>
             {countdown !== null && (
               <p style={{ fontSize: "var(--fs-xs)", color: "var(--rd)", fontWeight: 700 }}>
@@ -294,24 +283,55 @@ export default function EmergencyModal({ onClose }) {
           </div>
         )}
         
-        {/* Direct Call Buttons */}
+        {/* Direct Call Buttons - UK Emergency Numbers */}
         <div style={{ marginBottom: "var(--sp-4)" }}>
           <p style={{ fontSize: "var(--fs-xs)", fontWeight: 700, color: "var(--mt)", marginBottom: "var(--sp-2)" }}>
-            📞 Direct Emergency Numbers
+            📞 UK Emergency Helplines
           </p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: "var(--gap-sm)" }}>
             <button 
-              onClick={() => handleCallNow(contacts.ambulance.number, contacts.ambulance.name)}
-              style={{ background: "var(--rd)", color: "#fff", border: "none", borderRadius: 30, padding: "8px 16px", cursor: "pointer" }}
+              onClick={() => handleCallNow(emergencyContacts.ambulance.number, emergencyContacts.ambulance.name)}
+              style={{ background: "var(--rd)", color: "#fff", border: "none", borderRadius: 30, padding: "8px 16px", cursor: "pointer", fontSize: "var(--fs-xs)" }}
             >
-              🚑 {contacts.ambulance.name}: {contacts.ambulance.number}
+              🚑 999 (Emergency)
             </button>
             <button 
-              onClick={() => handleCallNow(contacts.police.number, contacts.police.name)}
-              style={{ background: "var(--bl)", color: "#fff", border: "none", borderRadius: 30, padding: "8px 16px", cursor: "pointer" }}
+              onClick={() => handleCallNow(emergencyContacts.nhs111.number, emergencyContacts.nhs111.name)}
+              style={{ background: "var(--bll)", color: "var(--bl)", border: "none", borderRadius: 30, padding: "8px 16px", cursor: "pointer", fontSize: "var(--fs-xs)" }}
             >
-              👮 {contacts.police.name}: {contacts.police.number}
+              🏥 111 (NHS)
             </button>
+            <button 
+              onClick={() => handleCallNow(emergencyContacts.samaritans.number, emergencyContacts.samaritans.name)}
+              style={{ background: "var(--gdl)", color: "var(--gd)", border: "none", borderRadius: 30, padding: "8px 16px", cursor: "pointer", fontSize: "var(--fs-xs)" }}
+            >
+              💚 116 123 (Samaritans)
+            </button>
+            <button 
+              onClick={() => handleCallNow(emergencyContacts.domesticAbuse.number, emergencyContacts.domesticAbuse.name)}
+              style={{ background: "var(--rdl)", color: "var(--rd)", border: "none", borderRadius: 30, padding: "8px 16px", cursor: "pointer", fontSize: "var(--fs-xs)" }}
+            >
+              🛡️ DV Helpline
+            </button>
+          </div>
+        </div>
+        
+        {/* Additional UK Support */}
+        <div style={{ 
+          background: "var(--warm)", 
+          borderRadius: "var(--r)", 
+          padding: "var(--sp-3)", 
+          marginBottom: "var(--sp-4)",
+          border: "1px solid var(--border)"
+        }}>
+          <p style={{ fontSize: "var(--fs-xs)", fontWeight: 700, marginBottom: "var(--sp-1)" }}>
+            🇬🇧 Other UK Support
+          </p>
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--mt)", lineHeight: 1.8 }}>
+            <div>• <strong>Mental Health:</strong> NHS 111 (option 2) - 24/7 crisis support</div>
+            <div>• <strong>Shout:</strong> Text "SHOUT" to 85258 (24/7 crisis text line)</div>
+            <div>• <strong>CALM:</strong> 0800 58 58 58 (5pm-midnight, men's mental health)</div>
+            <div>• <strong>Mind Infoline:</strong> 0300 123 3393 (Mon-Fri, 9am-6pm)</div>
           </div>
         </div>
         
@@ -319,11 +339,11 @@ export default function EmergencyModal({ onClose }) {
         <div style={{ display: "flex", gap: "var(--gap-md)" }}>
           {!sent && (
             <button 
-              onClick={() => handleCallNow(contacts.ambulance.number, contacts.ambulance.name)} 
+              onClick={() => handleCallNow(emergencyContacts.ambulance.number, emergencyContacts.ambulance.name)} 
               className="btn-primary"
               style={{ flex: 1, background: "var(--rd)", color: "#fff", border: "none", borderRadius: "var(--r)", padding: "var(--sp-3)", fontWeight: 800, cursor: "pointer" }}
             >
-              📞 Call Emergency Now
+              📞 Call 999 Now
             </button>
           )}
           <button 

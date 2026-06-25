@@ -1,70 +1,120 @@
+/* ============================================
+   INDEX.CSS - Complete Unified Styles
+   ============================================ */
+
+/* ============================================
+   1. FONT IMPORT
+   ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+
+/* ============================================
+   2. ROOT VARIABLES
+   ============================================ */
 :root {
+  /* Brand Colors */
+  --primary: #4108a5;
+  --primary-light: #FCE7F3;
+  --secondary: #7C3AED;
+  --accent: #aa3bff;
+
+  /* Status Colors */
+  --success: #10B981;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --info: #3B82F6;
+
+  /* UI Colors */
+  --bg: #FAFAFC;
+  --surface: #FFFFFF;
+  --text-primary: #1E1B2E;
+  --text-secondary: #6B7280;
   --text: #6b6375;
   --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
+  --border: #F1F5F9;
   --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --warm: #f8f7f4;
+  --mt: #6b7280;
+  --dp: #1e1b2e;
+  --pl: #7c3aed;
+  --pll: #ede9fe;
+  --rd: #ef4444;
+  --sg: #10b981;
+  --t: #7c3aed;
 
+  /* Shadows */
+  --shadow: 0 10px 25px rgba(15,23,42,.05), 0 4px 12px rgba(15,23,42,.04);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.15);
+
+  /* Border Radius */
+  --radius-sm: 12px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
+  --r: 16px;
+  --r2: 20px;
+
+  /* ✅ UNIFIED FONT - Poppins everywhere */
   --sans: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --heading: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --heading: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --mono: ui-monospace, Consolas, 'Courier New', monospace;
 
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --pad-x: 20px;
+
+  /* Gaps */
+  --gap-sm: 8px;
+  --gap-md: 16px;
+  --gap-lg: 24px;
+
+  /* Font Smoothing */
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-/* Force Poppins on all elements - add at the bottom of your CSS file */
-*:not(code):not(pre):not(.mono) {
-  font-family: var(--sans) !important;
-}
-
-/* But allow code blocks to keep monospace */
-code, pre, .mono, .counter {
-  font-family: var(--mono) !important;
-}
-
-/* Apply Poppins to everything */
+/* ============================================
+   3. GLOBAL RESET - FORCE POPPINS EVERYWHERE
+   ============================================ */
 *,
 *::before,
 *::after {
-  font-family: var(--sans);
+  font-family: var(--sans) !important;
   box-sizing: border-box;
-}
-
-/* Specifically for headings if you want DM Sans */
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
-}
-
-/* Body and root styles */
-body {
-  font-family: var(--sans);
-  height: 100%;
-  overflow: hidden;        
   margin: 0;
   padding: 0;
-  background-color: #ccc6d1;
-  font-size: 18px;
-  line-height: 145%;
-  letter-spacing: 0.18px;
-  color: var(--text);
-  background: var(--bg);
 }
 
+/* ============================================
+   4. HTML & BODY
+   ============================================ */
+html {
+  height: 100%;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--sans) !important;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ============================================
+   5. ROOT APP
+   ============================================ */
 #root {
   width: 1126px;
   max-width: 100%;
@@ -75,46 +125,202 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  font-family: var(--sans);
+  font-family: var(--sans) !important;
+  background: var(--surface);
+  position: relative;
 }
 
-/* Ensure all text elements inherit the font */
-p, span, div, button, input, textarea, select, label, 
-a, li, blockquote, small, strong, em, .lg-input-wrap, .lg-input {
-  font-family: var(--sans);
+/* ============================================
+   6. UNIFIED TYPOGRAPHY - ALL TEXT ELEMENTS
+   ============================================ */
+html,
+body,
+div,
+span,
+applet,
+object,
+iframe,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote,
+pre,
+a,
+abbr,
+acronym,
+address,
+big,
+cite,
+code,
+del,
+dfn,
+em,
+img,
+ins,
+kbd,
+q,
+s,
+samp,
+small,
+strike,
+strong,
+sub,
+sup,
+tt,
+var,
+b,
+u,
+i,
+center,
+dl,
+dt,
+dd,
+ol,
+ul,
+li,
+fieldset,
+form,
+label,
+legend,
+table,
+caption,
+tbody,
+tfoot,
+thead,
+tr,
+th,
+td,
+article,
+aside,
+canvas,
+details,
+embed,
+figure,
+figcaption,
+footer,
+header,
+hgroup,
+menu,
+nav,
+output,
+ruby,
+section,
+summary,
+time,
+mark,
+audio,
+video,
+button,
+input,
+textarea,
+select,
+option,
+label,
+a,
+li,
+blockquote,
+small,
+strong,
+em,
+section,
+article,
+main,
+aside,
+nav,
+header,
+footer {
+  font-family: var(--sans) !important;
 }
 
-/* Typography */
+/* ============================================
+   7. HEADINGS - Also Poppins
+   ============================================ */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--sans) !important;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
 h1 {
   font-size: 56px;
   letter-spacing: -1.68px;
   margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  font-weight: 800;
 }
 
 h2 {
-  font-size: 24px;
+  font-size: 32px;
   line-height: 118%;
   letter-spacing: -0.24px;
   margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+  font-weight: 700;
 }
 
+h3 {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+h4 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+h5 {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+h6 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* ============================================
+   8. PARAGRAPHS & TEXT
+   ============================================ */
 p {
   margin: 0;
+  font-family: var(--sans) !important;
+  font-weight: 400;
+  line-height: 1.6;
 }
 
+span, li, label, small, strong, em {
+  font-family: var(--sans) !important;
+}
+
+/* ============================================
+   9. BUTTONS & INPUTS
+   ============================================ */
+button,
+.button,
+input,
+textarea,
+select,
+option {
+  font-family: var(--sans) !important;
+  font-weight: 500;
+}
+
+/* ============================================
+   10. CODE - Keep Monospace
+   ============================================ */
 code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+pre,
+.mono,
+.counter,
+kbd,
+samp,
+tt,
+var {
+  font-family: var(--mono) !important;
 }
 
 code {
@@ -122,30 +328,537 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+  border-radius: 4px;
+  color: var(--text-h);
+  display: inline-flex;
 }
 
-.lg-input-wrap,
-.lg-input {
-  -webkit-appearance: none;   /* cleaner iOS look */
+pre {
+  background: var(--code-bg);
+  padding: var(--sp-4);
+  border-radius: var(--radius-sm);
+  overflow-x: auto;
 }
 
-/* Dark mode */
+/* ============================================
+   11. APP COMPONENTS
+   ============================================ */
+
+/* App Shell */
+.app-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  font-family: var(--sans) !important;
+}
+
+.app-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--sans) !important;
+}
+
+.fu {
+  flex: 1;
+  min-height: 0;
+}
+
+.scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+  min-height: 0;
+  font-family: var(--sans) !important;
+}
+
+.scroll-area::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-area::-webkit-scrollbar-thumb {
+  background: var(--pll, #ede9f7);
+  border-radius: 10px;
+}
+
+/* Page Padding */
+.page-pad {
+  padding: var(--sp-5) var(--pad-x) 100px;
+  text-align: left;
+  font-family: var(--sans) !important;
+}
+
+/* Cards */
+.card,
+.hm-card,
+.WCard {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: var(--sp-5);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  transition: all 0.3s ease;
+  font-family: var(--sans) !important;
+  margin-bottom: var(--sp-4);
+}
+
+.card:hover,
+.hm-card:hover,
+.WCard:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Section Title */
+.SectionTitle {
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--secondary);
+  margin: var(--sp-5) 0 var(--sp-3);
+  font-family: var(--sans) !important;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--sp-5);
+  font-family: var(--sans) !important;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+  font-family: var(--sans) !important;
+}
+
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.greeting {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-family: var(--sans) !important;
+}
+
+.name {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--sans) !important;
+}
+
+/* Feature Grid */
+.featureGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--gap-md);
+}
+
+.featureCard {
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: var(--sp-5);
+  text-align: center;
+  box-shadow: var(--shadow);
+  font-family: var(--sans) !important;
+}
+
+.featureIcon {
+  width: 64px;
+  height: 64px;
+  margin: auto;
+  margin-bottom: var(--sp-4);
+  background: #fdf2f8;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Journey Banner */
+.journeyBanner {
+  background: linear-gradient(135deg, #D63384, #7C3AED);
+  color: white;
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--sans) !important;
+}
+
+/* Bottom Navigation */
+.bottomNav {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(20px);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3);
+  display: flex;
+  justify-content: space-around;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  font-family: var(--sans) !important;
+  z-index: 100;
+}
+
+/* Hero */
+.hero {
+  position: relative;
+}
+
+.hero .base,
+.hero .framework,
+.hero .vite {
+  inset-inline: 0;
+  margin: 0 auto;
+}
+
+.hero .base {
+  width: 170px;
+  position: relative;
+  z-index: 0;
+}
+
+.hero .framework,
+.hero .vite {
+  position: absolute;
+}
+
+.hero .framework {
+  z-index: 1;
+  top: 34px;
+  height: 28px;
+  transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg) scale(1.4);
+}
+
+/* Center */
+#center {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  place-content: center;
+  place-items: center;
+  flex-grow: 1;
+  font-family: var(--sans) !important;
+}
+
+/* Next Steps */
+#next-steps {
+  display: flex;
+  border-top: 1px solid var(--border);
+  text-align: left;
+  font-family: var(--sans) !important;
+}
+
+#next-steps > div {
+  flex: 1 1 0;
+  padding: var(--sp-6);
+}
+
+#next-steps .icon {
+  margin-bottom: var(--sp-4);
+  width: 22px;
+  height: 22px;
+}
+
+#docs {
+  border-right: 1px solid var(--border);
+}
+
+#next-steps ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: var(--gap-sm);
+  margin: var(--sp-6) 0 0;
+  font-family: var(--sans) !important;
+}
+
+#next-steps ul .logo {
+  height: 18px;
+}
+
+#next-steps ul a {
+  color: var(--text-h);
+  font-size: 16px;
+  border-radius: 6px;
+  background: var(--social-bg, rgba(244,243,236,0.5));
+  display: flex;
+  padding: var(--sp-2) var(--sp-3);
+  align-items: center;
+  gap: var(--gap-sm);
+  text-decoration: none;
+  transition: box-shadow 0.3s;
+  font-family: var(--sans) !important;
+}
+
+#next-steps ul a:hover {
+  box-shadow: var(--shadow);
+}
+
+#next-steps ul a .button-icon {
+  height: 18px;
+  width: 18px;
+}
+
+/* Spacer */
+#spacer {
+  height: 88px;
+  border-top: 1px solid var(--border);
+}
+
+/* Ticks */
+.ticks {
+  position: relative;
+  width: 100%;
+}
+
+.ticks::before,
+.ticks::after {
+  content: '';
+  position: absolute;
+  top: -4.5px;
+  border: 5px solid transparent;
+}
+
+.ticks::before {
+  left: 0;
+  border-left-color: var(--border);
+}
+
+.ticks::after {
+  right: 0;
+  border-right-color: var(--border);
+}
+
+/* HM Section */
+.hm-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  align-items: center;
+}
+
+/* ============================================
+   12. UTILITY CLASSES
+   ============================================ */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+.font-medium { font-weight: 500; }
+.font-normal { font-weight: 400; }
+
+.mt-1 { margin-top: var(--sp-2); }
+.mt-2 { margin-top: var(--sp-4); }
+.mt-3 { margin-top: var(--sp-6); }
+.mb-1 { margin-bottom: var(--sp-2); }
+.mb-2 { margin-bottom: var(--sp-4); }
+.mb-3 { margin-bottom: var(--sp-6); }
+
+.p-1 { padding: var(--sp-2); }
+.p-2 { padding: var(--sp-4); }
+.p-3 { padding: var(--sp-6); }
+
+/* ============================================
+   13. ANIMATIONS
+   ============================================ */
+@keyframes sp {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(0.98); }
+}
+
+/* ============================================
+   14. DARK MODE
+   ============================================ */
 @media (prefers-color-scheme: dark) {
   :root {
     --text: #9ca3af;
     --text-h: #f3f4f6;
     --bg: #16171d;
+    --surface: #1f2028;
     --border: #2e303a;
     --code-bg: #1f2028;
+    --text-primary: #f3f4f6;
+    --text-secondary: #9ca3af;
+    --warm: #1a1b23;
+    --mt: #9ca3af;
+    --dp: #f3f4f6;
+    --shadow: 0 10px 25px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25);
+    --shadow-lg: 0 20px 60px rgba(0,0,0,0.5);
     --accent: #c084fc;
     --accent-bg: rgba(192, 132, 252, 0.15);
     --accent-border: rgba(192, 132, 252, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  .card,
+  .hm-card,
+  .WCard {
+    background: var(--surface);
+    border-color: var(--border);
+  }
+
+  .bottomNav {
+    background: rgba(31, 32, 40, 0.9);
+    backdrop-filter: blur(20px);
+  }
+
+  .featureCard {
+    background: var(--surface);
   }
 
   #social .button-icon {
     filter: invert(1) brightness(2);
+  }
+}
+
+/* ============================================
+   15. RESPONSIVE
+   ============================================ */
+@media (max-width: 1024px) {
+  :root {
+    font-size: 16px;
+  }
+
+  #center {
+    padding: var(--sp-6) var(--sp-4) var(--sp-5);
+    gap: 18px;
+  }
+
+  h1 {
+    font-size: 36px;
+    margin: var(--sp-4) 0;
+  }
+
+  h2 {
+    font-size: 24px;
+  }
+
+  #next-steps {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  #docs {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  #next-steps > div {
+    padding: var(--sp-5) var(--sp-4);
+  }
+
+  #next-steps ul {
+    margin-top: var(--sp-4);
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  #next-steps ul li {
+    flex: 1 1 calc(50% - var(--gap-sm));
+  }
+
+  #next-steps ul a {
+    width: 100%;
+    justify-content: center;
+    box-sizing: border-box;
+  }
+
+  #spacer {
+    height: 48px;
+  }
+
+  .featureGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .journeyBanner {
+    flex-direction: column;
+    gap: var(--sp-4);
+    text-align: center;
+  }
+
+  .page-pad {
+    padding: var(--sp-4) var(--sp-3) 80px;
+  }
+}
+
+@media (max-width: 640px) {
+  h1 {
+    font-size: 28px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  body {
+    font-size: 15px;
+  }
+
+  .bottomNav {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    padding: var(--sp-2);
+    border-radius: var(--radius-sm);
+  }
+
+  .name {
+    font-size: 20px;
+  }
+
+  .greeting {
+    font-size: 12px;
+  }
+
+  .featureCard {
+    padding: var(--sp-4);
+  }
+
+  .header {
+    flex-wrap: wrap;
+    gap: var(--sp-3);
+  }
+
+  .card,
+  .hm-card,
+  .WCard {
+    padding: var(--sp-4);
+  }
+
+  .page-pad {
+    padding: var(--sp-3) var(--sp-2) 70px;
   }
 }

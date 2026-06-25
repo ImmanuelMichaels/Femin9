@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { WCard, SectionTitle, Tag } from '../../components/ui';
 import { formatTime } from '../../utils/helpers';
+import { lsGet, lsSet } from '../../utils/storage';
 
 const STORAGE_KEY = 'kickHistory';
 const MAX_HISTORY_SIZE = 30;
@@ -18,15 +19,8 @@ export default function Kicks() {
   
   const startTimeRef = useRef(null);
   
-  // Load ALL real data from localStorage
-  const [realHistory, setRealHistory] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      return saved;
-    } catch {
-      return [];
-    }
-  });
+  // Load ALL real data from localStorage using safe storage
+  const [realHistory, setRealHistory] = useState(() => lsGet(STORAGE_KEY, []));
   
   // Get today's date in consistent format
   const getTodayKey = useCallback(() => {
@@ -44,7 +38,7 @@ export default function Kicks() {
   const savedKicks = todayEntry?.kicks || 0;
   const totalKicksToday = savedKicks + sessionKicks;
   
-  // FIX: Get last 7 days from REAL data with proper date ordering
+  // Get last 7 days from REAL data with proper date ordering
   const last7Days = useMemo(() => {
     // Create array of last 7 days with proper dates
     const days = [];
@@ -225,23 +219,20 @@ export default function Kicks() {
       lastUpdated: new Date().toISOString()
     };
     
-    try {
-      const prev = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-      // Remove any existing entry for today
-      const filteredPrev = prev.filter(e => e.date !== todayKey);
-      // Add new entry at the beginning
-      const newHistory = [entry, ...filteredPrev].slice(0, MAX_HISTORY_SIZE);
-      // Sort by date (most recent first)
-      newHistory.sort((a, b) => {
-        const dateA = new Date(a.timestamp);
-        const dateB = new Date(b.timestamp);
-        return dateB - dateA;
-      });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newHistory));
-      setRealHistory(newHistory);
-    } catch (error) {
-      console.error('Failed to save kick session:', error);
-    }
+    // Use safe storage operations
+    const prev = lsGet(STORAGE_KEY, []);
+    // Remove any existing entry for today
+    const filteredPrev = prev.filter(e => e.date !== todayKey);
+    // Add new entry at the beginning
+    const newHistory = [entry, ...filteredPrev].slice(0, MAX_HISTORY_SIZE);
+    // Sort by date (most recent first)
+    newHistory.sort((a, b) => {
+      const dateA = new Date(a.timestamp);
+      const dateB = new Date(b.timestamp);
+      return dateB - dateA;
+    });
+    lsSet(STORAGE_KEY, newHistory);
+    setRealHistory(newHistory);
     
     setSession(false);
     setSessionKicks(0);

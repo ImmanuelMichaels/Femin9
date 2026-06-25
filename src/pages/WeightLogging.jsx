@@ -1,6 +1,7 @@
 // WeightLogging.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../context/useApp';
+import { lsGet, lsSet, lsAppend } from '../../utils/storage';
 import './WeightLogging.css';
 
 export default function WeightLogging() {
@@ -36,17 +37,16 @@ export default function WeightLogging() {
     try {
       setLoadError(false);
       
-      // Load current weight
-      const currentWeight = localStorage.getItem('currentWeight');
+      // Load current weight using safe storage
+      const currentWeight = lsGet('currentWeight', null);
       if (currentWeight) {
-        const weightData = JSON.parse(currentWeight);
-        setWeight(weightData.value?.toString() || '');
+        setWeight(currentWeight.value?.toString() || '');
       } else {
         setWeight('');
       }
       
-      // Load goals
-      const goals = JSON.parse(localStorage.getItem('weightGoals') || '{}');
+      // Load goals using safe storage
+      const goals = lsGet('weightGoals', {});
       if (goals.targetWeight) setGoalWeight(goals.targetWeight.toString());
       if (goals.prePregnancyWeight) setPrePregnancyWeight(goals.prePregnancyWeight.toString());
       if (goals.startWeight) setStartWeight(goals.startWeight);
@@ -76,17 +76,17 @@ export default function WeightLogging() {
       return;
     }
     
-    // Save current weight
+    // Save current weight using safe storage
     const weightData = {
       value: weightNum,
       unit: weightUnit,
       recordedAt: new Date().toISOString()
     };
     
-    localStorage.setItem('currentWeight', JSON.stringify(weightData));
+    lsSet('currentWeight', weightData);
     
-    // Also append to history if needed elsewhere
-    const history = JSON.parse(localStorage.getItem('vitalsHistory') || '[]');
+    // Also append to history if needed elsewhere using safe storage
+    let history = lsGet('vitalsHistory', []);
     const today = new Date().toISOString().split('T')[0];
     const todayIndex = history.findIndex(entry => 
       entry.recordedAt?.split('T')[0] === today
@@ -98,14 +98,14 @@ export default function WeightLogging() {
       history.unshift({ weight: weightNum, recordedAt: new Date().toISOString(), unit: weightUnit });
     }
     
-    localStorage.setItem('vitalsHistory', JSON.stringify(history));
+    lsSet('vitalsHistory', history);
     window.dispatchEvent(new Event('vitalsUpdated'));
     loadWeightData();
     showMessage('Weight saved successfully!', 'success');
   };
 
   const saveGoals = () => {
-    const goals = JSON.parse(localStorage.getItem('weightGoals') || '{}');
+    let goals = lsGet('weightGoals', {});
     
     // Validate and save goal weight
     if (goalWeight !== '') {
@@ -141,7 +141,7 @@ export default function WeightLogging() {
     }
     
     goals.unit = weightUnit;
-    localStorage.setItem('weightGoals', JSON.stringify(goals));
+    lsSet('weightGoals', goals);
     window.dispatchEvent(new Event('weightGoalsUpdated'));
     loadWeightData();
     showMessage('Goals saved successfully!', 'success');

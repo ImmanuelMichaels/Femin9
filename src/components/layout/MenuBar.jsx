@@ -1,7 +1,19 @@
-import { useState } from "react";
-import { Home, Zap, MessageSquare, Heart, Stethoscope, Brain, Footprints, Milk, Apple, Users, AlertTriangle, FileText, Bell, LogOut } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+// MenuBar.jsx - Shows menu features in the drawer
 
+import { useState, useMemo } from 'react';
+import { 
+  Home, Zap, MessageSquare, Heart, Stethoscope, Brain, 
+  Footprints, Milk, Apple, Users, AlertTriangle, FileText, 
+  Bell, LogOut, Menu, Calendar, Droplets, Flame, 
+  Baby, Pill, Scan, Sparkles, Phone, HeartPulse,
+  Salad, Activity, HandHeart, ShieldCheck, Bot,
+  BarChart3, Flower2, Moon, Thermometer
+} from 'lucide-react';
+import { useApp } from '../../context/useApp';
+import { useNavigate } from 'react-router-dom';
+import './MenuBar.css';
+
+// ─── ICON MAP ──────────────────────────────────────────────────────────────
 const ICON_MAP = {
   home: Home,
   assistant: Zap,
@@ -9,39 +21,217 @@ const ICON_MAP = {
   vitals: Heart,
   health: Stethoscope,
   mental: Brain,
+  symptoms: Thermometer,
+  menstrual: Droplets,
+  menopause: Flame,
+  ttc: Moon,
   kicks: Footprints,
-  baby: Milk,
-  nutrition: Apple,
+  baby: Baby,
+  nursing: HandHeart,
+  ivf: Flower2,
+  medications: Pill,
+  scans: Scan,
+  embryos: Baby,
+  tww: Sparkles,
   partner: Users,
+  careteam: Phone,
+  timeline: HeartPulse,
+  nutrition: Apple,
+  safety: ShieldCheck,
+  calendar: Calendar,
+  insights: BarChart3,
+  profile: Menu,
+  settings: Menu,
+  records: FileText,
+  notifications: Bell,
 };
 
+// ─── MENU ITEMS BY SECTION ────────────────────────────────────────────────
 const MENU_ITEMS = [
-  { section: "Main",    items: [
-    { id: "home",       label: "Home",              tab: "home"      },
-    { id: "assistant",  label: "AI Daily Briefing", tab: "assistant" },
-    { id: "chat",       label: "Bloom AI Chat",     tab: "chat"      },
-  ]},
-  { section: "Health",  items: [
-    { id: "vitals",     label: "Vital Signs",       tab: "vitals"    },
-    { id: "health",     label: "Health Tools & QR", tab: "health"    },
-    { id: "mental",     label: "Mental Health",     tab: "mental"    },
-  ]},
-  { section: "Baby",    items: [
-    { id: "kicks",      label: "Kick Counter",      tab: "kicks"     },
-    { id: "baby",       label: "Baby Tracker",      tab: "baby"      },
-  ]},
-  { section: "Nutrition", items: [
-    { id: "nutrition",  label: "Nigerian Nutrition",tab: "nutrition" },
-  ]},
-  { section: "Support", items: [
-    { id: "partner",    label: "Partner Mode",      tab: "partner"   },
-  ]},
+  {
+    section: 'Main',
+    items: [
+      { id: 'home', label: 'Home', tab: 'home' },
+      { id: 'assistant', label: 'AI Daily Briefing', tab: 'assistant' },
+      { id: 'chat', label: 'Bloom AI Chat', tab: 'chat' },
+    ]
+  },
+  {
+    section: 'Health',
+    items: [
+      { id: 'vitals', label: 'Vital Signs', tab: 'vitals' },
+      { id: 'symptoms', label: 'Symptom Tracker', tab: 'symptoms' },
+      { id: 'mental', label: 'Mental Health', tab: 'mental' },
+    ]
+  },
+  {
+    section: "Women's Health",
+    items: [
+      { id: 'menstrual', label: 'Cycle Tracking', tab: 'menstrual' },
+      { id: 'menopause', label: 'Menopause Care', tab: 'menopause' },
+      { id: 'ttc', label: 'Fertility Tracking', tab: 'ttc' },
+    ]
+  },
+  {
+    section: 'Pregnancy & Baby',
+    items: [
+      { id: 'kicks', label: 'Kick Counter', tab: 'kicks' },
+      { id: 'baby', label: 'Baby Tracker', tab: 'baby' },
+      { id: 'nursing', label: 'Nursing Support', tab: 'nursing' },
+    ]
+  },
+  {
+    section: 'IVF & Fertility',
+    items: [
+      { id: 'ivf', label: 'IVF Journey', tab: 'ivf' },
+      { id: 'medications', label: 'Medication Log', tab: 'medications' },
+      { id: 'scans', label: 'Fertility Scans', tab: 'scans' },
+      { id: 'embryos', label: 'Embryo Tracker', tab: 'embryos' },
+      { id: 'tww', label: '2-Week Wait', tab: 'tww' },
+      { id: 'timeline', label: 'IVF Timeline', tab: 'timeline' },
+    ]
+  },
+  {
+    section: 'Wellness',
+    items: [
+      { id: 'nutrition', label: 'Nutrition Guide', tab: 'nutrition' },
+    ]
+  },
+  {
+    section: 'Support',
+    items: [
+      { id: 'partner', label: 'Partner Mode', tab: 'partner' },
+      { id: 'careteam', label: 'Care Team', tab: 'careteam' },
+      { id: 'safety', label: 'Safety & Emergency', tab: 'safety' },
+    ]
+  },
+  {
+    section: 'Tools',
+    items: [
+      { id: 'calendar', label: 'Calendar', tab: 'calendar' },
+      { id: 'insights', label: 'Health Insights', tab: 'insights' },
+      { id: 'records', label: 'Health Records', tab: 'records' },
+      { id: 'notifications', label: 'Notifications', tab: 'notifications' },
+    ]
+  },
 ];
 
+// ─── JOURNEY-SPECIFIC FILTERS ─────────────────────────────────────────────
+const JOURNEY_FILTERS = {
+  pregnant: {
+    hide: ['menstrual', 'menopause', 'ttc', 'ivf', 'medications', 'scans', 'embryos', 'tww', 'timeline']
+  },
+  mom: {
+    hide: ['menstrual', 'menopause', 'ttc', 'ivf', 'medications', 'scans', 'embryos', 'tww', 'timeline', 'kicks']
+  },
+  conceive: {
+    hide: ['pregnant', 'mom', 'baby', 'nursing', 'kicks', 'menopause']
+  },
+  ivf: {
+    hide: ['pregnant', 'mom', 'baby', 'nursing', 'kicks', 'menstrual', 'menopause']
+  },
+  menstrual: {
+    hide: ['pregnant', 'mom', 'baby', 'nursing', 'kicks', 'ivf', 'medications', 'scans', 'embryos', 'tww', 'timeline']
+  },
+  menopause: {
+    hide: ['pregnant', 'mom', 'baby', 'nursing', 'kicks', 'ivf', 'medications', 'scans', 'embryos', 'tww', 'timeline', 'ttc', 'menstrual']
+  },
+  default: {
+    hide: []
+  }
+};
+
+// ─── SUB-COMPONENTS ──────────────────────────────────────────────────────────
+
+function MenuItem({ item, isActive, onSelect }) {
+  const Icon = ICON_MAP[item.id];
+  
+  return (
+    <button
+      className={`menu-item ${isActive ? 'active' : ''}`}
+      onClick={() => onSelect(item.tab)}
+      aria-current={isActive ? 'page' : undefined}
+    >
+      {Icon && (
+        <Icon 
+          size={20} 
+          strokeWidth={isActive ? 2.5 : 2} 
+          className="menu-item-icon" 
+        />
+      )}
+      <span className="menu-item-label">{item.label}</span>
+      {isActive && <div className="menu-item-dot" />}
+    </button>
+  );
+}
+
+function MenuSection({ section, items, activeTab, onSelect }) {
+  if (items.length === 0) return null;
+  
+  return (
+    <div className="menu-section">
+      <p className="menu-section-title">{section}</p>
+      {items.map((item) => (
+        <MenuItem
+          key={item.id}
+          item={item}
+          isActive={activeTab === item.tab}
+          onSelect={onSelect}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
+
 export default function MenuBar({ active, setActive, onClose, onSOS }) {
-  const { user, profile, logout } = useAuth();
+  const navigate = useNavigate();
+  const { journeyType } = useApp();
   const [loggingOut, setLoggingOut] = useState(false);
 
+  // ─── GET USER DATA FROM LOCALSTORAGE ──────────────────────────────────
+  const userData = useMemo(() => {
+    try {
+      const email = localStorage.getItem('userEmail') || '';
+      const name = localStorage.getItem('userName') || '';
+      const profile = localStorage.getItem('userProfile');
+      return {
+        email,
+        name,
+        profile: profile ? JSON.parse(profile) : null,
+      };
+    } catch {
+      return { email: '', name: '', profile: null };
+    }
+  }, []);
+
+  // ─── DERIVED VALUES ──────────────────────────────────────────────────────
+  const initials = userData.profile
+    ? `${userData.profile.firstName?.[0] || ''}${userData.profile.lastName?.[0] || ''}`.toUpperCase()
+    : userData.name 
+      ? userData.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+      : '';
+
+  const displayName = userData.profile 
+    ? `${userData.profile.firstName || ''} ${userData.profile.lastName || ''}`.trim() || 'Welcome'
+    : userData.name || 'Welcome';
+
+  const weekBadge = userData.profile?.currentWeek ? `Week ${userData.profile.currentWeek}` : null;
+  const trimBadge = userData.profile?.trimester ? `Trimester ${userData.profile.trimester}` : null;
+
+  // ─── FILTER MENU ITEMS BY JOURNEY ──────────────────────────────────────
+  const filteredMenuItems = useMemo(() => {
+    const filter = JOURNEY_FILTERS[journeyType] || JOURNEY_FILTERS.default;
+    const hiddenIds = new Set(filter.hide);
+
+    return MENU_ITEMS.map(section => ({
+      ...section,
+      items: section.items.filter(item => !hiddenIds.has(item.id))
+    })).filter(section => section.items.length > 0);
+  }, [journeyType]);
+
+  // ─── HANDLERS ────────────────────────────────────────────────────────────
   const handleNav = (tab) => {
     setActive(tab);
     onClose();
@@ -49,115 +239,127 @@ export default function MenuBar({ active, setActive, onClose, onSOS }) {
 
   const handleLogout = async () => {
     setLoggingOut(true);
-    await logout();
-    // Page will re-render to AuthScreen via App.jsx
+    try {
+      localStorage.removeItem('userJourney');
+      localStorage.removeItem('userName');
+      localStorage.removeItem('userEmail');
+      localStorage.removeItem('userProfile');
+      localStorage.removeItem('userConsents');
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      setLoggingOut(false);
+    }
   };
 
-  const initials = profile
-    ? `${profile.firstName?.[0] || ""}${profile.lastName?.[0] || ""}`.toUpperCase()
-    : "MB";
-
-  const weekBadge = profile?.currentWeek ? `Week ${profile.currentWeek}` : null;
-  const trimBadge = profile?.trimester ? `Trimester ${profile.trimester}` : null;
-
+  // ─── RENDER ──────────────────────────────────────────────────────────────
   return (
     <>
       {/* Backdrop */}
       <div
+        className="menu-backdrop"
         onClick={onClose}
-        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 800, animation: "fi 0.2s ease" }}
-        className="fi"
+        role="button"
+        aria-label="Close menu"
       />
 
       {/* Drawer */}
-      <div
-        className="fi"
-        style={{ position: "fixed", top: 0, left: 0, bottom: 0, width: 290, background: "#fff", zIndex: 900, display: "flex", flexDirection: "column", overflowY: "auto", boxShadow: "4px 0 32px rgba(0,0,0,0.2)", animation: "slideIn 0.3s cubic-bezier(0.25,0.46,0.45,0.94)" }}
-      >
-        {/* Profile header */}
-        <div style={{ background: "linear-gradient(145deg,#3D1A0A,#7C3A1E,#C4603A)", padding: "44px 20px 24px", position: "relative" }}>
-          <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 32, height: 32, borderRadius: "50%", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>×</button>
+      <div className="menu-drawer" role="dialog" aria-modal="true" aria-label="Navigation menu">
+        {/* Profile Header */}
+        <div className="menu-header">
+          <button 
+            className="menu-close-btn" 
+            onClick={onClose}
+            aria-label="Close menu"
+          >
+            ×
+          </button>
 
-          <div style={{ width: 58, height: 58, borderRadius: "50%", background: "rgba(255,255,255,0.2)", border: "2px solid rgba(255,255,255,0.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, fontWeight: 700, color: "#fff", marginBottom: 12 }}>
-            {profile?.avatarUrl
-              ? <img src={profile.avatarUrl} alt="" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
-              : initials}
+          <div className="menu-avatar">
+            {userData.profile?.avatarUrl ? (
+              <img src={userData.profile.avatarUrl} alt="" className="menu-avatar-img" />
+            ) : (
+              <span className="menu-avatar-text">{initials || 'U'}</span>
+            )}
           </div>
 
-          <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: "#fff", fontWeight: 400, marginBottom: 2 }}>
-            {profile ? `${profile.firstName} ${profile.lastName}` : "Welcome"}
-          </p>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.65)", marginBottom: weekBadge ? 10 : 0 }}>
-            {user?.email}
-          </p>
+          <p className="menu-user-name">{displayName}</p>
+          {userData.email && (
+            <p className="menu-user-email">{userData.email}</p>
+          )}
 
           {(weekBadge || trimBadge) && (
-            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {weekBadge  && <span style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)", padding: "3px 9px", borderRadius: 10, fontSize: 10, fontWeight: 600 }}>{weekBadge}</span>}
-              {trimBadge  && <span style={{ background: "rgba(255,255,255,0.15)", color: "rgba(255,255,255,0.9)", padding: "3px 9px", borderRadius: 10, fontSize: 10, fontWeight: 600 }}>{trimBadge}</span>}
-              {user?.role && <span style={{ background: "rgba(232,149,109,0.3)", color: "#E8956D", padding: "3px 9px", borderRadius: 10, fontSize: 10, fontWeight: 600 }}>{user.role}</span>}
+            <div className="menu-badges">
+              {weekBadge && (
+                <span className="menu-badge">{weekBadge}</span>
+              )}
+              {trimBadge && (
+                <span className="menu-badge">{trimBadge}</span>
+              )}
+              {userData.profile?.role && (
+                <span className="menu-badge menu-badge-role">{userData.profile.role}</span>
+              )}
             </div>
           )}
         </div>
 
         {/* SOS Button */}
-        <button onClick={() => { onClose(); onSOS(); }}
-          style={{ margin: "16px 16px 4px", padding: "11px", background: "#FDECEA", border: "1.5px solid #E74C3C", borderRadius: 12, fontSize: 13, fontWeight: 700, color: "#C0392B", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, animation: "pu 2s infinite" }}>
-          <AlertTriangle size={18} /> Emergency / SOS
+        <button
+          className="menu-sos-btn"
+          onClick={() => { onClose(); onSOS(); }}
+          aria-label="Emergency SOS"
+        >
+          <AlertTriangle size={18} />
+          Emergency / SOS
         </button>
 
-        {/* Navigation sections */}
-        <div style={{ flex: 1, padding: "8px 12px", overflowY: "auto" }}>
-          {MENU_ITEMS.map((section) => (
-            <div key={section.section} style={{ marginBottom: 8 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#9B7260", letterSpacing: 1, padding: "8px 8px 4px", textTransform: "uppercase" }}>
-                {section.section}
-              </p>
-              {section.items.map((item) => {
-                const isActive = active === item.tab;
-                const Icon = ICON_MAP[item.id];
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNav(item.tab)}
-                    style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 11, border: "none", background: isActive ? "#FDF6EE" : "none", cursor: "pointer", textAlign: "left", transition: "background 0.15s", marginBottom: 2 }}
-                  >
-                    {Icon && <Icon size={20} strokeWidth={2} style={{ flexShrink: 0, color: isActive ? "#C4603A" : "#8B6F63" }} />}
-                    <span style={{ fontSize: 13, fontWeight: isActive ? 700 : 500, color: isActive ? "#C4603A" : "#1A0A00" }}>{item.label}</span>
-                    {isActive && <div style={{ marginLeft: "auto", width: 6, height: 6, borderRadius: "50%", background: "#C4603A" }} />}
-                  </button>
-                );
-              })}
-            </div>
+        {/* Navigation Sections - THIS IS WHERE MENU ITEMS APPEAR */}
+        <div className="menu-sections">
+          {filteredMenuItems.map((section) => (
+            <MenuSection
+              key={section.section}
+              section={section.section}
+              items={section.items}
+              activeTab={active}
+              onSelect={handleNav}
+            />
           ))}
         </div>
 
-        {/* Footer actions */}
-        <div style={{ padding: "12px 16px 32px", borderTop: "1px solid #EAD5C0" }}>
-          <button style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 11, border: "none", background: "none", cursor: "pointer", marginBottom: 4, textAlign: "left" }}>
-            <AlertTriangle size={20} strokeWidth={2} style={{ color: "#8B6F63" }} />
-            <span style={{ fontSize: 13, fontWeight: 500, color: "#1A0A00" }}>Settings</span>
+        {/* Footer */}
+        <div className="menu-footer">
+          <button
+            className="menu-footer-btn"
+            onClick={() => handleNav('settings')}
+          >
+            <Menu size={20} />
+            <span>Settings</span>
           </button>
-          <button style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 11, border: "none", background: "none", cursor: "pointer", marginBottom: 4, textAlign: "left" }}>
-            <FileText size={20} strokeWidth={2} style={{ color: "#8B6F63" }} />
-            <span style={{ fontSize: 13, fontWeight: 500, color: "#1A0A00" }}>Health Records</span>
+          <button
+            className="menu-footer-btn"
+            onClick={() => handleNav('records')}
+          >
+            <FileText size={20} />
+            <span>Health Records</span>
           </button>
-          <button style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 11, border: "none", background: "none", cursor: "pointer", marginBottom: 4, textAlign: "left" }}>
-            <Bell size={20} strokeWidth={2} style={{ color: "#8B6F63" }} />
-            <span style={{ fontSize: 13, fontWeight: 500, color: "#1A0A00" }}>Notifications</span>
+          <button
+            className="menu-footer-btn"
+            onClick={() => handleNav('notifications')}
+          >
+            <Bell size={20} />
+            <span>Notifications</span>
           </button>
 
           <button
+            className="menu-signout-btn"
             onClick={handleLogout}
             disabled={loggingOut}
-            style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", borderRadius: 11, border: "1.5px solid #EAD5C0", background: loggingOut ? "#f5f5f5" : "#fff", cursor: loggingOut ? "not-allowed" : "pointer", marginTop: 8 }}>
-            <LogOut size={20} strokeWidth={2} style={{ color: "#C0392B" }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: "#C0392B" }}>{loggingOut ? "Signing out..." : "Sign Out"}</span>
+          >
+            <LogOut size={20} />
+            <span>{loggingOut ? 'Signing out...' : 'Sign Out'}</span>
           </button>
 
-          <p style={{ textAlign: "center", fontSize: 10, color: "#9B7260", marginTop: 14 }}>
-            MamaBloom v1.0 · Nigeria-First 🌍
-          </p>
+          <p className="menu-version">v1.0</p>
         </div>
       </div>
     </>

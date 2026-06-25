@@ -1,638 +1,496 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../context/useApp';
 import { auth, db } from '../context/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
-const PLANS = {
-  free: {
-    id: 'free',
-    name: 'Free',
-    price: '£0',
-    period: '/month',
-    description: 'Essential support for your journey',
-    features: [
-      { text: '10 AI messages per day', included: true },
-      { text: 'Basic symptom tracking', included: true },
-      { text: 'Cultural food database', included: true },
-      { text: 'Medication safety checker', included: true },
-      { text: 'Emergency resources', included: true },
-      { text: 'Unlimited AI messages', included: false },
-      { text: 'Export health data', included: false },
-      { text: 'Priority support', included: false },
-      { text: 'Birth plan builder', included: false },
-      { text: 'Partner access', included: false }
-    ],
-    buttonText: 'Current Plan',
-    buttonClass: 'current',
-    popular: false,
-    priceId: null
-  },
-  bloom: {
-    id: 'bloom',
-    name: 'Bloom',
-    price: '£4.99',
-    period: '/month',
-    description: 'For moms who want more support',
-    features: [
-      { text: '50 AI messages per day', included: true },
-      { text: 'Advanced symptom tracking', included: true },
-      { text: 'Cultural food database', included: true },
-      { text: 'Medication safety checker', included: true },
-      { text: 'Emergency resources', included: true },
-      { text: 'Export health data', included: true },
-      { text: 'Priority support', included: false },
-      { text: 'Birth plan builder', included: false },
-      { text: 'Partner access', included: false }
-    ],
-    buttonText: 'Upgrade to Bloom',
-    buttonClass: 'upgrade',
-    popular: false,
-    priceId: 'price_bloom_monthly'
-  },
-  bloomPlus: {
-    id: 'bloomPlus',
-    name: 'Bloom+',
-    price: '£9.99',
-    period: '/month',
-    description: 'Complete care for your entire journey',
-    features: [
-      { text: 'Unlimited AI messages', included: true },
-      { text: 'Advanced symptom tracking', included: true },
-      { text: 'Cultural food database', included: true },
-      { text: 'Medication safety checker', included: true },
-      { text: 'Emergency resources', included: true },
-      { text: 'Export health data', included: true },
-      { text: 'Priority 24/7 support', included: true },
-      { text: 'Birth plan builder', included: true },
-      { text: 'Partner access', included: true }
-    ],
-    buttonText: 'Upgrade to Bloom+',
-    buttonClass: 'upgrade-popular',
-    popular: true,
-    priceId: 'price_bloom_plus_monthly'
-  }
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const PURPLE = '#4108a5';
+const GREEN  = '#2E9E67';
+
+// ── Single source of truth for plan IDs ───────────────────────────────────────
+// Keep in sync with Profile.jsx. Use 'bloom_plus' everywhere — no spaces or +.
+export const PLAN_IDS = {
+  FREE:       'free',
+  BLOOM_PLUS: 'bloom_plus',
 };
 
-// Annual plans (discounted)
-const ANNUAL_PLANS = {
-  bloom: {
-    ...PLANS.bloom,
-    price: '£49.99',
-    period: '/year',
-    description: '2 months free • Save £9.89',
-    priceId: 'price_bloom_yearly'
+const BASE_FEATURES = [
+  '10 AI messages per day',
+  'Basic symptom tracking',
+  'Cultural food database',
+  'Medication safety checker',
+  'Emergency resources',
+  'Unlimited AI messages',
+  'Export health data',
+  'Priority 24/7 support',
+  'Birth plan builder',
+  'Partner access',
+];
+
+const PLANS = {
+  [PLAN_IDS.FREE]: {
+    id: PLAN_IDS.FREE,
+    name: 'Free',
+    monthlyPrice: '£0',
+    yearlyPrice: '£0',
+    period: { monthly: '/month', yearly: '/year' },
+    tagline: 'Essential support for your journey',
+    included: [
+      '10 AI messages per day',
+      'Basic symptom tracking',
+      'Cultural food database',
+      'Medication safety checker',
+      'Emergency resources',
+    ],
+    buttonText: 'Current Plan',
+    popular: false,
   },
-  bloomPlus: {
-    ...PLANS.bloomPlus,
-    price: '£99.99',
-    period: '/year',
-    description: '2 months free • Save £19.89',
-    priceId: 'price_bloom_plus_yearly'
-  }
+  [PLAN_IDS.BLOOM_PLUS]: {
+    id: PLAN_IDS.BLOOM_PLUS,
+    name: 'Bloom+',
+    monthlyPrice: '£6.99',
+    yearlyPrice: '£69.99',
+    period: { monthly: '/month', yearly: '/year' },
+    tagline: 'Complete care for your entire journey',
+    included: BASE_FEATURES,
+    buttonText: 'Upgrade to Bloom+',
+    popular: true,
+  },
 };
 
 export default function SubscriptionPlans({ onClose, onUpgrade }) {
-  const { subscriptionPlan, setSubscriptionPlan, userName } = useApp();
-  const [billingCycle, setBillingCycle] = useState('monthly');
-  const [loading, setLoading] = useState(null);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [scrollIndex, setScrollIndex] = useState(1); // 0, 1, 2 for free, bloom, bloomPlus
-  const scrollContainerRef = useRef(null);
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
+  const { subscriptionPlan, setSubscriptionPlan } = useApp();
+  const [billingCycle, setBillingCycle] = useState(() => {
+    try { return localStorage.getItem('billingCycle') || 'monthly'; }
+    catch { return 'monthly'; }
+  });
+  const [loading,      setLoading]      = useState(null);
+  const [upgradeError, setUpgradeError] = useState(null);
+  const [success,      setSuccess]      = useState(false);
+  const [upgradedPlan, setUpgradedPlan] = useState(null);
+  const scrollRef  = useRef(null);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const plansArray  = Object.values(PLANS);
+  const currentPlanId = subscriptionPlan || PLAN_IDS.FREE;
 
-  const currentPlanId = subscriptionPlan || 'free';
-  const plans = billingCycle === 'monthly' 
-    ? PLANS 
-    : { free: PLANS.free, bloom: ANNUAL_PLANS.bloom, bloomPlus: ANNUAL_PLANS.bloomPlus };
-  
-  const plansArray = Object.values(plans);
+  // Persist billing cycle selection
+  const handleBillingCycle = (cycle) => {
+    setBillingCycle(cycle);
+    try { localStorage.setItem('billingCycle', cycle); } catch { /* silent */ }
+  };
 
-  // Handle scroll position for snap scrolling
+  // Sync dot indicator with scroll position
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const handleScroll = () => {
-      const scrollPosition = container.scrollLeft;
-      const cardWidth = container.clientWidth;
-      const newIndex = Math.round(scrollPosition / cardWidth);
-      if (newIndex !== scrollIndex && newIndex >= 0 && newIndex < plansArray.length) {
-        setScrollIndex(newIndex);
-      }
+    const el = scrollRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const idx = Math.round(el.scrollLeft / el.clientWidth);
+      setActiveIdx(Math.max(0, Math.min(idx, plansArray.length - 1)));
     };
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
+  }, [plansArray.length]);
 
-    container.addEventListener('scroll', handleScroll);
-    return () => container.removeEventListener('scroll', handleScroll);
-  }, [plansArray.length, scrollIndex]);
-
-  // Snap to specific plan
-  const snapToPlan = (index) => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      const cardWidth = container.clientWidth;
-      container.scrollTo({
-        left: index * cardWidth,
-        behavior: 'smooth'
-      });
-    }
-    setScrollIndex(index);
-  };
-
-  // Touch handlers for swipe
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 50) {
-      if (diff > 0 && scrollIndex < plansArray.length - 1) {
-        snapToPlan(scrollIndex + 1);
-      } else if (diff < 0 && scrollIndex > 0) {
-        snapToPlan(scrollIndex - 1);
-      }
-    }
-  };
-
-  const handleTouchMove = (e) => {
-    touchEndX.current = e.touches[0].clientX;
+  const scrollTo = (idx) => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' });
+    setActiveIdx(idx);
   };
 
   const handleUpgrade = async (planId) => {
-    if (planId === currentPlanId) return;
-    
-    setLoading(planId);
-    
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Update Firestore
-    const user = auth.currentUser;
-    if (user) {
-      const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, {
-        plan: planId,
-        planUpdatedAt: new Date(),
-        messageCount: 0
-      });
-    }
-    
-    // Update context and localStorage
-    setSubscriptionPlan(planId);
-    localStorage.setItem('subscriptionPlan', planId);
-    
-    setLoading(null);
-    setShowConfetti(true);
-    
-    if (onUpgrade) onUpgrade(planId);
-    
-    // Close modal after confetti
-    setTimeout(() => {
-      setShowConfetti(false);
-      if (onClose) onClose();
-    }, 3000);
-  };
+    if (planId === currentPlanId || loading) return;
+    // Free downgrades not permitted via this modal
+    if (planId === PLAN_IDS.FREE) return;
 
-  const getFeatureStatus = (feature, plan) => {
-    const planFeatures = plans[plan.id]?.features || PLANS[plan.id]?.features;
-    const featureObj = planFeatures?.find(f => f.text === feature.text);
-    return featureObj?.included || false;
+    setLoading(planId);
+    setUpgradeError(null);
+
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error('Not authenticated');
+
+      // ── TODO: Replace this block with a real payment gateway call ──────────
+      // e.g. call your Cloud Function: await fetch('/api/create-checkout', ...)
+      // Only write to Firestore AFTER payment is confirmed server-side.
+      // The block below is a placeholder that bypasses payment — remove before launch.
+      // ──────────────────────────────────────────────────────────────────────
+      const planRef = doc(db, 'users', user.uid);
+      await updateDoc(planRef, {
+        plan:          planId,
+        billingCycle,
+        planUpdatedAt: serverTimestamp(), // fix: use server timestamp not client new Date()
+        // messageCount reset must be done server-side — removed from client
+      });
+      // ── End placeholder ───────────────────────────────────────────────────
+
+      // Update context and localStorage so Profile re-renders immediately
+      setSubscriptionPlan(planId);
+      try { localStorage.setItem('subscriptionPlan', planId); } catch { /* silent */ }
+
+      setUpgradedPlan(PLANS[planId]);
+      setSuccess(true);
+      if (onUpgrade) onUpgrade(planId);
+
+      setTimeout(() => {
+        setSuccess(false);
+        if (onClose) onClose();
+      }, 2800);
+
+    } catch (err) {
+      console.error('Upgrade error:', err);
+      setUpgradeError('Something went wrong. Please try again or contact support.');
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
     <>
-      {/* Backdrop */}
-      <div 
-        onClick={onClose}
+      {/* ── Backdrop ── */}
+      <div
+        onClick={!loading ? onClose : undefined}
         style={{
-          position: 'sticky',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.5)',
-          backdropFilter: 'blur(4px)',
+          position: 'fixed', inset: 0,
+          background: 'rgba(0,0,0,0.55)',
+          backdropFilter: 'blur(6px)',
+          WebkitBackdropFilter: 'blur(6px)',
           zIndex: 9998,
-          animation: 'fadeIn 0.3s ease-out',
-          bottom: '-30%',
         }}
       />
-      
-      {/* Modal Content */}
-      <div style={{
-        position: 'absolute',
-        top: '50%',
-        // left: '50%',
-        // transform: 'translate(-50%, -50%)',
-        width: '90%',
-        maxWidth: 1200,
-        // maxHeight: '90vh',
-        overflowY: 'auto',
-        background: '#fff',
-        borderRadius: 32,
-        zIndex: 9999,
-        padding: '20px',
-        animation: 'slideUp 0.3s ease-out',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
-      }}>
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: 20,
-            right: 20,
-            width: 40,
-            height: 40,
-            borderRadius: '50%',
-            background: 'white',
-            border: 'none',
-            fontSize: 24,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#4108a5',
-            transition: 'all 0.2s',
-            zIndex: 10,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'scale(1.1)';
-            e.currentTarget.style.backgroundColor = '#4108a5';
-            e.currentTarget.style.color = 'white';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'scale(1)';
-            e.currentTarget.style.backgroundColor = 'white';
-            e.currentTarget.style.color = '#4108a5';
-          }}
-        >
-          ✕
-        </button>
 
-        {/* Confetti effect */}
-        {showConfetti && (
+      {/* ── Modal ── */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Choose your subscription plan"
+        style={{
+          position: 'fixed',
+          top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'min(94vw, 760px)',
+          maxHeight: '92vh',
+          overflowY: 'auto',
+          background: '#fff',
+          borderRadius: 28,
+          zIndex: 9999,
+          boxShadow: '0 24px 64px rgba(0,0,0,0.22)',
+          animation: 'femin9-slide-up 0.28s ease-out both',
+        }}
+      >
+        {/* Success overlay */}
+        {success && upgradedPlan && (
           <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            pointerEvents: 'none',
-            zIndex: 1000,
-            background: '#4108a5',
-            animation: 'pulse 1s ease-out'
+            position: 'absolute', inset: 0,
+            borderRadius: 28,
+            background: 'rgba(255,255,255,0.97)',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            zIndex: 10,
+            animation: 'femin9-fade-in 0.3s ease-out',
           }}>
-            <div style={{
-              position: 'absolute',
-              top: '40%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              textAlign: 'center'
-            }}>
-              <div style={{ fontSize: 64, marginBottom: 16, animation: 'bounce 0.5s ease-out' }}>🎉</div>
-              <h2 style={{ color: '#4108a5', margin: 0, fontSize: 28 }}>Welcome to Bloom+!</h2>
-              <p style={{ color: '#666', fontSize: 16, marginTop: 8 }}>You now have unlimited access to all features</p>
-            </div>
+            <div style={{ fontSize: 56, marginBottom: 16 }}>🎉</div>
+            <h2 style={{ color: PURPLE, fontSize: 26, fontWeight: 700, margin: 0 }}>
+              Welcome to {upgradedPlan.name}!
+            </h2>
+            <p style={{ color: '#555', fontSize: 15, marginTop: 8, textAlign: 'center', padding: '0 24px' }}>
+              You now have unlimited access to all features.
+            </p>
           </div>
         )}
 
-        <div style={{ padding: '40px 20px' }}>
-          <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-            {/* Header */}
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <div style={{ fontSize: 18, marginBottom: 16 }}></div>
-              <h1 style={{ fontSize: 'clamp(18px,2vw,20px)', color: '#4108a5', marginBottom: 8 }}>
-                Choose Your Journey
-              </h1>
-              <p style={{ fontSize: 12, color: '#666', maxWidth: 500, margin: '0 auto' }}>
-                Hi {userName || 'Mama'}! Pick the plan that gives you the support you deserve.
-              </p>
-            </div>
+        {/* ── Inner padding wrapper ── */}
+        <div style={{ padding: '28px 24px 32px' }}>
 
-            {/* Billing Toggle */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 40, gap: 12 }}>
-              <button
-                onClick={() => setBillingCycle('monthly')}
-                style={{
-                  padding: '10px 24px',
-                  borderRadius: 30,
-                  border: billingCycle === 'monthly' ? '2px solid #4108a5' : '1px solid #ddd',
-                  background: billingCycle === 'monthly' ? '#4108a5' : 'white',
-                  color: billingCycle === 'monthly' ? 'white' : '#666',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setBillingCycle('yearly')}
-                style={{
-                  padding: '10px 24px',
-                  borderRadius: 30,
-                  border: billingCycle === 'yearly' ? '2px solid #4108a5' : '1px solid #ddd',
-                  background: billingCycle === 'yearly' ? '#4108a5' : 'white',
-                  color: billingCycle === 'yearly' ? 'white' : '#666',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  position: 'relative'
-                }}
-              >
-                Yearly
-                <span style={{
-                  position: 'absolute',
-                  top: -10,
-                  right: -10,
-                  background: '#2E9E67',
-                  color: 'white',
-                  fontSize: 10,
-                  padding: '2px 6px',
-                  borderRadius: 20,
-                  fontWeight: 600
-                }}>
-                  Save £20
-                </span>
-              </button>
-            </div>
-
-            {/* Dot indicators */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              gap: 12,
-              marginBottom: 24
-            }}>
-              {plansArray.map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => snapToPlan(idx)}
-                  style={{
-                    width: scrollIndex === idx ? 32 : 8,
-                    height: 8,
-                    borderRadius: 4,
-                    background: scrollIndex === idx ? '#4108a5' : '#ddd',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease'
-                  }}
-                />
-              ))}
-            </div>
-
-            {/* Horizontal Scroll Container */}
-            <div
-              ref={scrollContainerRef}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+          {/* Header row */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+            <button
+              onClick={!loading ? onClose : undefined}
+              disabled={!!loading}
+              aria-label="Close"
               style={{
-                display: 'flex',
-                overflowX: 'auto',
-                scrollSnapType: 'x mandatory',
-                scrollBehavior: 'smooth',
-                gap: 24,
-                padding: '20px 0',
-                margin: '0 -4px',
-                cursor: 'grab',
-                scrollbarWidth: 'none', // Hide scrollbar on Firefox
-                msOverflowStyle: 'none', // Hide scrollbar on IE/Edge
+                width: 36, height: 36,
+                borderRadius: '50%',
+                border: '1.5px solid #e0d5f5',
+                background: 'white',
+                color: PURPLE,
+                fontSize: 16,
+                cursor: loading ? 'default' : 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                opacity: loading ? 0.4 : 1,
+                transition: 'background 0.15s, color 0.15s',
               }}
-              className="hide-scrollbar"
+              onMouseEnter={e => { if (!loading) { e.currentTarget.style.background = PURPLE; e.currentTarget.style.color = '#fff'; } }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = PURPLE; }}
             >
-              {plansArray.map((plan, idx) => {
-                const isCurrentPlan = plan.id === currentPlanId;
-                const isPopular = plan.popular;
-                const isUpgrading = loading === plan.id;
+              ✕
+            </button>
+          </div>
 
-                return (
-                  <div
-                    key={plan.id}
-                    style={{
-                      flex: '0 0 calc(33.333% - 16px)',
-                      minWidth: 350,
-                      scrollSnapAlign: 'start',
-                      background: 'white',
-                      borderRadius: 32,
-                      padding: '28px 24px 32px',
-                      boxShadow: isPopular 
-                        ? '0 20px 40px rgb(46 12 129 / 8%), 0 0 0 2px #4108a5' 
-                        : '0 10px 30px rgba(0,0,0,0.08)',
-                      position: 'relative',
-                      transition: 'transform 0.2s, box-shadow 0.2s',
-                      transform: isPopular && scrollIndex === idx ? 'scale(1.02)' : 'scale(1)',
-                      display: 'flex',
-                      flexDirection: 'column'
-                    }}
-                  >
-                    {isPopular && (
+          {/* Billing toggle */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 28 }}>
+            {['monthly', 'yearly'].map(cycle => (
+              <button
+                key={cycle}
+                onClick={() => handleBillingCycle(cycle)}
+                style={{
+                  padding: '9px 26px',
+                  borderRadius: 30,
+                  border: billingCycle === cycle ? `2px solid ${PURPLE}` : '1.5px solid #ddd',
+                  background: billingCycle === cycle ? PURPLE : '#fff',
+                  color: billingCycle === cycle ? '#fff' : '#777',
+                  fontWeight: 600, fontSize: 14,
+                  cursor: 'pointer',
+                  position: 'relative',
+                  transition: 'all 0.18s',
+                }}
+              >
+                {cycle === 'monthly' ? 'Monthly' : 'Yearly'}
+                {cycle === 'yearly' && (
+                  <span style={{
+                    position: 'absolute', top: -10, right: -8,
+                    background: GREEN, color: '#fff',
+                    fontSize: 10, padding: '2px 7px',
+                    borderRadius: 20, fontWeight: 700,
+                    pointerEvents: 'none',
+                  }}>
+                    Save £14
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Error banner */}
+          {upgradeError && (
+            <div style={{
+              background: '#FEF2F2', border: '1px solid #FECACA',
+              borderRadius: 12, padding: '10px 16px',
+              marginBottom: 16, fontSize: 13,
+              color: '#991B1B', textAlign: 'center',
+            }}>
+              {upgradeError}
+            </div>
+          )}
+
+          {/* ── Plan cards ── */}
+          <div
+            ref={scrollRef}
+            style={{
+              display: 'flex',
+              overflowX: 'auto',
+              scrollSnapType: 'x mandatory',
+              scrollBehavior: 'smooth',
+              gap: 0,
+              padding: '4px 0 16px',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch',
+            }}
+            className="femin9-hide-scrollbar"
+          >
+            {plansArray.map((plan) => {
+              const isCurrent   = plan.id === currentPlanId;
+              const isUpgrading = loading === plan.id;
+              const price       = billingCycle === 'monthly' ? plan.monthlyPrice : plan.yearlyPrice;
+              const period      = plan.period[billingCycle];
+
+              return (
+                <div
+                  key={plan.id}
+                  style={{
+                    flex: '0 0 100%',
+                    width: '100%',
+                    scrollSnapAlign: 'start',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    padding: '8px 16px',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <div style={{
+                    width: '100%', maxWidth: 340,
+                    background: '#fff', borderRadius: 22,
+                    padding: '22px 20px 24px',
+                    border: plan.popular ? `2px solid ${PURPLE}` : '1.5px solid #ede9f6',
+                    boxShadow: plan.popular
+                      ? '0 8px 32px rgba(65,8,165,0.13)'
+                      : '0 2px 12px rgba(0,0,0,0.05)',
+                    position: 'relative',
+                    display: 'flex', flexDirection: 'column',
+                    transition: 'box-shadow 0.2s',
+                  }}>
+                    {plan.popular && (
                       <div style={{
-                        position: 'absolute',
-                        top: -12,
-                        left: '50%',
+                        position: 'absolute', top: -12, left: '50%',
                         transform: 'translateX(-50%)',
-                        background: '#4108a5',
-                        color: 'white',
-                        padding: '6px 16px',
-                        borderRadius: 30,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        letterSpacing: 1
+                        background: PURPLE, color: '#fff',
+                        fontSize: 11, fontWeight: 700,
+                        padding: '3px 14px', borderRadius: 20,
+                        letterSpacing: 0.5, whiteSpace: 'nowrap',
                       }}>
                         MOST POPULAR
                       </div>
                     )}
 
-                    {/* Plan Name */}
-                    <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                      <h2 style={{ fontSize: 28, color: '#333', marginBottom: 8 }}>{plan.name}</h2>
-                      <p style={{ color: '#888', fontSize: 14 }}>{plan.description}</p>
+                    <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                      <h2 style={{ fontSize: 22, fontWeight: 700, color: '#222', margin: 0 }}>
+                        {plan.name}
+                      </h2>
+                      <p style={{ fontSize: 12, color: '#888', margin: '5px 0 0' }}>
+                        {plan.tagline}
+                      </p>
                     </div>
 
-                    {/* Price */}
-                    <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                      <span style={{ fontSize: 48, fontWeight: 800, color: '#4108a5' }}>{plan.price}</span>
-                      <span style={{ color: '#888' }}>{plan.period}</span>
-                      {billingCycle === 'yearly' && plan.id !== 'free' && (
-                        <p style={{ fontSize: 12, color: '#2E9E67', marginTop: 8 }}>
-                          {plan.id === 'bloom' ? 'Save £9.89 vs monthly' : 'Save £19.89 vs monthly'}
+                    <div style={{ textAlign: 'center', marginBottom: 20 }}>
+                      <span style={{ fontSize: 38, fontWeight: 800, color: PURPLE, lineHeight: 1 }}>
+                        {price}
+                      </span>
+                      <span style={{ fontSize: 13, color: '#999' }}>{period}</span>
+                      {billingCycle === 'yearly' && plan.id === PLAN_IDS.BLOOM_PLUS && (
+                        <p style={{ fontSize: 12, color: GREEN, margin: '4px 0 0' }}>
+                          2 months free — save £13.89
                         </p>
                       )}
                     </div>
 
-                    {/* Features */}
-                    <div style={{ flex: 1, marginBottom: 32 }}>
-                      {PLANS.free.features.map((feature, featureIdx) => {
-                        const isIncluded = getFeatureStatus(feature, plan);
+                    <ul style={{ flex: 1, listStyle: 'none', margin: '0 0 20px', padding: 0 }}>
+                      {BASE_FEATURES.map((feat) => {
+                        const on = plan.included.includes(feat);
                         return (
-                          <div
-                            key={featureIdx}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 12,
-                              padding: '8px 0',
-                              opacity: isIncluded ? 1 : 0.5
-                            }}
-                          >
-                            <span style={{ 
-                              fontSize: 18,
-                              color: isIncluded ? '#2E9E67' : '#ccc'
+                          <li key={feat} style={{
+                            display: 'flex', alignItems: 'center', gap: 9,
+                            padding: '5px 0', opacity: on ? 1 : 0.38,
+                          }}>
+                            <span style={{
+                              fontSize: 15, color: on ? GREEN : '#bbb',
+                              width: 20, textAlign: 'center', flexShrink: 0,
                             }}>
-                              {isIncluded ? '✓' : '○'}
+                              {on ? '✓' : '○'}
                             </span>
-                            <span style={{ color: '#555', fontSize: 14 }}>{feature.text}</span>
-                          </div>
+                            <span style={{
+                              fontSize: 13,
+                              color: on ? '#444' : '#aaa',
+                              textDecoration: on ? 'none' : 'line-through',
+                            }}>
+                              {feat}
+                            </span>
+                          </li>
                         );
                       })}
-                    </div>
+                    </ul>
 
-                    {/* Button */}
                     <button
                       onClick={() => handleUpgrade(plan.id)}
-                      disabled={isCurrentPlan || isUpgrading}
+                      disabled={isCurrent || !!loading}
                       style={{
-                        width: '100%',
-                        padding: '14px',
+                        width: '100%', padding: '13px 18px',
                         borderRadius: 40,
-                        fontSize: 16,
-                        fontWeight: 700,
-                        cursor: isCurrentPlan ? 'default' : 'pointer',
-                        background: isCurrentPlan
-                          ? '#E8F7EE'
-                          : plan.id === 'bloomPlus'
-                          ? '#4108a5'
-                          : 'white',
-                        color: isCurrentPlan
-                          ? '#2E9E67'
-                          : plan.id === 'bloomPlus'
-                          ? 'white'
-                          : '#4108a5',
-                        border: isCurrentPlan
-                          ? '1px solid #2E9E67'
-                          : plan.id === 'bloomPlus'
-                          ? 'none'
-                          : '2px solid #4108a5',
-                        transition: 'all 0.2s',
-                        opacity: isUpgrading ? 0.7 : 1
+                        fontSize: 14, fontWeight: 700,
+                        cursor: isCurrent || loading ? 'default' : 'pointer',
+                        background: isCurrent ? '#edf9f2'
+                          : plan.id === PLAN_IDS.BLOOM_PLUS ? PURPLE : '#fff',
+                        color: isCurrent ? GREEN
+                          : plan.id === PLAN_IDS.BLOOM_PLUS ? '#fff' : PURPLE,
+                        border: isCurrent ? `1.5px solid ${GREEN}`
+                          : plan.id === PLAN_IDS.BLOOM_PLUS ? 'none' : `2px solid ${PURPLE}`,
+                        opacity: isUpgrading ? 0.75 : 1,
+                        transition: 'all 0.18s',
                       }}
-                      onMouseEnter={(e) => {
-                        if (!isCurrentPlan && !isUpgrading) {
+                      onMouseEnter={e => {
+                        if (!isCurrent && !loading) {
                           e.currentTarget.style.transform = 'scale(1.02)';
+                          e.currentTarget.style.boxShadow = '0 4px 14px rgba(65,8,165,0.18)';
                         }
                       }}
-                      onMouseLeave={(e) => {
-                        if (!isCurrentPlan && !isUpgrading) {
-                          e.currentTarget.style.transform = 'scale(1)';
-                        }
+                      onMouseLeave={e => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.boxShadow = 'none';
                       }}
                     >
                       {isUpgrading ? (
                         <span style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
                           <span style={{
-                            width: 16,
-                            height: 16,
-                            border: `2px solid ${plan.id === 'bloomPlus' ? 'white' : '#4108a5'}`,
+                            width: 16, height: 16,
+                            border: `2px solid ${plan.id === PLAN_IDS.BLOOM_PLUS ? '#fff' : PURPLE}`,
                             borderTopColor: 'transparent',
                             borderRadius: '50%',
-                            animation: 'spin 0.8s linear infinite'
+                            animation: 'femin9-spin 0.7s linear infinite',
+                            display: 'inline-block',
                           }} />
-                          Processing...
+                          Processing…
                         </span>
-                      ) : (
-                        plan.buttonText
-                      )}
+                      ) : isCurrent ? '✓ Current Plan' : plan.buttonText}
                     </button>
 
-                    {plan.id === 'free' && (
-                      <p style={{ textAlign: 'center', fontSize: 12, color: '#aaa', marginTop: 16 }}>
-                        Free forever. No credit card required.
+                    {plan.id === PLAN_IDS.FREE && (
+                      <p style={{ textAlign: 'center', fontSize: 11, color: '#bbb', marginTop: 10 }}>
+                        Free forever. No card required.
                       </p>
                     )}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })}
+          </div>
 
-            {/* Swipe hint for mobile */}
-            <div style={{ 
-              textAlign: 'center', 
-              marginTop: 16,
-              opacity: 0.6,
-              fontSize: 12,
-              color: '#888'
-            }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                ← Swipe to see more plans →
-              </span>
-            </div>
-
-            {/* Footer */}
-            <div style={{ textAlign: 'center', marginTop: 32, padding: 24 }}>
-              <p style={{ fontSize: 12, color: '#aaa' }}>
-                All plans include a 7-day free trial for Bloom and Bloom+.<br />
-                Cancel anytime. No questions asked.
-              </p>
+          {/* Dot indicators */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 22 }}>
+            {plansArray.map((_, i) => (
               <button
-                onClick={onClose}
+                key={i}
+                onClick={() => scrollTo(i)}
+                aria-label={`Go to plan ${i + 1}`}
                 style={{
-                  marginTop: 24,
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#4108a5',
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  textDecoration: 'underline',
-                  transition: 'opacity 0.2s'
+                  width: activeIdx === i ? 28 : 8, height: 8,
+                  borderRadius: 4,
+                  background: activeIdx === i ? PURPLE : '#ddd',
+                  border: 'none', cursor: 'pointer',
+                  transition: 'all 0.25s ease', padding: 0,
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
-              >
-                Maybe later
-              </button>
-            </div>
+              />
+            ))}
+          </div>
+
+          <p style={{ textAlign: 'center', fontSize: 12, color: '#bbb', margin: 0 }}>
+            Bloom+ includes a 7-day free trial. Cancel anytime, no questions asked.
+          </p>
+          <div style={{ textAlign: 'center', marginTop: 12 }}>
+            <button
+              onClick={!loading ? onClose : undefined}
+              disabled={!!loading}
+              style={{
+                background: 'none', border: 'none',
+                color: PURPLE, fontSize: 13,
+                cursor: loading ? 'default' : 'pointer',
+                textDecoration: 'underline',
+                padding: '4px 12px',
+                opacity: loading ? 0.4 : 0.75,
+                transition: 'opacity 0.15s',
+              }}
+              onMouseEnter={e => { if (!loading) e.currentTarget.style.opacity = '1'; }}
+              onMouseLeave={e => { e.currentTarget.style.opacity = loading ? '0.4' : '0.75'; }}
+            >
+              Maybe later
+            </button>
           </div>
         </div>
       </div>
 
       <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
+        @keyframes femin9-slide-up {
+          from { opacity: 0; transform: translate(-50%, -46%) scale(0.96); }
+          to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
-        
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translate(-50%, -45%);
-          }
-          to {
-            opacity: 1;
-            transform: translate(-50%, -50%);
-          }
+        @keyframes femin9-fade-in {
+          from { opacity: 0; } to { opacity: 1; }
         }
-        
-        @keyframes pulse {
-          0% { opacity: 0; transform: scale(0.9); }
-          50% { opacity: 1; transform: scale(1); }
-          100% { opacity: 0; transform: scale(1.1); }
-        }
-        
-        @keyframes spin {
+        @keyframes femin9-spin {
           to { transform: rotate(360deg); }
         }
-        
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-20px); }
-        }
-
-        /* Hide scrollbar but keep functionality */
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
+        .femin9-hide-scrollbar::-webkit-scrollbar { display: none; }
+        .femin9-hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
         }
       `}</style>
     </>

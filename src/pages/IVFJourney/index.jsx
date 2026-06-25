@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../context/useApp';
+import { lsGet, lsSet } from '../../utils/storage';
 import EmbryoTracker from '../../components/EmbryoTracker'; 
 import './Ivf.css';
 
@@ -320,7 +321,7 @@ function MedCard({ med, onEdit, onDelete }) {
 
 function MedicationSection({ medications, onMedicationUpdate }) {
   const todayKey = `ivf_taken_${todayISO()}`;
-  const [takenLog, setTakenLog] = useState(() => { try { return JSON.parse(localStorage.getItem(todayKey) || '{}'); } catch { return {}; } });
+  const [takenLog, setTakenLog] = useState(() => lsGet(todayKey, {}));
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState(null);
   const [view, setView] = useState('today');
@@ -328,7 +329,7 @@ function MedicationSection({ medications, onMedicationUpdate }) {
   const handleAdd = (form) => { const newMed = { id: Date.now(), ...form }; saveMedications([...medications, newMed]); setShowAdd(false); };
   const handleEdit = (form) => { const updated = medications.map(m => m.id === editing.id ? { ...m, ...form } : m); saveMedications(updated); setEditing(null); };
   const handleDelete = (id) => { if (!window.confirm('Remove this medication?')) return; saveMedications(medications.filter(m => m.id !== id)); };
-  const toggleTaken = (key) => { const updated = { ...takenLog, [key]: !takenLog[key] }; setTakenLog(updated); localStorage.setItem(todayKey, JSON.stringify(updated)); };
+  const toggleTaken = (key) => { const updated = { ...takenLog, [key]: !takenLog[key] }; setTakenLog(updated); lsSet(todayKey, updated); };
   const activeMeds = medications.filter(isMedActive);
   const inactiveMeds = medications.filter(m => !isMedActive(m));
   const todayTotal = activeMeds.reduce((acc, m) => acc + (m.times?.length || 1), 0);
@@ -419,12 +420,16 @@ function EmbryoSection({ embryos, onEmbryoUpdate }) {
 
 /* ─────────────────TWO WEEK WAIT SECTION───────────────────────────── */
 function TwoWeekWait({ cycleId, transferDate }) {
-  const [symptoms, setSymptoms] = useState(() => { const saved = localStorage.getItem(`${STORAGE_KEYS.SYMPTOM_LOGS}_${todayISO()}`); return saved ? JSON.parse(saved) : {}; });
-  const [dailyAffirmation, setDailyAffirmation] = useState(() => { const idx = localStorage.getItem(STORAGE_KEYS.AFFIRMATION_IDX) || 0; const affirmationsList = ["You are stronger than you know. 💪", "Every day brings you closer to your dream. 🌈", "Your body is capable of amazing things. ✨", "Trust the process, trust your journey. 🦋"]; return affirmationsList[idx % affirmationsList.length]; });
+  const [symptoms, setSymptoms] = useState(() => lsGet(`${STORAGE_KEYS.SYMPTOM_LOGS}_${todayISO()}`, {}));
+  const [dailyAffirmation, setDailyAffirmation] = useState(() => { 
+    const idx = lsGet(STORAGE_KEYS.AFFIRMATION_IDX, 0); 
+    const affirmationsList = ["You are stronger than you know. 💪", "Every day brings you closer to your dream. 🌈", "Your body is capable of amazing things. ✨", "Trust the process, trust your journey. 🦋"]; 
+    return affirmationsList[idx % affirmationsList.length]; 
+  });
   const affirmationsList = ["You are stronger than you know. 💪", "Every day brings you closer to your dream. 🌈", "Your body is capable of amazing things. ✨", "Trust the process, trust your journey. 🦋", "You've prepared well. Now rest and hope. 🌸", "You are not alone in this wait. 💕"];
   const commonSymptoms = [{ name: "Mild cramping", emoji: "🔴" }, { name: "Spotting", emoji: "🩸" }, { name: "Breast tenderness", emoji: "🤱" }, { name: "Fatigue", emoji: "😴" }, { name: "Bloating", emoji: "🎈" }, { name: "Nausea", emoji: "🤢" }];
-  const handleSymptomToggle = (symptom) => { const updated = { ...symptoms, [symptom]: !symptoms[symptom] }; setSymptoms(updated); localStorage.setItem(`${STORAGE_KEYS.SYMPTOM_LOGS}_${todayISO()}`, JSON.stringify(updated)); };
-  const nextAffirmation = () => { const currentIdx = affirmationsList.findIndex(a => a === dailyAffirmation); const nextIdx = (currentIdx + 1) % affirmationsList.length; setDailyAffirmation(affirmationsList[nextIdx]); localStorage.setItem(STORAGE_KEYS.AFFIRMATION_IDX, nextIdx); };
+  const handleSymptomToggle = (symptom) => { const updated = { ...symptoms, [symptom]: !symptoms[symptom] }; setSymptoms(updated); lsSet(`${STORAGE_KEYS.SYMPTOM_LOGS}_${todayISO()}`, updated); };
+  const nextAffirmation = () => { const currentIdx = affirmationsList.findIndex(a => a === dailyAffirmation); const nextIdx = (currentIdx + 1) % affirmationsList.length; setDailyAffirmation(affirmationsList[nextIdx]); lsSet(STORAGE_KEYS.AFFIRMATION_IDX, nextIdx); };
   const testDate = transferDate ? new Date(transferDate) : null; if (testDate) testDate.setDate(testDate.getDate() + 14);
   const today = new Date(); const daysUntilTest = testDate ? Math.ceil((testDate - today) / (1000 * 60 * 60 * 24)) : null;
 
@@ -463,11 +468,11 @@ function ProgressSummarySection({ scans, embryos, medications, timeline, cycleSt
 /* ─────────────────PARTNER SECTION───────────────────────────── */
 function PartnerSection({ partner, onPartnerUpdate }) {
   const [showEdit, setShowEdit] = useState(false);
-  const [supportLog, setSupportLog] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.PARTNER_SUPPORT); return saved ? JSON.parse(saved) : []; });
+  const [supportLog, setSupportLog] = useState(() => lsGet(STORAGE_KEYS.PARTNER_SUPPORT, []));
   const [newNote, setNewNote] = useState('');
   const supportActivities = ["Attended appointment", "Gave injection", "Emotional support", "Helped with medications"];
-  const addSupportNote = () => { if (!newNote.trim()) return; const updated = [...supportLog, { id: Date.now(), note: newNote, date: todayISO(), type: 'note' }]; setSupportLog(updated); localStorage.setItem(STORAGE_KEYS.PARTNER_SUPPORT, JSON.stringify(updated)); setNewNote(''); };
-  const logActivity = (activity) => { const updated = [...supportLog, { id: Date.now(), activity, date: todayISO(), type: 'activity' }]; setSupportLog(updated); localStorage.setItem(STORAGE_KEYS.PARTNER_SUPPORT, JSON.stringify(updated)); };
+  const addSupportNote = () => { if (!newNote.trim()) return; const updated = [...supportLog, { id: Date.now(), note: newNote, date: todayISO(), type: 'note' }]; setSupportLog(updated); lsSet(STORAGE_KEYS.PARTNER_SUPPORT, updated); setNewNote(''); };
+  const logActivity = (activity) => { const updated = [...supportLog, { id: Date.now(), activity, date: todayISO(), type: 'activity' }]; setSupportLog(updated); lsSet(STORAGE_KEYS.PARTNER_SUPPORT, updated); };
   const todaysActivities = supportLog.filter(log => log.date === todayISO());
 
   return (
@@ -521,22 +526,35 @@ function CycleStartPicker({ onConfirm }) {
 /* ─────────────────MAIN COMPONENT───────────────────────────────────── */
 export default function IVFJourney({ activeTab = "home" }) {
   const { userName } = useApp();
-  const [cycleStart, setCycleStart] = useState(() => localStorage.getItem(STORAGE_KEYS.CYCLE_START) || null);
-  const handleCycleStartConfirm = (dateString) => { localStorage.setItem(STORAGE_KEYS.CYCLE_START, dateString); setCycleStart(dateString); };
-  const [timeline, setTimeline] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.TIMELINE); if (saved) return JSON.parse(saved); return cycleStart ? buildTimeline(cycleStart) : []; });
-  const [medications, setMedications] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.MEDICATIONS); return saved ? JSON.parse(saved) : getInitialMedications(); });
-  const [scans, setScans] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.SCANS); if (saved) return JSON.parse(saved); return cycleStart ? buildScans(cycleStart) : []; });
-  const [embryos, setEmbryos] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.EMBRYOS); return saved ? JSON.parse(saved) : getInitialEmbryos(); });
-  const [contacts, setContacts] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.CONTACTS); return saved ? JSON.parse(saved) : getInitialContacts(); });
-  const [partner, setPartner] = useState(() => { const saved = localStorage.getItem(STORAGE_KEYS.PARTNER); return saved ? JSON.parse(saved) : { name: '', role: '' }; });
+  const [cycleStart, setCycleStart] = useState(() => lsGet(STORAGE_KEYS.CYCLE_START, null));
+  const handleCycleStartConfirm = (dateString) => { lsSet(STORAGE_KEYS.CYCLE_START, dateString); setCycleStart(dateString); };
+  const [timeline, setTimeline] = useState(() => { 
+    const saved = lsGet(STORAGE_KEYS.TIMELINE, null); 
+    if (saved) return saved; 
+    return cycleStart ? buildTimeline(cycleStart) : []; 
+  });
+  const [medications, setMedications] = useState(() => lsGet(STORAGE_KEYS.MEDICATIONS, getInitialMedications()));
+  const [scans, setScans] = useState(() => { 
+    const saved = lsGet(STORAGE_KEYS.SCANS, null); 
+    if (saved) return saved; 
+    return cycleStart ? buildScans(cycleStart) : []; 
+  });
+  const [embryos, setEmbryos] = useState(() => lsGet(STORAGE_KEYS.EMBRYOS, getInitialEmbryos()));
+  const [contacts, setContacts] = useState(() => lsGet(STORAGE_KEYS.CONTACTS, getInitialContacts()));
+  const [partner, setPartner] = useState(() => lsGet(STORAGE_KEYS.PARTNER, { name: '', role: '' }));
 
-  useEffect(() => { if (!cycleStart) return; if (!localStorage.getItem(STORAGE_KEYS.TIMELINE)) setTimeline(buildTimeline(cycleStart)); if (!localStorage.getItem(STORAGE_KEYS.SCANS)) setScans(buildScans(cycleStart)); }, [cycleStart]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.TIMELINE, JSON.stringify(timeline)); }, [timeline]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.MEDICATIONS, JSON.stringify(medications)); }, [medications]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.SCANS, JSON.stringify(scans)); }, [scans]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.EMBRYOS, JSON.stringify(embryos)); }, [embryos]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.CONTACTS, JSON.stringify(contacts)); }, [contacts]);
-  useEffect(() => { localStorage.setItem(STORAGE_KEYS.PARTNER, JSON.stringify(partner)); }, [partner]);
+  useEffect(() => { 
+    if (!cycleStart) return; 
+    if (!lsGet(STORAGE_KEYS.TIMELINE, null)) setTimeline(buildTimeline(cycleStart)); 
+    if (!lsGet(STORAGE_KEYS.SCANS, null)) setScans(buildScans(cycleStart)); 
+  }, [cycleStart]);
+  
+  useEffect(() => { lsSet(STORAGE_KEYS.TIMELINE, timeline); }, [timeline]);
+  useEffect(() => { lsSet(STORAGE_KEYS.MEDICATIONS, medications); }, [medications]);
+  useEffect(() => { lsSet(STORAGE_KEYS.SCANS, scans); }, [scans]);
+  useEffect(() => { lsSet(STORAGE_KEYS.EMBRYOS, embryos); }, [embryos]);
+  useEffect(() => { lsSet(STORAGE_KEYS.CONTACTS, contacts); }, [contacts]);
+  useEffect(() => { lsSet(STORAGE_KEYS.PARTNER, partner); }, [partner]);
 
   const completedStages = timeline.filter(s => s.done).length;
   const progress = timeline.length > 0 ? Math.round((completedStages / timeline.length) * 100) : 0;
@@ -552,7 +570,7 @@ export default function IVFJourney({ activeTab = "home" }) {
       case 'treatment': return <><HeroSection userName={userName} progress={progress} stage={currentStage} cycleDay={cycleDay} cycleStartDate={cycleStart} timeline={timeline} /><IVFTimeline stages={timeline} onStageUpdate={setTimeline} /><ScanSection scans={scans} onScanUpdate={setScans} /><EmbryoSection embryos={embryos} onEmbryoUpdate={setEmbryos} /></>;
       case 'medications': return <MedicationSection medications={medications} onMedicationUpdate={setMedications} />;
       case 'scans': return <ScanSection scans={scans} onScanUpdate={setScans} />;
-      case 'embryos': return <div className="embryo-tracker-page"><EmbryoTracker cycleId={cycleStart} onEmbryoUpdate={(updatedEmbryos) => { setEmbryos(updatedEmbryos); localStorage.setItem(STORAGE_KEYS.EMBRYOS, JSON.stringify(updatedEmbryos)); }} /></div>;
+      case 'embryos': return <div className="embryo-tracker-page"><EmbryoTracker cycleId={cycleStart} onEmbryoUpdate={(updatedEmbryos) => { setEmbryos(updatedEmbryos); lsSet(STORAGE_KEYS.EMBRYOS, updatedEmbryos); }} /></div>;
       case 'insights': return <><HeroSection userName={userName} progress={progress} stage={currentStage} cycleDay={cycleDay} cycleStartDate={cycleStart} timeline={timeline} /><TwoWeekWait cycleId={cycleStart} transferDate={transferStage?.timestamp} /><ProgressSummarySection scans={scans} embryos={embryos} medications={medications} timeline={timeline} cycleStart={cycleStart} /></>;
       case 'profile': return <><HeroSection userName={userName} progress={progress} stage={currentStage} cycleDay={cycleDay} cycleStartDate={cycleStart} timeline={timeline} /><PartnerSection partner={partner} onPartnerUpdate={setPartner} /><ContactSection contacts={contacts} onContactUpdate={setContacts} /></>;
       default: return <HeroSection userName={userName} stage={currentStage} progress={progress} cycleDay={cycleDay} cycleStartDate={cycleStart} timeline={timeline} />;

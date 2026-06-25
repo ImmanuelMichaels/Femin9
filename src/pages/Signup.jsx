@@ -476,6 +476,7 @@ export default function Signup() {
               : <><span>Create Account</span><span className="su-submit-arrow">→</span></>
             }
           </button>
+          
         </div>
 
         {/* ── Footer ────────────────────────────────────────────────────────── */}

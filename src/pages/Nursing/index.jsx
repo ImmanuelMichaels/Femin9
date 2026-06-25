@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { SectionTitle } from '../../components/ui';
 import { useApp } from '../../context/useApp';
+import { lsGet, lsSet } from '../../utils/storage';
 import './Nursing.css';
 
 /* ── Helpers ── */
@@ -91,9 +92,7 @@ export default function Nursing() {
   const [feedSide, setFeedSide]     = useState('left');
   const [feedActive, setFeedActive] = useState(false);
   const [feedSecs, setFeedSecs]     = useState(0);
-  const [feedLog, setFeedLog]       = useState(() => {
-    try { return JSON.parse(localStorage.getItem('nursingFeedLog') || '[]'); } catch { return []; }
-  });
+  const [feedLog, setFeedLog]       = useState(() => lsGet('nursingFeedLog', []));
   const feedRef = useRef(null);
 
   useEffect(() => {
@@ -112,7 +111,7 @@ export default function Nursing() {
       const entry = { side: feedSide, duration: feedSecs, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: Date.now() };
       const updated = [entry, ...feedLog].slice(0, 10);
       setFeedLog(updated);
-      localStorage.setItem('nursingFeedLog', JSON.stringify(updated));
+      lsSet('nursingFeedLog', updated);
     }
     setFeedSecs(0);
   };
@@ -124,9 +123,7 @@ export default function Nursing() {
   /* ── Pump timer ── */
   const [pumpActive, setPumpActive] = useState(false);
   const [pumpSecs, setPumpSecs]     = useState(0);
-  const [pumpLog, setPumpLog]       = useState(() => {
-    try { return JSON.parse(localStorage.getItem('nursingPumpLog') || '[]'); } catch { return []; }
-  });
+  const [pumpLog, setPumpLog]       = useState(() => lsGet('nursingPumpLog', []));
   const pumpRef = useRef(null);
 
   useEffect(() => {
@@ -144,7 +141,7 @@ export default function Nursing() {
       const entry = { duration: pumpSecs, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: Date.now() };
       const updated = [entry, ...pumpLog].slice(0, 10);
       setPumpLog(updated);
-      localStorage.setItem('nursingPumpLog', JSON.stringify(updated));
+      lsSet('nursingPumpLog', updated);
     }
     setPumpSecs(0);
   };
@@ -163,9 +160,7 @@ export default function Nursing() {
   const [sleepActive, setSleepActive]   = useState(false);
   const [sleepStart, setSleepStart]     = useState(null);
   const [sleepSecs, setSleepSecs]       = useState(0);
-  const [sleepLog, setSleepLog]         = useState(() => {
-    try { return JSON.parse(localStorage.getItem('nursingSleepLog') || '[]'); } catch { return []; }
-  });
+  const [sleepLog, setSleepLog]         = useState(() => lsGet('nursingSleepLog', []));
   const sleepRef = useRef(null);
 
   useEffect(() => {
@@ -189,7 +184,7 @@ export default function Nursing() {
       };
       const updated = [entry, ...sleepLog].slice(0, 14);
       setSleepLog(updated);
-      localStorage.setItem('nursingSleepLog', JSON.stringify(updated));
+      lsSet('nursingSleepLog', updated);
     }
     setSleepSecs(0);
   };
@@ -203,9 +198,7 @@ export default function Nursing() {
     : 0;
 
   /* ── Baby Weight Tracker ── */
-  const [babyWeight, setBabyWeight] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('babyWeightLog') || '[]'); } catch { return []; }
-  });
+  const [babyWeight, setBabyWeight] = useState(() => lsGet('babyWeightLog', []));
   const [weightInput, setWeightInput] = useState('');
   const [weightUnit, setWeightUnit] = useState('kg');
 
@@ -223,7 +216,7 @@ export default function Nursing() {
     };
     const updated = [entry, ...babyWeight].slice(0, 20);
     setBabyWeight(updated);
-    localStorage.setItem('babyWeightLog', JSON.stringify(updated));
+    lsSet('babyWeightLog', updated);
     setWeightInput('');
   };
 
@@ -241,17 +234,13 @@ export default function Nursing() {
   };
 
   /* ── Immunisation Tracker ── */
-  const [nextImmunisation, setNextImmunisation] = useState(() => {
-    try { return localStorage.getItem('nextImmunisationDate') || ''; } catch { return ''; }
-  });
-  const [immunisationNotes, setImmunisationNotes] = useState(() => {
-    try { return localStorage.getItem('immunisationNotes') || ''; } catch { return ''; }
-  });
+  const [nextImmunisation, setNextImmunisation] = useState(() => lsGet('nextImmunisationDate', ''));
+  const [immunisationNotes, setImmunisationNotes] = useState(() => lsGet('immunisationNotes', ''));
   const [showImmunisationInput, setShowImmunisationInput] = useState(!nextImmunisation);
 
   const saveImmunisation = () => {
-    localStorage.setItem('nextImmunisationDate', nextImmunisation);
-    localStorage.setItem('immunisationNotes', immunisationNotes);
+    lsSet('nextImmunisationDate', nextImmunisation);
+    lsSet('immunisationNotes', immunisationNotes);
     setShowImmunisationInput(false);
   };
 

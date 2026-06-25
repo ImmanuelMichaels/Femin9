@@ -1,8 +1,14 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+// src/pages/VerifyEmail.jsx
+// FIXED: removed const isValid = true bypass.
+// Uses Firebase's built-in email verification — no custom OTP needed.
+
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth } from '../context/firebase';
+import { sendEmailVerification, reload } from 'firebase/auth';
 import './VerifyEmail.css';
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
+const RESEND_COOLDOWN = 60; // seconds — increased from 30 to reduce spam
 
 const MailOpenIcon = () => (
   <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -18,275 +24,188 @@ const CheckCircle = () => (
   </svg>
 );
 
-const BackIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M19 12H5M12 5l-7 7 7 7"/>
-  </svg>
-);
-
-// ─── Success splash ───────────────────────────────────────────────────────────
-
 function VerifiedSplash() {
   return (
     <div className="ve-splash">
       <div className="ve-splash-ring ve-splash-ring--1" />
       <div className="ve-splash-ring ve-splash-ring--2" />
-      <div className="ve-splash-icon">
-        <CheckCircle />
-      </div>
+      <div className="ve-splash-icon"><CheckCircle /></div>
       <p className="ve-splash-title">Email Verified!</p>
       <p className="ve-splash-sub">Taking you to your journey…</p>
     </div>
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
-
-const CODE_LENGTH = 6;
-const RESEND_COOLDOWN = 30; // seconds
-
 export default function VerifyEmail() {
   const navigate = useNavigate();
 
-  // Read email from localStorage (set during signup)
-  const storedEmail = localStorage.getItem('userEmail') || '';
-  const maskedEmail = maskEmail(storedEmail);
+  const user        = auth.currentUser;
+  const email       = user?.email || localStorage.getItem('userEmail') || '';
+  const maskedEmail = maskEmail(email);
 
-  // OTP digit state
-  const [digits, setDigits]       = useState(Array(CODE_LENGTH).fill(''));
-  const [shaking, setShaking]     = useState(false);
-  const [verified, setVerified]   = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [errorMsg, setErrorMsg]   = useState('');
-  const [animOut, setAnimOut]     = useState(false);
-
-  // Resend cooldown
-  const [cooldown, setCooldown]   = useState(0);
+  const [verified,   setVerified]   = useState(false);
+  const [checking,   setChecking]   = useState(false);
+  const [errorMsg,   setErrorMsg]   = useState('');
   const [resendSent, setResendSent] = useState(false);
-  const timerRef                  = useRef(null);
+  const [cooldown,   setCooldown]   = useState(0);
+  const [animOut,    setAnimOut]    = useState(false);
 
-  const inputRefs = useRef([]);
+  const timerRef  = useRef(null);
+  const pollRef   = useRef(null);
 
-  // ── Focus first box on mount ────────────────────────────────────────────────
+  // ── Send verification email on mount if not already sent ────────────────
   useEffect(() => {
-    inputRefs.current[0]?.focus();
-  }, []);
+    if (!user) {
+      // No Firebase user — redirect back to signup
+      navigate('/signup');
+      return;
+    }
+    if (!user.emailVerified) {
+      sendEmailVerification(user).catch(e => {
+        // Too many requests is common — safe to ignore on mount
+        if (e.code !== 'auth/too-many-requests') {
+          console.warn('[VerifyEmail] sendEmailVerification:', e.code);
+        }
+      });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Cooldown ticker ─────────────────────────────────────────────────────────
+  // ── Poll Firebase for email verification (every 5 seconds) ──────────────
+  useEffect(() => {
+    pollRef.current = setInterval(async () => {
+      if (!auth.currentUser) return;
+      try {
+        await reload(auth.currentUser);         // re-fetch user from Firebase
+        if (auth.currentUser.emailVerified) {
+          clearInterval(pollRef.current);
+          localStorage.setItem('emailVerified', 'true');
+          setVerified(true);
+          setTimeout(() => {
+            setAnimOut(true);
+            setTimeout(() => navigate('/onboarding'), 380);
+          }, 1600);
+        }
+      } catch (e) {
+        console.warn('[VerifyEmail] reload error:', e.code);
+      }
+    }, 5000);
+
+    return () => clearInterval(pollRef.current);
+  }, [navigate]);
+
+  // ── Cooldown ticker ──────────────────────────────────────────────────────
   useEffect(() => {
     if (cooldown <= 0) return;
-    timerRef.current = setTimeout(() => setCooldown((c) => c - 1), 1000);
+    timerRef.current = setTimeout(() => setCooldown(c => c - 1), 1000);
     return () => clearTimeout(timerRef.current);
   }, [cooldown]);
 
-  // ── Digit input handler ─────────────────────────────────────────────────────
-  const handleChange = (index, value) => {
-    // Allow only digits
-    const cleaned = value.replace(/\D/g, '').slice(-1);
-    const next = [...digits];
-    next[index] = cleaned;
-    setDigits(next);
+  // ── Manual check button ──────────────────────────────────────────────────
+  const handleManualCheck = async () => {
+    if (checking) return;
+    setChecking(true);
     setErrorMsg('');
-
-    if (cleaned && index < CODE_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  // ── Paste handler — fill all boxes from clipboard ───────────────────────────
-  const handlePaste = (e) => {
-    e.preventDefault();
-    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, CODE_LENGTH);
-    if (!pasted) return;
-    const next = Array(CODE_LENGTH).fill('');
-    pasted.split('').forEach((ch, i) => { next[i] = ch; });
-    setDigits(next);
-    setErrorMsg('');
-    // Focus last filled box
-    const focusIdx = Math.min(pasted.length, CODE_LENGTH - 1);
-    inputRefs.current[focusIdx]?.focus();
-  };
-
-  // ── Backspace handler ───────────────────────────────────────────────────────
-  const handleKeyDown = (index, e) => {
-    if (e.key === 'Backspace') {
-      if (digits[index]) {
-        const next = [...digits];
-        next[index] = '';
-        setDigits(next);
-      } else if (index > 0) {
-        inputRefs.current[index - 1]?.focus();
-      }
-    }
-    if (e.key === 'ArrowLeft' && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-    if (e.key === 'ArrowRight' && index < CODE_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  // ── Verify ──────────────────────────────────────────────────────────────────
-  const handleVerify = useCallback(() => {
-    const code = digits.join('');
-    if (code.length < CODE_LENGTH) {
-      setErrorMsg('Please enter all 6 digits.');
-      shake();
-      return;
-    }
-
-    setLoading(true);
-    setErrorMsg('');
-
-    // Simulate verification — accept any 6-digit code for now
-    // Replace this block with your real API call
-    setTimeout(() => {
-      const isValid = true; // swap with: code === serverCode
-
-      if (isValid) {
+    try {
+      await reload(auth.currentUser);
+      if (auth.currentUser.emailVerified) {
+        clearInterval(pollRef.current);
         localStorage.setItem('emailVerified', 'true');
-        setLoading(false);
         setVerified(true);
         setTimeout(() => {
           setAnimOut(true);
           setTimeout(() => navigate('/onboarding'), 380);
         }, 1600);
       } else {
-        setLoading(false);
-        setErrorMsg('Incorrect code. Please try again.');
-        setDigits(Array(CODE_LENGTH).fill(''));
-        inputRefs.current[0]?.focus();
-        shake();
+        setErrorMsg("Not verified yet — please click the link in your email. Check spam too.");
       }
-    }, 1100);
-  }, [digits, navigate]);
-
-  // ── Enter key submits ───────────────────────────────────────────────────────
-  const handleLastKeyDown = (e) => {
-    if (e.key === 'Enter') handleVerify();
+    } catch {
+      setErrorMsg('Could not check status. Please try again.');
+    } finally {
+      setChecking(false);
+    }
   };
 
-  // ── Shake animation ─────────────────────────────────────────────────────────
-  const shake = () => {
-    setShaking(true);
-    setTimeout(() => setShaking(false), 500);
+  // ── Resend ───────────────────────────────────────────────────────────────
+  const handleResend = async () => {
+    if (cooldown > 0 || !user) return;
+    try {
+      await sendEmailVerification(user);
+      setResendSent(true);
+      setCooldown(RESEND_COOLDOWN);
+      setTimeout(() => setResendSent(false), 4000);
+    } catch (e) {
+      if (e.code === 'auth/too-many-requests') {
+        setErrorMsg('Too many attempts. Please wait a few minutes before resending.');
+        setCooldown(RESEND_COOLDOWN);
+      } else {
+        setErrorMsg('Could not resend. Please try again.');
+      }
+    }
   };
 
-  // ── Resend ──────────────────────────────────────────────────────────────────
-  const handleResend = () => {
-    if (cooldown > 0) return;
-    // TODO: trigger your real resend API call here
-    setResendSent(true);
-    setCooldown(RESEND_COOLDOWN);
-    setDigits(Array(CODE_LENGTH).fill(''));
-    setErrorMsg('');
-    inputRefs.current[0]?.focus();
-    setTimeout(() => setResendSent(false), 3000);
-  };
-
-  // ── Render ──────────────────────────────────────────────────────────────────
   if (verified) return <VerifiedSplash />;
-
-  const codeComplete = digits.every((d) => d !== '');
 
   return (
     <div
       className="ve-root"
-      style={{
-        opacity:    animOut ? 0 : 1,
-        transform:  animOut ? 'translateY(18px)' : 'translateY(0)',
-        transition: 'opacity 0.38s ease, transform 0.38s ease',
-      }}
+      style={{ opacity: animOut ? 0 : 1, transform: animOut ? 'translateY(18px)' : 'translateY(0)', transition: 'opacity 0.38s ease, transform 0.38s ease' }}
     >
       <div className="ve-card">
+        <button className="ve-back" onClick={() => navigate('/signup')}>← Back</button>
 
-        {/* ── Back link ──────────────────────────────────────────────────── */}
-        <button className="ve-back" onClick={() => navigate('/signup')}>
-          <BackIcon />
-          <span>Back</span>
-        </button>
-
-        {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="ve-header">
-          <div className="ve-icon-ring">
-            <MailOpenIcon />
-          </div>
+          <div className="ve-icon-ring"><MailOpenIcon /></div>
           <h1 className="ve-title">Check your email</h1>
           <p className="ve-sub">
-            We sent a 6-digit code to
-            <br />
+            We sent a verification link to<br />
             <strong className="ve-email">{maskedEmail || 'your email address'}</strong>
+          </p>
+          <p style={{ fontSize: 13, color: 'var(--mt)', marginTop: 8 }}>
+            Click the link in the email, then come back here.
+            The page will update automatically.
           </p>
         </div>
 
-        {/* ── OTP boxes ──────────────────────────────────────────────────── */}
-        <div
-          className={`ve-otp-row ${shaking ? 've-otp-row--shake' : ''} ${errorMsg ? 've-otp-row--error' : ''}`}
-          onPaste={handlePaste}
-        >
-          {digits.map((digit, i) => (
-            <input
-              key={i}
-              ref={(el) => (inputRefs.current[i] = el)}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              className={`ve-otp-box ${digit ? 've-otp-box--filled' : ''}`}
-              onChange={(e) => handleChange(i, e.target.value)}
-              onKeyDown={i === CODE_LENGTH - 1 ? (e) => { handleKeyDown(i, e); handleLastKeyDown(e); } : (e) => handleKeyDown(i, e)}
-              autoComplete="one-time-code"
-            />
-          ))}
-        </div>
-
-        {/* ── Error message ───────────────────────────────────────────────── */}
         {errorMsg && <p className="ve-error">{errorMsg}</p>}
 
-        {/* ── Verify button ───────────────────────────────────────────────── */}
+        {/* Manual check for users who already clicked the link */}
         <button
-          className={`ve-submit ${codeComplete && !loading ? '' : 've-submit--dim'}`}
-          onClick={handleVerify}
-          disabled={loading || !codeComplete}
+          className={`ve-submit${checking ? ' ve-submit--dim' : ''}`}
+          onClick={handleManualCheck}
+          disabled={checking}
+          style={{ marginBottom: 16 }}
         >
-          {loading
+          {checking
             ? <span className="ve-spinner" />
-            : <><span>Verify Email</span><span className="ve-arrow">→</span></>
+            : <><span>I've clicked the link</span><span className="ve-arrow"> ✓</span></>
           }
         </button>
 
-        {/* ── Resend section ──────────────────────────────────────────────── */}
         <div className="ve-resend-wrap">
           {resendSent ? (
-            <p className="ve-resend-sent">✓ New code sent!</p>
+            <p className="ve-resend-sent">✓ New verification email sent!</p>
           ) : (
             <p className="ve-resend-text">
-              Didn't get it?{' '}
+              Didn't receive it?{' '}
               <button
-                className={`ve-resend-btn ${cooldown > 0 ? 've-resend-btn--disabled' : ''}`}
+                className={`ve-resend-btn${cooldown > 0 ? ' ve-resend-btn--disabled' : ''}`}
                 onClick={handleResend}
                 disabled={cooldown > 0}
               >
-                {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
+                {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend email'}
               </button>
             </p>
           )}
         </div>
 
-        {/* ── Wrong email ─────────────────────────────────────────────────── */}
         <p className="ve-wrong-email">
           Wrong email?{' '}
-          <button className="ve-change-email" onClick={() => navigate('/signup')}>
-            Change it
-          </button>
+          <button className="ve-change-email" onClick={() => navigate('/signup')}>Change it</button>
         </p>
-
       </div>
     </div>
   );
 }
-
-// ─── Utility ──────────────────────────────────────────────────────────────────
 
 function maskEmail(email) {
   if (!email || !email.includes('@')) return email;

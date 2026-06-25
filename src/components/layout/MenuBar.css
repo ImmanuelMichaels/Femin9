@@ -1,0 +1,385 @@
+/* MenuBar.css - Styled to match app design system */
+
+/* ─── BACKDROP ────────────────────────────────────────────────────────────── */
+.menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 800;
+  animation: menuFadeIn 0.25s ease;
+}
+
+@keyframes menuFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ─── DRAWER ────────────────────────────────────────────────────────────────── */
+.menu-drawer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 290px;
+  background: #FFFFFF;
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  box-shadow: 4px 0 40px rgba(0, 0, 0, 0.12);
+  animation: menuSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes menuSlideIn {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+/* ─── HEADER ────────────────────────────────────────────────────────────────── */
+.menu-header {
+  background: linear-gradient(145deg, #7C3AED, #6D28D9);
+  padding: 44px 20px 24px;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.menu-close-btn {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #FFFFFF;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.menu-close-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
+}
+
+.menu-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.menu-avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.menu-avatar-text {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.menu-user-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #FFFFFF;
+  margin-bottom: 2px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.menu-user-email {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 10px;
+  font-family: 'Poppins', sans-serif;
+}
+
+.menu-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.menu-badge {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'Poppins', sans-serif;
+}
+
+.menu-badge-role {
+  background: rgba(255, 255, 255, 0.2);
+  color: #FCD34D;
+}
+
+/* ─── SOS BUTTON ──────────────────────────────────────────────────────────── */
+.menu-sos-btn {
+  margin: 16px 16px 4px;
+  padding: 12px;
+  background: #FEF2F2;
+  border: 1.5px solid #EF4444;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #DC2626;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+.menu-sos-btn:hover {
+  background: #FEE2E2;
+  transform: scale(1.02);
+}
+
+.menu-sos-btn:active {
+  transform: scale(0.95);
+}
+
+/* ─── SECTIONS ────────────────────────────────────────────────────────────── */
+.menu-sections {
+  flex: 1;
+  padding: 8px 12px;
+  overflow-y: auto;
+}
+
+.menu-section {
+  margin-bottom: 8px;
+}
+
+.menu-section-title {
+  font-size: 10px;
+  font-weight: 700;
+  color: #9CA3AF;
+  letter-spacing: 0.5px;
+  padding: 8px 8px 4px;
+  text-transform: uppercase;
+  font-family: 'Poppins', sans-serif;
+}
+
+.menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+  margin-bottom: 2px;
+  position: relative;
+  font-family: 'Poppins', sans-serif;
+}
+
+.menu-item:hover {
+  background: #F5F3FF;
+}
+
+.menu-item.active {
+  background: #EDE9FE;
+}
+
+.menu-item-icon {
+  flex-shrink: 0;
+  color: #6B7280;
+  transition: color 0.15s ease;
+}
+
+.menu-item.active .menu-item-icon {
+  color: #7C3AED;
+}
+
+.menu-item-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1F2937;
+  transition: color 0.15s ease;
+}
+
+.menu-item.active .menu-item-label {
+  font-weight: 600;
+  color: #7C3AED;
+}
+
+.menu-item-dot {
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #7C3AED;
+  flex-shrink: 0;
+}
+
+/* ─── FOOTER ────────────────────────────────────────────────────────────────── */
+.menu-footer {
+  padding: 12px 16px 32px;
+  border-top: 1px solid #F3F4F6;
+  flex-shrink: 0;
+}
+
+.menu-footer-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.menu-footer-btn:hover {
+  background: #F5F3FF;
+}
+
+.menu-footer-btn svg {
+  color: #6B7280;
+}
+
+.menu-footer-btn span {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1F2937;
+}
+
+.menu-signout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #F3F4F6;
+  background: #FFFFFF;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.15s ease;
+  font-family: 'Poppins', sans-serif;
+}
+
+.menu-signout-btn:hover:not(:disabled) {
+  background: #FEF2F2;
+  border-color: #EF4444;
+}
+
+.menu-signout-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.menu-signout-btn svg {
+  color: #EF4444;
+}
+
+.menu-signout-btn span {
+  font-size: 13px;
+  font-weight: 600;
+  color: #EF4444;
+}
+
+.menu-version {
+  text-align: center;
+  font-size: 10px;
+  color: #9CA3AF;
+  margin-top: 14px;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* ─── RESPONSIVE ────────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .menu-drawer {
+    width: 260px;
+  }
+
+  .menu-header {
+    padding: 36px 16px 20px;
+  }
+
+  .menu-avatar {
+    width: 48px;
+    height: 48px;
+  }
+
+  .menu-user-name {
+    font-size: 16px;
+  }
+
+  .menu-sections {
+    padding: 6px 10px;
+  }
+
+  .menu-item {
+    padding: 8px 10px;
+  }
+
+  .menu-footer {
+    padding: 10px 14px 28px;
+  }
+}
+
+/* ─── ACCESSIBILITY ────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .menu-backdrop {
+    animation: none;
+  }
+
+  .menu-drawer {
+    animation: none;
+  }
+
+  .menu-sos-btn:hover {
+    transform: none;
+  }
+
+  .menu-close-btn:hover {
+    transform: none;
+  }
+}
+
+/* ─── SCROLLBAR STYLING ──────────────────────────────────────────────────── */
+.menu-drawer::-webkit-scrollbar {
+  width: 4px;
+}
+
+.menu-drawer::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.menu-drawer::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 4px;
+}
+
+.menu-drawer::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}

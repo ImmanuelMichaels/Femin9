@@ -1,18 +1,5 @@
 // src/hooks/useHealthData.js
-//
-// Single source of truth for all health tracking data in Firestore.
-// Covers: symptom logs, AI insights, heatmap aggregates.
-//
-// Firestore schema:
-//   healthLogs/{userId}/entries/{YYYY-MM-DD}
-//     symptoms:    [{ id, label, severity (1-5), note?, ts }]
-//     aiInsight:   { summary, flags, tips, generatedAt }
-//     bp:          { sys, dia, loggedAt }
-//     weight:      { kg, loggedAt }
-//     mood:        'great'|'good'|'okay'|'low'|'bad'
-//     bleeding:    'none'|'spotting'|'light'|'heavy'
-//     movement:    'normal'|'reduced'|'absent'      (pregnant only)
-//     updatedAt:   serverTimestamp
+// Complete refactored version with secure AI via Cloud Function
 
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -21,6 +8,8 @@ import {
   query, orderBy, limit, onSnapshot,
 } from 'firebase/firestore';
 import { db, auth } from '../context/firebase';
+import { sendToBloom } from './useBloom';
+import { lsGet } from '../utils/storage';
 
 // ─── Journey-aware symptom catalogues ────────────────────────────────────────
 
@@ -142,6 +131,18 @@ export const TRADITIONAL_BY_JOURNEY = {
   ],
 };
 
+// ─── Constants ─────────────────────────────────────────────────────────────────
+
+const MAX_INSIGHT_DAYS = 14;
+const JOURNEY_LABELS = {
+  pregnant: 'pregnancy',
+  ttc: 'trying to conceive',
+  ivf: 'IVF treatment',
+  mom: 'postpartum',
+  menopause: 'menopause',
+  menstrual: 'menstrual health',
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 export function todayKey() {
@@ -158,107 +159,23 @@ function entryRef(userId, key) {
   return doc(db, 'healthLogs', userId, 'entries', key);
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+function buildInsightPrompt(entries, journeyType) {
+  const journeyLabel = JOURNEY_LABELS[journeyType] || 'reproductive health';
 
-export function useHealthData({ journeyType = '' } = {}) {
-  const userId = auth.currentUser?.uid;
-  const today  = todayKey();
+  // Build summary of entries
+  const summary = entries.map((e) => {
+    const syms = (e.symptoms || [])
+      .map((s) => `${s.label} (severity ${s.severity}/5)`)
+      .join(', ');
+    const vitals = [
+      e.bp ? `BP ${e.bp.sys}/${e.bp.dia}` : null,
+      e.weight ? `Weight ${e.weight.kg}kg` : null,
+      e.mood ? `Mood: ${e.mood}` : null,
+    ].filter(Boolean).join(', ');
+    return `${e.id}: symptoms=[${syms || 'none'}]${vitals ? `, vitals=[${vitals}]` : ''}`;
+  }).join('\n');
 
-  const [todayEntry, setTodayEntry]   = useState(null);
-  const [recentEntries, setRecent]    = useState([]);   // last 14 days
-  const [loadingToday, setLoadingT]   = useState(true);
-  const [loadingRecent, setLoadingR]  = useState(true);
-  const [saving, setSaving]           = useState(false);
-  const [insightLoading, setInsLoading] = useState(false);
-  const [insightError, setInsError]     = useState(null);
-
-  // ── Real-time listener for today's entry ─────────────────────────────────
-  useEffect(() => {
-    if (!userId) { setLoadingT(false); return; }
-    const unsub = onSnapshot(entryRef(userId, today), (snap) => {
-      setTodayEntry(snap.exists() ? { id: snap.id, ...snap.data() } : null);
-      setLoadingT(false);
-    }, (err) => { console.error('[useHealthData today]', err); setLoadingT(false); });
-    return () => unsub();
-  }, [userId, today]);
-
-  // ── One-time fetch for recent 14 days (for heatmap / trends) ─────────────
-  useEffect(() => {
-    if (!userId) { setLoadingR(false); return; }
-    const keys = Array.from({ length: 14 }, (_, i) => dateKey(i));
-    Promise.all(keys.map((k) => getDoc(entryRef(userId, k)))).then((snaps) => {
-      setRecent(snaps
-        .filter((s) => s.exists())
-        .map((s) => ({ id: s.id, ...s.data() }))
-      );
-      setLoadingR(false);
-    }).catch((err) => { console.error('[useHealthData recent]', err); setLoadingR(false); });
-  }, [userId]);
-
-  // ── Log symptoms for today ────────────────────────────────────────────────
-  const logSymptoms = useCallback(async (symptoms) => {
-    if (!userId) return;
-    setSaving(true);
-    try {
-      await setDoc(entryRef(userId, today), {
-        symptoms,
-        journeyType,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-    } catch (e) { console.error('[logSymptoms]', e); }
-    finally { setSaving(false); }
-  }, [userId, today, journeyType]);
-
-  // ── Log a single vitals field for today ──────────────────────────────────
-  const logVital = useCallback(async (field, value) => {
-    if (!userId) return;
-    setSaving(true);
-    try {
-      await setDoc(entryRef(userId, today), {
-        [field]:   value,
-        journeyType,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
-    } catch (e) { console.error('[logVital]', e); }
-    finally { setSaving(false); }
-  }, [userId, today, journeyType]);
-
-  // ── Generate AI health insight from real logged data ──────────────────────
-  const generateInsight = useCallback(async () => {
-    if (!userId) return;
-    setInsLoading(true);
-    setInsError(null);
-
-    try {
-      // Build context from real logged data (last 14 days)
-      const keys   = Array.from({ length: 14 }, (_, i) => dateKey(i));
-      const snaps  = await Promise.all(keys.map((k) => getDoc(entryRef(userId, k))));
-      const entries = snaps.filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() }));
-
-      if (entries.length === 0) {
-        setInsError('No health data logged yet. Start logging symptoms today and your AI insight will reflect your real health patterns.');
-        setInsLoading(false);
-        return;
-      }
-
-      // Summarise for the prompt
-      const summary = entries.map((e) => {
-        const syms = (e.symptoms || []).map((s) => `${s.label} (severity ${s.severity}/5)`).join(', ');
-        const vitals = [
-          e.bp     ? `BP ${e.bp.sys}/${e.bp.dia}` : null,
-          e.weight ? `Weight ${e.weight.kg}kg`     : null,
-          e.mood   ? `Mood: ${e.mood}`             : null,
-        ].filter(Boolean).join(', ');
-        return `${e.id}: symptoms=[${syms || 'none'}]${vitals ? `, vitals=[${vitals}]` : ''}`;
-      }).join('\n');
-
-      const journeyLabels = {
-        pregnant: 'pregnancy', ttc: 'trying to conceive', ivf: 'IVF treatment',
-        mom: 'postpartum', menopause: 'menopause', menstrual: 'menstrual health',
-      };
-      const journeyLabel = journeyLabels[journeyType] || 'reproductive health';
-
-      const prompt = `You are a compassionate women's health assistant supporting a user on their ${journeyLabel} journey.
+  return `You are a compassionate women's health assistant supporting a user on their ${journeyLabel} journey.
 
 The user has logged the following health data over the past ${entries.length} day(s):
 
@@ -275,49 +192,197 @@ Respond in JSON only, exactly this shape:
   "flags": ["...", "...", "..."],
   "tips": ["...", "...", "..."]
 }`;
+}
 
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }],
-        }),
+// ─── Hook ─────────────────────────────────────────────────────────────────────
+
+export function useHealthData({ journeyType = '' } = {}) {
+  const userId = auth.currentUser?.uid;
+  const today = todayKey();
+
+  const [todayEntry, setTodayEntry] = useState(null);
+  const [recentEntries, setRecent] = useState([]);
+  const [loadingToday, setLoadingT] = useState(true);
+  const [loadingRecent, setLoadingR] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [insightLoading, setInsLoading] = useState(false);
+  const [insightError, setInsError] = useState(null);
+
+  // ── Real-time listener for today's entry ─────────────────────────────────
+  useEffect(() => {
+    if (!userId) {
+      setLoadingT(false);
+      return;
+    }
+
+    const unsub = onSnapshot(
+      entryRef(userId, today),
+      (snap) => {
+        setTodayEntry(snap.exists() ? { id: snap.id, ...snap.data() } : null);
+        setLoadingT(false);
+      },
+      (err) => {
+        console.error('[useHealthData today]', err);
+        setLoadingT(false);
+      }
+    );
+
+    return () => unsub();
+  }, [userId, today]);
+
+  // ── One-time fetch for recent days (for heatmap / trends) ──────────────
+  useEffect(() => {
+    if (!userId) {
+      setLoadingR(false);
+      return;
+    }
+
+    const keys = Array.from({ length: MAX_INSIGHT_DAYS }, (_, i) => dateKey(i));
+
+    Promise.all(keys.map((k) => getDoc(entryRef(userId, k))))
+      .then((snaps) => {
+        setRecent(
+          snaps
+            .filter((s) => s.exists())
+            .map((s) => ({ id: s.id, ...s.data() }))
+        );
+        setLoadingR(false);
+      })
+      .catch((err) => {
+        console.error('[useHealthData recent]', err);
+        setLoadingR(false);
       });
+  }, [userId]);
 
-      if (!res.ok) throw new Error(`API error ${res.status}`);
-      const data = await res.json();
-      const raw  = data.content?.find((b) => b.type === 'text')?.text || '{}';
-      const clean = raw.replace(/```json|```/g, '').trim();
+  // ── Log symptoms for today ────────────────────────────────────────────────
+  const logSymptoms = useCallback(
+    async (symptoms) => {
+      if (!userId) return;
+      setSaving(true);
+      try {
+        await setDoc(
+          entryRef(userId, today),
+          {
+            symptoms,
+            journeyType,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch (e) {
+        console.error('[logSymptoms]', e);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [userId, today, journeyType]
+  );
+
+  // ── Log a single vitals field for today ──────────────────────────────────
+  const logVital = useCallback(
+    async (field, value) => {
+      if (!userId) return;
+      setSaving(true);
+      try {
+        await setDoc(
+          entryRef(userId, today),
+          {
+            [field]: value,
+            journeyType,
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch (e) {
+        console.error('[logVital]', e);
+      } finally {
+        setSaving(false);
+      }
+    },
+    [userId, today, journeyType]
+  );
+
+  // ── Generate AI health insight from real logged data ──────────────────────
+  const generateInsight = useCallback(async () => {
+    if (!userId) {
+      setInsError('Please sign in to generate health insights.');
+      return;
+    }
+
+    setInsLoading(true);
+    setInsError(null);
+
+    try {
+      // Fetch recent entries
+      const keys = Array.from({ length: MAX_INSIGHT_DAYS }, (_, i) => dateKey(i));
+      const snaps = await Promise.all(keys.map((k) => getDoc(entryRef(userId, k))));
+      const entries = snaps
+        .filter((s) => s.exists())
+        .map((s) => ({ id: s.id, ...s.data() }));
+
+      if (entries.length === 0) {
+        setInsError(
+          'No health data logged yet. Start logging symptoms today and your AI insight will reflect your real health patterns.'
+        );
+        setInsLoading(false);
+        return;
+      }
+
+      // Build prompt
+      const prompt = buildInsightPrompt(entries, journeyType);
+
+      // ─── SECURE: Use Cloud Function proxy via useBloom ──────────────────
+      const insightText = await sendToBloom(
+        prompt,
+        [], // No history needed for insight generation
+        journeyType,
+        'Generate structured health insight from user symptom logs.'
+      );
+
+      // Parse JSON response (handle markdown code blocks)
+      const clean = insightText.replace(/```json|```/g, '').trim();
       const insight = JSON.parse(clean);
+
+      // Add metadata
       insight.generatedAt = new Date().toISOString();
       insight.basedOnDays = entries.length;
 
       // Persist to today's entry
-      await setDoc(entryRef(userId, today), {
-        aiInsight: insight,
-        updatedAt: serverTimestamp(),
-      }, { merge: true });
+      await setDoc(
+        entryRef(userId, today),
+        {
+          aiInsight: insight,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      return insight;
 
     } catch (e) {
       console.error('[generateInsight]', e);
-      setInsError('Could not generate insight right now. Please try again shortly.');
+
+      if (e instanceof SyntaxError) {
+        setInsError('I received a response I couldn\'t understand. Please try again.');
+      } else {
+        setInsError(e.message || 'Could not generate insight right now. Please try again shortly.');
+      }
+      return null;
     } finally {
       setInsLoading(false);
     }
   }, [userId, today, journeyType]);
 
-  // ── Heatmap data: severity totals per day over 14 days ───────────────────
+  // ── Heatmap data: severity totals per day over recent days ──────────────
   const heatmapData = recentEntries.map((entry) => {
     const totalSeverity = (entry.symptoms || []).reduce((sum, s) => sum + (s.severity || 1), 0);
-    const symptomCount  = (entry.symptoms || []).length;
+    const symptomCount = (entry.symptoms || []).length;
     return {
-      date:           entry.id,
+      date: entry.id,
       totalSeverity,
       symptomCount,
       dominantSymptom: entry.symptoms?.sort((a, b) => b.severity - a.severity)?.[0]?.label || null,
-      mood:            entry.mood || null,
+      mood: entry.mood || null,
     };
   });
 

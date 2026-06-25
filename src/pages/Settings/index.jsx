@@ -8,6 +8,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import WeightGoalSetup from '../../components/WeightGoalSetup';
+import { lsGet, lsSet, lsRemove } from '../../utils/storage';
 
 const Toggle = ({ value, onChange, label, desc, color = "var(--sg)", disabled = false }) => (
   <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-md)", padding: "var(--sp-4) 0", borderBottom: "1px solid var(--border)", opacity: disabled ? 0.5 : 1 }}>
@@ -62,23 +63,20 @@ export default function Settings() {
     setNotificationsEnabled,
   } = useApp();
   
-  // Local state
-  const [lang, setLang] = useState(() => localStorage.getItem('appLanguage') || "EN");
+  // Local state - using safe storage
+  const [lang, setLang] = useState(() => lsGet('appLanguage', "EN"));
   const [notifications, setNotifications] = useState(notificationsEnabled);
-  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
-  const [kickAlerts, setKickAlerts] = useState(() => localStorage.getItem('kickAlerts') !== 'false');
-  const [bpReminders, setBpReminders] = useState(() => localStorage.getItem('bpReminders') !== 'false');
+  const [darkMode, setDarkMode] = useState(() => lsGet('darkMode', false));
+  const [kickAlerts, setKickAlerts] = useState(() => lsGet('kickAlerts', true));
+  const [bpReminders, setBpReminders] = useState(() => lsGet('bpReminders', true));
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showWeightGoals, setShowWeightGoals] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [upgrading, setUpgrading] = useState(false);
   
-  // Profile picture state
-  const [profileImage, setProfileImage] = useState(() => {
-    const saved = localStorage.getItem('profileImage');
-    return saved || null;
-  });
+  // Profile picture state - using safe storage
+  const [profileImage, setProfileImage] = useState(() => lsGet('profileImage', null));
   const [uploading, setUploading] = useState(false);
   const [imageError, setImageError] = useState(null);
   const [editingName, setEditingName] = useState(false);
@@ -91,9 +89,9 @@ export default function Settings() {
       const user = auth.currentUser;
       if (user?.photoURL) {
         setProfileImage(user.photoURL);
-        localStorage.setItem('profileImage', user.photoURL);
+        lsSet('profileImage', user.photoURL);
       } else {
-        const saved = localStorage.getItem('profileImage');
+        const saved = lsGet('profileImage', null);
         if (saved) setProfileImage(saved);
       }
     };
@@ -143,7 +141,7 @@ export default function Settings() {
       await setDoc(userRef, { profileImage: downloadURL }, { merge: true });
       
       setProfileImage(downloadURL);
-      localStorage.setItem('profileImage', downloadURL);
+      lsSet('profileImage', downloadURL);
       
     } catch (err) {
       console.error('Upload error:', err);
@@ -165,7 +163,7 @@ export default function Settings() {
         await setDoc(userRef, { profileImage: null }, { merge: true });
       }
       setProfileImage(null);
-      localStorage.removeItem('profileImage');
+      lsRemove('profileImage');
     } catch (err) {
       console.error('Remove error:', err);
       setImageError('Failed to remove image');
@@ -205,7 +203,7 @@ export default function Settings() {
       case 'conceive': return 'Trying to Conceive';
       case 'ivf': return 'IVF & Fertility Treatment';
       case 'mom': {
-        const days = localStorage.getItem('babyAgeDays');
+        const days = lsGet('babyAgeDays', null);
         if (days && parseInt(days) < 42) return `Postpartum · Week ${Math.floor(parseInt(days) / 7)}`;
         return 'Postpartum & Nursing';
       }
@@ -226,7 +224,7 @@ export default function Settings() {
   const handleNotificationsChange = async (value) => {
     setNotifications(value);
     setNotificationsEnabled(value);
-    localStorage.setItem('notificationsEnabled', value);
+    lsSet('notificationsEnabled', value);
     
     if (value && 'Notification' in window) {
       if (Notification.permission === 'default') {
@@ -244,7 +242,7 @@ export default function Settings() {
   // Save kick alerts preference
   const handleKickAlertsChange = async (value) => {
     setKickAlerts(value);
-    localStorage.setItem('kickAlerts', value);
+    lsSet('kickAlerts', value);
     
     const user = auth.currentUser;
     if (user) {
@@ -256,7 +254,7 @@ export default function Settings() {
   // Save BP reminders preference
   const handleBpRemindersChange = async (value) => {
     setBpReminders(value);
-    localStorage.setItem('bpReminders', value);
+    lsSet('bpReminders', value);
     
     const user = auth.currentUser;
     if (user) {
@@ -268,7 +266,7 @@ export default function Settings() {
   // Save language preference
   const handleLanguageChange = async (newLang) => {
     setLang(newLang);
-    localStorage.setItem('appLanguage', newLang);
+    lsSet('appLanguage', newLang);
     
     const user = auth.currentUser;
     if (user) {
@@ -284,7 +282,7 @@ export default function Settings() {
     setUpgrading(false);
   };
   
-  // GDPR Data Export
+  // GDPR Data Export - using safe storage for all reads
   const handleExportData = async () => {
     setExporting(true);
     
@@ -303,33 +301,33 @@ export default function Settings() {
           subscriptionPlan: subscriptionPlan,
         },
         healthData: {
-          vitals: JSON.parse(localStorage.getItem('vitalsHistory') || '[]'),
-          symptoms: JSON.parse(localStorage.getItem('symptomsHistory') || '[]'),
+          vitals: lsGet('vitalsHistory', []),
+          symptoms: lsGet('symptomsHistory', []),
           cycleData: {
-            cycleLength: localStorage.getItem('cycleLength'),
-            periodLength: localStorage.getItem('periodLength'),
-            lastPeriodStart: localStorage.getItem('lastPeriodStart'),
-            cycleHistory: JSON.parse(localStorage.getItem('cycleHistory') || '[]'),
+            cycleLength: lsGet('cycleLength', null),
+            periodLength: lsGet('periodLength', null),
+            lastPeriodStart: lsGet('lastPeriodStart', null),
+            cycleHistory: lsGet('cycleHistory', []),
           },
           pregnancyData: {
-            edd: localStorage.getItem('edd'),
-            babyNumber: localStorage.getItem('babyNumber'),
+            edd: lsGet('edd', null),
+            babyNumber: lsGet('babyNumber', null),
           },
           postpartumData: {
-            babyBirthDate: localStorage.getItem('babyBirthDate'),
-            babyAgeDays: localStorage.getItem('babyAgeDays'),
-            feedingMethod: localStorage.getItem('feedingMethod'),
+            babyBirthDate: lsGet('babyBirthDate', null),
+            babyAgeDays: lsGet('babyAgeDays', null),
+            feedingMethod: lsGet('feedingMethod', null),
           },
-          intercourseLogs: JSON.parse(localStorage.getItem('intercourseLog') || '[]'),
-          lhLogs: JSON.parse(localStorage.getItem('lhLogs') || '[]'),
-          bbtLogs: JSON.parse(localStorage.getItem('bbtLogs') || '[]'),
-          nursingFeeds: JSON.parse(localStorage.getItem('nursingFeedLog') || '[]'),
-          nursingPump: JSON.parse(localStorage.getItem('nursingPumpLog') || '[]'),
-          nursingSleep: JSON.parse(localStorage.getItem('nursingSleepLog') || '[]'),
-          menopauseSymptoms: JSON.parse(localStorage.getItem('menopauseSymptoms') || '{}'),
-          menopauseChecklist: JSON.parse(localStorage.getItem('menopauseChecklist') || '[]'),
+          intercourseLogs: lsGet('intercourseLog', []),
+          lhLogs: lsGet('lhLogs', []),
+          bbtLogs: lsGet('bbtLogs', []),
+          nursingFeeds: lsGet('nursingFeedLog', []),
+          nursingPump: lsGet('nursingPumpLog', []),
+          nursingSleep: lsGet('nursingSleepLog', []),
+          menopauseSymptoms: lsGet('menopauseSymptoms', {}),
+          menopauseChecklist: lsGet('menopauseChecklist', []),
         },
-        consents: JSON.parse(localStorage.getItem('userConsents') || '{}'),
+        consents: lsGet('userConsents', {}),
         appPreferences: {
           language: lang,
           notificationsEnabled: notifications,
@@ -337,7 +335,7 @@ export default function Settings() {
           bpReminders: bpReminders,
           darkMode: darkMode,
         },
-        chatHistory: JSON.parse(localStorage.getItem('chatHistory') || '[]'),
+        chatHistory: lsGet('chatHistory', []),
       };
       
       const dataStr = JSON.stringify(userData, null, 2);
@@ -387,7 +385,7 @@ export default function Settings() {
   
   // Save consent preferences
   const saveConsents = (consents) => {
-    localStorage.setItem('userConsents', JSON.stringify(consents));
+    lsSet('userConsents', consents);
     const user = auth.currentUser;
     if (user) {
       const userRef = doc(db, 'users', user.uid);
@@ -655,7 +653,7 @@ export default function Settings() {
               { id: "analytics", label: "Anonymous Analytics", desc: "Share anonymous usage data" },
               { id: "marketing", label: "Marketing Communications", desc: "Receive tips and offers" }
             ].map(item => {
-              const savedConsents = JSON.parse(localStorage.getItem('userConsents') || '{}');
+              const savedConsents = lsGet('userConsents', {});
               const isChecked = savedConsents[item.id];
               return (
                 <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "var(--sp-3) 0", borderBottom: "1px solid var(--border)" }}>
@@ -663,7 +661,16 @@ export default function Settings() {
                     <p style={{ fontWeight: 700 }}>{item.label}</p>
                     <p style={{ fontSize: "var(--fs-xs)", color: "var(--mt)" }}>{item.desc}</p>
                   </div>
-                  <Toggle value={isChecked} onChange={(val) => { const consents = JSON.parse(localStorage.getItem('userConsents') || '{}'); consents[item.id] = val; localStorage.setItem('userConsents', JSON.stringify(consents)); saveConsents(consents); }} label="" />
+                  <Toggle 
+                    value={isChecked} 
+                    onChange={(val) => { 
+                      const consents = lsGet('userConsents', {}); 
+                      consents[item.id] = val; 
+                      lsSet('userConsents', consents); 
+                      saveConsents(consents); 
+                    }} 
+                    label="" 
+                  />
                 </div>
               );
             })}

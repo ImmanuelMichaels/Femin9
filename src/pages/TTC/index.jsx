@@ -94,7 +94,7 @@ function getOvulationConfidence(bbtLog, lhLogs, savedSymptoms) {
   const signals = [recentBBT, recentLHPeak, todayCM].filter(Boolean).length;
   if (signals === 3) return { label: "Confirmed Ovulation ✅", color: "var(--lv)", bg: "var(--lvl)", detail: "BBT rise + LH peak + egg-white CM all detected." };
   if (signals === 2) return { label: "Likely Ovulation 🟡", color: "var(--gd)", bg: "var(--gdl)", detail: `${signals}/3 signals detected. Continue tracking.` };
-  if (signals === 1) return { label: "Possible Ovulation 🔵", color: "var(--bl)", bg: "var(--bll)", detail: "Only 1/3 signals detected. Keep logging." };
+  if (signals === 1) return { label: "Possible Ovulation ", color: "var(--dp)", bg: "var(--bll)", detail: "Only 1/3 signals detected. Keep logging." };
   return null;
 }
 
@@ -609,7 +609,7 @@ export default function TTC() {
       {/* ════════════════════════ SETUP TAB ════════════════════════ */}
       {activeTab === "setup" && (
         <>
-          <SectionTitle title="Cycle Setup 🌸" subtitle="Personalise your fertility tracking" />
+          <SectionTitle title="Cycle Setup 🩸" subtitle="Personalise your fertility tracking" />
           <div style={{ display: "flex", flexDirection: "column", gap: "var(--gap-md)" }}>
             <WCard>
               {cycleHistory.length > 0 && (
@@ -621,7 +621,7 @@ export default function TTC() {
               )}
               <div style={{ marginBottom: "var(--sp-4)" }}>
                 <label style={{ fontSize: "var(--fs-xs)", fontWeight: 800, color: "var(--md)", display: "block", marginBottom: "var(--sp-2)" }}>First day of your last period</label>
-                <input type="date" value={lastPeriodStart} onChange={e => setLastPeriodStart(e.target.value)} className="form-input" />
+                <input style={{borderRadius: "10px", border: "1px strong #8B7EC8", padding: "15px"}} type="date" value={lastPeriodStart} onChange={e => setLastPeriodStart(e.target.value)} className="form-input" />
               </div>
               <div style={{ marginBottom: "var(--sp-4)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--sp-2)" }}>

@@ -37,8 +37,7 @@ export const JOURNEY_CONFIG = {
     id: 'ivf',
     name: 'IVF & Fertility',
     description: 'IVF treatment support',
-    tabs: ["home", "treatment", "medications", "embryos", "scans", "insights", "profile", "chat"],
-    // Added "embryos" tab
+    tabs: ["home", "treatment", "medications", "embryos", "scans", "nutrition", "vitals", "health", "mental", "insights", "profile", "chat"],
     pills: [
       { dot: "var(--lv)", label: "Cycle Day 14 · Stimulation", bg: "var(--lvl)" },
       { dot: "var(--sg)", label: "4/5 meds taken ✓", bg: "var(--sgl)" },

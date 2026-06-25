@@ -1,251 +1,301 @@
-// src/context/AppContext.jsx
-import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
-import { auth, db } from './firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
+import { lsGet, lsSet } from '../utils/storage';
 
-// Create context
-const AppContext = createContext();
+const AppContext = createContext(null);
 
-// Custom hook
-export const useApp = () => {
-  const context = useContext(AppContext);
-  if (!context) {
-    throw new Error('useApp must be used within AppProvider');
-  }
-  return context;
+const STORAGE_KEYS = {
+  journey: 'userJourney',
+  userName: 'userName',
+  culture: 'userCulture',
+  startDate: 'pregnancyStartDate',
+  babyBirthDate: 'babyBirthDate',
+  dietaryPractices: 'dietaryPractices',
 };
 
-export const AppProvider = ({ children }) => {
-  // Core journey state
-  const [journeyType, setJourneyType] = useState(null);
-  const [culture, setCulture] = useState(null);
-  const [religion, setReligion] = useState(null);
-  const [dietaryPractices, setDietaryPractices] = useState([]);
-  const [hasDietaryPractices, setHasDietaryPractices] = useState(null);
-  const [userName, setUserName] = useState('');
-  
-  // Pregnancy-specific state
-  const [edd, setEdd] = useState(null);
-  const [babyNumber, setBabyNumber] = useState(null);
-  
-  // Mom-specific state
-  const [babyAgeDays, setBabyAgeDays] = useState(null);
-  const [babyBirthDate, setBabyBirthDate] = useState(null);
-  const [feedingMethod, setFeedingMethod] = useState(null);
-  
-  // Conceive-specific state
-  const [cycleLength, setCycleLength] = useState(null);
-  const [periodLength, setPeriodLength] = useState(null);
-  
-  // IVF-specific state
-  const [treatmentType, setTreatmentType] = useState(null);
-  const [ivfCycleNumber, setIvfCycleNumber] = useState(null);
-  
-  // Menopause-specific state
-  const [menopauseStage, setMenopauseStage] = useState(null);
-  const [menopauseSymptoms, setMenopauseSymptoms] = useState([]);
-  
-  // UI state
+export function AppProvider({ children }) {
+  const [journeyType, setJourneyType] = useState(() =>
+    lsGet(STORAGE_KEYS.journey, 'pregnant')
+  );
+
+  const [userName, setUserName] = useState(() =>
+    lsGet(STORAGE_KEYS.userName, '')
+  );
+
+  const [culture, setCulture] = useState(() =>
+    lsGet(STORAGE_KEYS.culture, 'en-GB')
+  );
+
+  const [dietaryPractices, setDietaryPractices] = useState(() =>
+    lsGet(STORAGE_KEYS.dietaryPractices, [])
+  );
+
   const [showSOS, setShowSOS] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  
-  // Helper: Get current week based on EDD
+
+  // Additional user fields used across the app
+  const [religion, setReligion] = useState(() =>
+    lsGet('userReligion', '')
+  );
+
+  const [hasDietaryPractices, setHasDietaryPractices] = useState(() =>
+    lsGet('hasDietaryPractices', null)
+  );
+
+  const [edd, setEdd] = useState(() =>
+    lsGet('pregnancyEdd', '')
+  );
+
+  const [babyNumber, setBabyNumber] = useState(() =>
+    lsGet('babyNumber', '1st')
+  );
+
+  const [babyBirthDate, setBabyBirthDate] = useState(() =>
+    lsGet(STORAGE_KEYS.babyBirthDate, '')
+  );
+
+  const [babyAgeDays, setBabyAgeDays] = useState(() => {
+    const value = lsGet('babyAgeDays', 0);
+    return Number(value) || 0;
+  });
+
+  const [cycleLength, setCycleLength] = useState(() =>
+    lsGet('cycleLength', '28')
+  );
+
+  const [periodLength, setPeriodLength] = useState(() =>
+    lsGet('periodLength', '5')
+  );
+
+  const [treatmentType, setTreatmentType] = useState(() =>
+    lsGet('treatmentType', '')
+  );
+
+  const [ivfCycleNumber, setIvfCycleNumber] = useState(() =>
+    lsGet('ivfCycleNumber', '1')
+  );
+
+  const [menopauseStage, setMenopauseStage] = useState(() =>
+    lsGet('menopauseStage', '')
+  );
+
+  const [menopauseSymptoms, setMenopauseSymptoms] = useState(() =>
+    lsGet('menopauseSymptoms', [])
+  );
+
+  const [feedingMethod, setFeedingMethod] = useState(() =>
+    lsGet('feedingMethod', '')
+  );
+
+  // ────────────────────────────────────────────────────────────
+  // Persist State
+  // ────────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    lsSet(STORAGE_KEYS.journey, journeyType);
+  }, [journeyType]);
+
+  useEffect(() => {
+    lsSet(STORAGE_KEYS.userName, userName);
+  }, [userName]);
+
+  useEffect(() => {
+    lsSet(STORAGE_KEYS.culture, culture);
+  }, [culture]);
+
+  useEffect(() => {
+    lsSet(STORAGE_KEYS.dietaryPractices, dietaryPractices);
+  }, [dietaryPractices]);
+
+  useEffect(() => {
+    lsSet('userReligion', religion || '');
+  }, [religion]);
+
+  useEffect(() => {
+    lsSet('hasDietaryPractices', hasDietaryPractices ?? '');
+  }, [hasDietaryPractices]);
+
+  useEffect(() => {
+    lsSet('pregnancyEdd', edd || '');
+  }, [edd]);
+
+  useEffect(() => {
+    lsSet('babyNumber', babyNumber || '1st');
+  }, [babyNumber]);
+
+  useEffect(() => {
+    lsSet(STORAGE_KEYS.babyBirthDate, babyBirthDate || '');
+  }, [babyBirthDate]);
+
+  useEffect(() => {
+    lsSet('babyAgeDays', babyAgeDays);
+  }, [babyAgeDays]);
+
+  useEffect(() => {
+    lsSet('cycleLength', cycleLength || '28');
+  }, [cycleLength]);
+
+  useEffect(() => {
+    lsSet('periodLength', periodLength || '5');
+  }, [periodLength]);
+
+  useEffect(() => {
+    lsSet('treatmentType', treatmentType || '');
+  }, [treatmentType]);
+
+  useEffect(() => {
+    lsSet('ivfCycleNumber', ivfCycleNumber || '1');
+  }, [ivfCycleNumber]);
+
+  useEffect(() => {
+    lsSet('menopauseStage', menopauseStage || '');
+  }, [menopauseStage]);
+
+  useEffect(() => {
+    lsSet('menopauseSymptoms', menopauseSymptoms || []);
+  }, [menopauseSymptoms]);
+
+  useEffect(() => {
+    lsSet('feedingMethod', feedingMethod || '');
+  }, [feedingMethod]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // ────────────────────────────────────────────────────────────
+  // Pregnancy Helpers
+  // ────────────────────────────────────────────────────────────
+
   const getCurrentWeek = useCallback(() => {
-    if (journeyType !== 'pregnant' || !edd) return null;
-    
-    const today = new Date();
-    const dueDate = new Date(edd);
-    const diffTime = dueDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const weeksAlong = 40 - Math.ceil(diffDays / 7);
-    
-    return Math.min(40, Math.max(0, weeksAlong));
-  }, [journeyType, edd]);
-  
-  // Helper: Get trimester based on current week
-  const getTrimester = useCallback(() => {
-    const week = getCurrentWeek();
-    if (!week) return null;
-    
-    if (week <= 12) return 1;
-    if (week <= 27) return 2;
-    return 3;
-  }, [getCurrentWeek]);
-  
-  // Load user data from Firestore
-  const loadUserData = useCallback(async (userId) => {
+    const startDate = lsGet(STORAGE_KEYS.startDate, null);
+
+    if (!startDate) return null;
+
     try {
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        
-        setJourneyType(data.journeyType || null);
-        setCulture(data.culture || null);
-        setReligion(data.religion || null);
-        setDietaryPractices(data.dietaryPractices || []);
-        setHasDietaryPractices(data.hasDietaryPractices || null);
-        setUserName(data.name || '');
-        
-        setEdd(data.edd || null);
-        setBabyNumber(data.babyNumber || null);
-        setBabyAgeDays(data.babyAgeDays || null);
-        setBabyBirthDate(data.babyBirthDate || null);
-        setFeedingMethod(data.feedingMethod || null);
-        setCycleLength(data.cycleLength || null);
-        setPeriodLength(data.periodLength || null);
-        setTreatmentType(data.treatmentType || null);
-        setIvfCycleNumber(data.ivfCycleNumber || null);
-        setMenopauseStage(data.menopauseStage || null);
-        setMenopauseSymptoms(data.menopauseSymptoms || []);
-        
-        // Save to localStorage for quick access
-        if (data.journeyType) localStorage.setItem('userJourney', data.journeyType);
-        if (data.name) localStorage.setItem('userName', data.name);
-      }
-    } catch (error) {
-      console.error('Failed to load user data:', error);
-    } finally {
-      setIsLoading(false);
+      const start = new Date(startDate);
+      const now = new Date();
+
+      const diffDays = Math.ceil(
+        Math.abs(now - start) / (1000 * 60 * 60 * 24)
+      );
+
+      const weeks = Math.floor(diffDays / 7) + 1;
+
+      return Math.min(weeks, 42);
+    } catch {
+      return null;
     }
   }, []);
-  
-  // Sync to Firestore (debounced)
-  const syncToFirestore = useCallback(async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-    
-    try {
-      const userData = {
-        journeyType,
-        culture,
-        religion,
-        dietaryPractices,
-        hasDietaryPractices,
-        name: userName,
-        edd,
-        babyNumber,
-        babyAgeDays,
-        babyBirthDate,
-        feedingMethod,
-        cycleLength,
-        periodLength,
-        treatmentType,
-        ivfCycleNumber,
-        menopauseStage,
-        menopauseSymptoms,
-        lastUpdated: new Date()
-      };
-      
-      // Remove undefined/null values
-      Object.keys(userData).forEach(key => {
-        if (userData[key] === undefined) delete userData[key];
-      });
-      
-      await setDoc(doc(db, 'users', user.uid), userData, { merge: true });
-    } catch (error) {
-      console.error('Failed to sync to Firestore:', error);
-    }
-  }, [
-    journeyType, culture, religion, dietaryPractices, hasDietaryPractices, userName,
-    edd, babyNumber, babyAgeDays, babyBirthDate, feedingMethod,
-    cycleLength, periodLength, treatmentType, ivfCycleNumber,
-    menopauseStage, menopauseSymptoms
-  ]);
-  
-  // Debounced sync (1 second delay)
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (auth.currentUser) {
-        syncToFirestore();
-      }
-    }, 1000);
-    
-    return () => clearTimeout(timeoutId);
-  }, [
-    journeyType, culture, religion, dietaryPractices, hasDietaryPractices, userName,
-    edd, babyNumber, babyAgeDays, babyBirthDate, feedingMethod,
-    cycleLength, periodLength, treatmentType, ivfCycleNumber,
-    menopauseStage, menopauseSymptoms, syncToFirestore
-  ]);
-  
-  // Listen to auth state
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        await loadUserData(user.uid);
-      } else {
-        // Reset all state on logout
-        setJourneyType(null);
-        setCulture(null);
-        setReligion(null);
-        setDietaryPractices([]);
-        setHasDietaryPractices(null);
-        setUserName('');
-        setEdd(null);
-        setBabyNumber(null);
-        setBabyAgeDays(null);
-        setBabyBirthDate(null);
-        setFeedingMethod(null);
-        setCycleLength(null);
-        setPeriodLength(null);
-        setTreatmentType(null);
-        setIvfCycleNumber(null);
-        setMenopauseStage(null);
-        setMenopauseSymptoms([]);
-        setIsLoading(false);
-        
-        // Clear localStorage
-        localStorage.removeItem('userJourney');
-        localStorage.removeItem('userName');
-      }
-    });
-    
-    return () => unsubscribe();
-  }, [loadUserData]);
-  
-  const value = {
-    // Core
-    journeyType, setJourneyType,
-    culture, setCulture,
-    religion, setReligion,
-    dietaryPractices, setDietaryPractices,
-    hasDietaryPractices, setHasDietaryPractices,
-    userName, setUserName,
-    
-    // Pregnancy
-    edd, setEdd,
-    babyNumber, setBabyNumber,
-    getCurrentWeek,
-    getTrimester,
-    
-    // Mom
-    babyAgeDays, setBabyAgeDays,
-    babyBirthDate, setBabyBirthDate,
-    feedingMethod, setFeedingMethod,
-    
-    // Conceive
-    cycleLength, setCycleLength,
-    periodLength, setPeriodLength,
-    
-    // IVF
-    treatmentType, setTreatmentType,
-    ivfCycleNumber, setIvfCycleNumber,
-    
-    // Menopause
-    menopauseStage, setMenopauseStage,
-    menopauseSymptoms, setMenopauseSymptoms,
-    
-    // UI
-    showSOS, setShowSOS,
-    isLoading
-  };
-  
+
+  const getTrimester = useCallback(() => {
+    const week = getCurrentWeek();
+
+    if (!week) return null;
+    if (week <= 13) return 1;
+    if (week <= 26) return 2;
+
+    return 3;
+  }, [getCurrentWeek]);
+
+  // ────────────────────────────────────────────────────────────
+  // Context Value
+  // ────────────────────────────────────────────────────────────
+
+  const value = useMemo(
+    () => ({
+      // Journey
+      journeyType,
+      setJourneyType,
+
+      // User
+      userName,
+      setUserName,
+      culture,
+      setCulture,
+
+      // Additional User Data
+      religion,
+      setReligion,
+      hasDietaryPractices,
+      setHasDietaryPractices,
+
+      // Dietary
+      dietaryPractices,
+      setDietaryPractices,
+
+      // Pregnancy
+      getCurrentWeek,
+      getTrimester,
+      edd,
+      setEdd,
+      babyNumber,
+      setBabyNumber,
+
+      // Baby
+      babyAgeDays,
+      setBabyAgeDays,
+      babyBirthDate,
+      setBabyBirthDate,
+
+      // Fertility Tracking
+      cycleLength,
+      setCycleLength,
+      periodLength,
+      setPeriodLength,
+
+      // IVF
+      treatmentType,
+      setTreatmentType,
+      ivfCycleNumber,
+      setIvfCycleNumber,
+
+      // Menopause
+      menopauseStage,
+      setMenopauseStage,
+      menopauseSymptoms,
+      setMenopauseSymptoms,
+
+      // Postpartum
+      feedingMethod,
+      setFeedingMethod,
+
+      // UI
+      showSOS,
+      setShowSOS,
+      isLoading,
+      setIsLoading,
+    }),
+    [
+      journeyType,
+      userName,
+      culture,
+      religion,
+      hasDietaryPractices,
+      dietaryPractices,
+      getCurrentWeek,
+      getTrimester,
+      edd,
+      babyNumber,
+      babyAgeDays,
+      babyBirthDate,
+      cycleLength,
+      periodLength,
+      treatmentType,
+      ivfCycleNumber,
+      menopauseStage,
+      menopauseSymptoms,
+      feedingMethod,
+      showSOS,
+      isLoading,
+    ]
+  );
+
   return (
     <AppContext.Provider value={value}>
       {children}
     </AppContext.Provider>
   );
-};
+}
 
-// Default export for backward compatibility
 export default AppContext;

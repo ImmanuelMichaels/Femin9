@@ -1,11 +1,13 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom'; // ✅ Add useNavigate
 import { useApp } from '../context/useApp';
-import AppHeader from '../components/layout/AppHeader';
+import Header from '../components/layout/Header';
 import BottomNav from '../components/nav/BottomNav';
 import EmergencyModal from '../components/modals/EmergencyModal';
 import SubscriptionPlans from '../components/SubscriptionPlans';
 import { BLOOM_KB } from '../data/journey';
+import { lsGet, lsSet } from '../utils/storage';
+import EPDSClinicalModal from '../components/modals/EPDSClinicalModal'; // ✅ Import new modal
 
 // ── Lazy loaded pages ────────────────────────────────────────────────────────
 const Home        = lazy(() => import('./Home'));
@@ -128,10 +130,12 @@ function Spinner() {
 
 export default function AppShell() {
   const { journey } = useParams();
+  const navigate = useNavigate(); // ✅ Added for upgrade navigation
   const { journeyType, setJourneyType, showSOS, setShowSOS } = useApp();
 
   const [showEPDS, setShowEPDS] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
+  const [epdsScore, setEpdsScore] = useState(null); // ✅ New state for score
 
   // Sync URL journey with context + localStorage
   useEffect(() => {
@@ -177,31 +181,39 @@ export default function AppShell() {
   const handleUpgrade = () => setShowSubscription(true);
   const handleSubscriptionClose = () => setShowSubscription(false);
 
-  // EPDS screening for nursing moms
+  // ✅ NEW EPDS useEffect with checkpoint windows
   useEffect(() => {
     if (journeyType !== 'mom') return;
 
-    const postnatalDay = parseInt(localStorage.getItem('postnatalDay') || '0', 10);
-    const lastEPDSScreen = localStorage.getItem('lastEPDSScreen');
+    const postnatalDay = parseInt(lsGet('postnatalDay', 0), 10);
 
-    const isCheckpoint = (
-      (postnatalDay >= 14 && postnatalDay < 15) ||
-      (postnatalDay >= 42 && postnatalDay < 43) ||
-      (postnatalDay >= 90 && postnatalDay < 91)
+    // Checkpoint windows — open-ended so missing exact day still triggers
+    const checkpoints = [
+      { key: 'epds_screened_week2',  from: 14, to: 20  },
+      { key: 'epds_screened_week6',  from: 40, to: 50  },
+      { key: 'epds_screened_week12', from: 84, to: 100 },
+    ];
+
+    const checkpoint = checkpoints.find(
+      c => postnatalDay >= c.from && postnatalDay <= c.to && !lsGet(c.key, false)
     );
 
-    if (!isCheckpoint || lastEPDSScreen) return;
+    if (!checkpoint) return;
 
-    const t = setTimeout(() => setShowEPDS(true), 1000);
+    const t = setTimeout(() => setShowEPDS(true), 1500);
     return () => clearTimeout(t);
   }, [journeyType]);
 
+  // ✅ NEW handleEPDSComplete with checkpoint marking
   const handleEPDSComplete = (score) => {
     setShowEPDS(false);
-    localStorage.setItem('lastEPDSScreen', new Date().toISOString());
-    if (score >= 13) {
-      alert('Your score suggests you may need some support. Please speak to your GP or health visitor.');
-    }
+    setEpdsScore(score);
+
+    // Mark this checkpoint as screened
+    const postnatalDay = parseInt(lsGet('postnatalDay', 0), 10);
+    if (postnatalDay >= 14 && postnatalDay <= 20)  lsSet('epds_screened_week2',  true);
+    if (postnatalDay >= 40 && postnatalDay <= 50)  lsSet('epds_screened_week6',  true);
+    if (postnatalDay >= 84 && postnatalDay <= 100) lsSet('epds_screened_week12', true);
   };
 
   const renderPage = () => {
@@ -259,20 +271,30 @@ export default function AppShell() {
       <div className="app-frame fu">
         {showSOS && <EmergencyModal onClose={() => setShowSOS(false)} />}
 
+        {/* ✅ Updated EPDS Questionnaire overlay */}
         {showEPDS && (
-          <div style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 2000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--pad-x)',
+          <div style={{ 
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', 
+            zIndex: 2000, display: 'flex', alignItems: 'center', 
+            justifyContent: 'center', padding: 'var(--pad-x)' 
           }}>
-            <div style={{
-              background: 'var(--card)', borderRadius: 'var(--r2)', maxWidth: 500,
-              maxHeight: '90vh', overflowY: 'auto', width: '100%',
+            <div style={{ 
+              background: 'var(--card)', borderRadius: 'var(--r2)', 
+              maxWidth: 500, maxHeight: '90vh', overflowY: 'auto', width: '100%' 
             }}>
               <Suspense fallback={<Spinner />}>
                 <EPDSQuestionnaire onComplete={handleEPDSComplete} />
               </Suspense>
             </div>
           </div>
+        )}
+
+        {/* ✅ New EPDS Clinical Results Modal */}
+        {epdsScore !== null && (
+          <EPDSClinicalModal
+            score={epdsScore}
+            onClose={() => setEpdsScore(null)}
+          />
         )}
 
         {showSubscription && (
@@ -309,17 +331,19 @@ export default function AppShell() {
               ✕
             </button>
             <Suspense fallback={<Spinner />}>
-              <SubscriptionPlans onClose={handleSubscriptionClose} onUpgrade={() => {
-                handleSubscriptionClose();
-                setTimeout(() => {
-                  alert('✨ Thank you for upgrading! Your new features are now available.');
-                }, 300);
-              }} />
+              <SubscriptionPlans 
+                onClose={handleSubscriptionClose} 
+                onUpgrade={() => {
+                  handleSubscriptionClose();
+                  // ✅ Replace alert with navigation
+                  navigate('/app/' + journeyType + '?upgraded=1');
+                }} 
+              />
             </Suspense>
           </div>
         )}
 
-        <AppHeader onSOS={() => setShowSOS(true)} onUpgrade={handleUpgrade} />
+        <Header onSOS={() => setShowSOS(true)} onUpgrade={handleUpgrade} />
 
         <div
           className="scroll-area fu"

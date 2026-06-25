@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { AlertTriangle, ChevronRight, Hospital, CheckCircle2, Circle, Plus, Trash2, PlusCircle, MinusCircle, X } from 'lucide-react';
+import { AlertTriangle, ChevronRight, CheckCircle2, Circle, Plus, Trash2, PlusCircle, MinusCircle, X } from 'lucide-react';
 import { useApp } from '../../context/useApp';
+import { lsGet, lsSet, lsAppend } from '../../utils/storage';
 import CalendarStrip from '../../components/ui/CalendarStrip';
 import GlowCard from '../../components/GlowCard';
 import EmergencyRedFlags from '../../components/EmergencyRedFlags';
@@ -8,13 +9,12 @@ import { HOME_CONFIG, JOURNEY_META } from '../../data/homeConfig';
 import './Home.css';
 
 /* ─────────────────────────────────────────────────────────────────
-   CLINICAL REFERENCE DATA (Not user-configurable - medical guidelines)
-   These are reference values, not user data.
+   CLINICAL REFERENCE DATA (not user-configurable)
 ───────────────────────────────────────────────────────────────── */
 const PREGNANCY_WEIGHT_GAIN = {
-  T1_EXPECTED_KG: 1.5,   
-  T2_EXPECTED_KG: 6.5,   
-  T3_EXPECTED_KG: 11.5,  
+  T1_EXPECTED_KG: 1.5,
+  T2_EXPECTED_KG: 6.5,
+  T3_EXPECTED_KG: 11.5,
 };
 
 const CYCLE = {
@@ -22,21 +22,15 @@ const CYCLE = {
   FERTILE_WINDOW_PRE_OVU: 5,
   FERTILE_WINDOW_POST_OVU: 1,
   LUTEAL_PHASE_LENGTH: 14,
-  IMPLANTATION_DAY_MIN: 6,
-  IMPLANTATION_DAY_MAX: 10,
 };
 
 const EMERGENCY = {
-  BP_SYSTOLIC:  160,
+  BP_SYSTOLIC: 160,
   BP_DIASTOLIC: 110,
-  MOVEMENT_CONCERN_WEEK: 24,
+  MOVEMENT_CONCERN_WEEK: 28,
 };
 
-const SLEEP_THRESHOLDS = {
-  POOR: 5,
-  FAIR: 7,
-  GOOD: 8,
-};
+const SLEEP_THRESHOLDS = { POOR: 5, FAIR: 7, GOOD: 8 };
 
 function getSleepLabel(hours) {
   if (hours < SLEEP_THRESHOLDS.POOR) return 'Rest more';
@@ -53,17 +47,22 @@ function expectedWeightGain(week) {
 }
 
 function trimesterLabel(t) {
-  const labels = ['First', 'Second', 'Third'];
-  return labels[(t ?? 1) - 1] ?? 'First';
+  return ['First', 'Second', 'Third'][(t ?? 1) - 1] ?? 'First';
 }
 
 function trimesterOrdinal(t) {
-  const ordinals = ['st', 'nd', 'rd'];
-  return ordinals[(t ?? 1) - 1] ?? 'st';
+  return ['st', 'nd', 'rd'][(t ?? 1) - 1] ?? 'st';
+}
+
+function formatAppointmentDate(raw) {
+  if (!raw) return '';
+  const d = new Date(raw);
+  if (isNaN(d)) return raw;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   USER CONFIGURABLE TARGETS (Load from localStorage)
+   USER CONFIGURABLE TARGETS
 ───────────────────────────────────────────────────────────────── */
 const DEFAULT_TARGETS = {
   HYDRATION_CUPS: 8,
@@ -73,18 +72,11 @@ const DEFAULT_TARGETS = {
 };
 
 function getUserTargets() {
-  try {
-    const saved = localStorage.getItem('userTargets');
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      return { ...DEFAULT_TARGETS, ...parsed };
-    }
-  } catch {}
-  return DEFAULT_TARGETS;
+  return lsGet('userTargets', { ...DEFAULT_TARGETS });
 }
 
 function saveUserTargets(targets) {
-  localStorage.setItem('userTargets', JSON.stringify(targets));
+  lsSet('userTargets', targets);
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -99,17 +91,7 @@ const DEFAULT_SYMPTOMS = {
 };
 
 function getUserSymptoms(journeyType) {
-  try {
-    const saved = localStorage.getItem(`userSymptoms_${journeyType}`);
-    if (saved) {
-      return JSON.parse(saved);
-    }
-  } catch {}
-  return DEFAULT_SYMPTOMS[journeyType] || DEFAULT_SYMPTOMS.pregnant;
-}
-
-function saveUserSymptoms(journeyType, symptoms) {
-  localStorage.setItem(`userSymptoms_${journeyType}`, JSON.stringify(symptoms));
+  return lsGet(`userSymptoms_${journeyType}`, DEFAULT_SYMPTOMS[journeyType] ?? DEFAULT_SYMPTOMS.pregnant);
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -124,29 +106,16 @@ const DEFAULT_MOODS = [
 ];
 
 function getUserMoods() {
-  try {
-    const saved = localStorage.getItem('userMoods');
-    if (saved) {
-      return JSON.parse(saved);
-    }
-  } catch {}
-  return DEFAULT_MOODS;
-}
-
-function saveUserMoods(moods) {
-  localStorage.setItem('userMoods', JSON.stringify(moods));
+  return lsGet('userMoods', DEFAULT_MOODS);
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   TIP ROTATION (uses current date, not hard-coded)
+   TIP ROTATION
 ───────────────────────────────────────────────────────────────── */
 function getDayIndex(arrayLength) {
   return new Date().getDate() % arrayLength;
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   DAILY TIPS STORAGE - Tips can be user-added or come from library
-───────────────────────────────────────────────────────────────── */
 const DEFAULT_TIPS_LIBRARY = {
   pregnant: [
     { weeks: [1, 12], tips: [
@@ -161,12 +130,12 @@ const DEFAULT_TIPS_LIBRARY = {
       'Baby can hear your voice from around week 18.',
       'Iron-rich foods like spinach and lentils help prevent anaemia.',
       'Kick counting can start from around week 18–20.',
-      "Heartburn is common. Try smaller meals and avoid lying down after eating.",
+      'Heartburn is common. Try smaller meals and avoid lying down after eating.',
     ]},
     { weeks: [28, 42], tips: [
       "Baby is gaining weight rapidly. Make sure you're eating enough protein.",
       'Swelling in feet and ankles is normal — elevate when resting.',
-      "Pack your hospital bag by week 36.",
+      'Pack your hospital bag by week 36.',
       'Braxton Hicks contractions are practice contractions.',
       'Sleep on your left side to improve blood flow.',
     ]},
@@ -174,7 +143,7 @@ const DEFAULT_TIPS_LIBRARY = {
   mom: [
     'Sleep deprivation is real. Ask for help — rest is recovery.',
     'Drink water every time you feed. Breastfeeding increases your fluid needs.',
-    'If you\'re struggling with mood, reach out for support.',
+    "If you're struggling with mood, reach out for support.",
     'Your body took 9 months to change. Give it grace to heal.',
     'Skin-to-skin contact with baby boosts bonding hormones.',
   ],
@@ -202,61 +171,60 @@ const DEFAULT_TIPS_LIBRARY = {
 };
 
 function getUserTips(journeyType) {
-  try {
-    const saved = localStorage.getItem(`userTips_${journeyType}`);
-    if (saved) {
-      return JSON.parse(saved);
+  const saved = lsGet(`userTips_${journeyType}`, null);
+  if (saved) {
+    if (journeyType === 'pregnant' && Array.isArray(saved)) {
+      if (typeof saved[0] === 'string') return DEFAULT_TIPS_LIBRARY[journeyType];
+      if (saved[0] && typeof saved[0] === 'object' && 'weeks' in saved[0]) return saved;
     }
-  } catch {}
-  return DEFAULT_TIPS_LIBRARY[journeyType] || DEFAULT_TIPS_LIBRARY.pregnant;
+    if (journeyType !== 'pregnant' && Array.isArray(saved)) return saved;
+  }
+  return DEFAULT_TIPS_LIBRARY[journeyType] ?? DEFAULT_TIPS_LIBRARY.pregnant;
 }
 
 function getDailyTip(journeyType, currentWeek) {
   const tips = getUserTips(journeyType);
-  
-  if (journeyType === 'pregnant' && currentWeek && Array.isArray(tips)) {
-    const group = tips.find(g => g.weeks && currentWeek >= g.weeks[0] && currentWeek <= g.weeks[1]);
-    if (group && group.tips) {
-      return group.tips[getDayIndex(group.tips.length)];
+
+  if (journeyType === 'pregnant' && Array.isArray(tips) && tips.length > 0) {
+    if (tips[0] && typeof tips[0] === 'object' && 'weeks' in tips[0]) {
+      if (currentWeek) {
+        const group = tips.find(g => g.weeks && currentWeek >= g.weeks[0] && currentWeek <= g.weeks[1]);
+        if (group?.tips?.length) return group.tips[getDayIndex(group.tips.length)];
+      }
+      const fallback = tips[0];
+      if (fallback?.tips?.length) return fallback.tips[getDayIndex(fallback.tips.length)];
     }
+    return null;
   }
-  
+
   if (Array.isArray(tips) && tips.length > 0) {
-    return tips[getDayIndex(tips.length)];
+    const tip = tips[getDayIndex(tips.length)];
+    return typeof tip === 'string' ? tip : null;
   }
-  
+
   return null;
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   HERO BODY COPY (Dynamic, based on user data)
+   HERO BODY COPY
 ───────────────────────────────────────────────────────────────── */
-function getPregnantHeroBody(trimester, userData) {
-  if (userData?.customHeroMessage) return userData.customHeroMessage;
+function getPregnantHeroBody(trimester) {
   if (trimester === 1) return "Your baby's neural tube is forming. Take folic acid daily.";
   if (trimester === 2) return 'Baby is growing rapidly. Eat nutrient-rich foods.';
   return 'Baby is putting on weight. Rest and prepare for birth.';
 }
 
-function getMomHeroBody(weeks, userData) {
-  if (userData?.customHeroMessage) return userData.customHeroMessage;
+function getMomHeroBody(weeks) {
   if (weeks <= 4) return 'Focus on rest, hydration, and skin-to-skin contact.';
   if (weeks <= 12) return "You're finding your rhythm. Ask for help when needed.";
   return 'Celebrate your journey. Every day gets a little easier.';
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   CYCLE STATS BUILDER (all derived, no hard-coded dates)
+   CYCLE STATS
 ───────────────────────────────────────────────────────────────── */
-function buildCycleStats(lastPeriodStart, cycleLength) {
+function buildCycleStats(lastPeriodStart, cycleLength, bbtEntry) {
   const cycleLen = cycleLength || CYCLE.DEFAULT_LENGTH;
-
-  const bbtEntry = (() => {
-    try {
-      const history = JSON.parse(localStorage.getItem('vitalsHistory') || '[]');
-      return history[0]?.bbt || null;
-    } catch { return null; }
-  })();
 
   if (!lastPeriodStart) {
     return {
@@ -282,7 +250,6 @@ function buildCycleStats(lastPeriodStart, cycleLength) {
   else if (cycleDay >= ovulationDay - 1 && cycleDay <= ovulationDay + 1) phase = 'ovulation';
   else if (cycleDay > ovulationDay) phase = 'luteal';
 
-  // Generate tip dynamically based on user's actual data
   let tip = '';
   if (inFertileWindow) {
     if (ovulationIn === 0) {
@@ -313,33 +280,23 @@ function getCycleActionText(cycleStats) {
   const { inFertileWindow, phase, ovulationIn, fertileStart, fertileEnd, cycleDay } = cycleStats;
 
   if (inFertileWindow) {
-    if (ovulationIn === 0) {
-      return '⭐ PRIORITY: Have intercourse today! This is your peak fertility day.';
-    }
-    if (ovulationIn === 1) {
-      return '⭐ PRIORITY: Have intercourse today and tomorrow. Ovulation expected tomorrow.';
-    }
+    if (ovulationIn === 0) return '⭐ PRIORITY: Have intercourse today! This is your peak fertility day.';
+    if (ovulationIn === 1) return '⭐ PRIORITY: Have intercourse today and tomorrow. Ovulation expected tomorrow.';
     return `⭐ ACTION: Have intercourse every 1–2 days. Your fertile window is Days ${fertileStart}–${fertileEnd}.`;
   }
-  if (phase === 'menstrual') {
-    return `📊 Track: Log your flow intensity and cramps. ${cycleDay === 1 ? 'This is your new cycle day 1.' : ''}`;
-  }
+  if (phase === 'menstrual') return `📊 Track: Log your flow intensity and cramps.${cycleDay === 1 ? ' This is your new cycle day 1.' : ''}`;
   if (phase === 'follicular') {
     return cycleDay <= 10
       ? `📊 Prepare: Start LH testing around day ${fertileStart - 2}.`
       : '📊 Prepare: Check cervical mucus daily for fertility signs.';
   }
-  if (phase === 'ovulation') {
-    return '📊 Confirm: Track BBT tomorrow morning to confirm ovulation.';
-  }
-  if (phase === 'luteal') {
-    return '📊 Observe: Track any symptoms. A pregnancy test can be taken if your period is late.';
-  }
+  if (phase === 'ovulation') return '📊 Confirm: Track BBT tomorrow morning to confirm ovulation.';
+  if (phase === 'luteal') return '📊 Observe: Track any symptoms. A pregnancy test can be taken if your period is late.';
   return '📊 Track your symptoms daily to understand your unique cycle patterns.';
 }
 
 /* ─────────────────────────────────────────────────────────────────
-   COMPONENTS (same as before, but with dynamic data)
+   SUB-COMPONENTS
 ───────────────────────────────────────────────────────────────── */
 const StatCard = React.memo(({ icon, label, value, sub, accent, onClick, screenId }) => (
   <div
@@ -378,11 +335,15 @@ const CycleStatCard = React.memo(({ icon, label, value, sub, accent, onClick, sc
 
 const ChecklistItem = React.memo(({ id, label, done, onToggle, onDelete, accent }) => (
   <div className="hm-check-row-wrapper">
-    <button className="hm-check-row" onClick={() => onToggle(id)}>
+    <button
+      className="hm-check-row"
+      onClick={() => onToggle(id)}
+      aria-pressed={done}
+    >
       {done ? <CheckCircle2 size={20} color={accent} /> : <Circle size={20} color="#ccc" />}
       <span className={`hm-check-label ${done ? 'hm-check-label--done' : ''}`}>{label}</span>
     </button>
-    <button className="hm-check-delete" onClick={() => onDelete(id)} aria-label="Delete task">
+    <button className="hm-check-delete" onClick={() => onDelete(id)} aria-label={`Delete task: ${label}`}>
       <Trash2 size={16} color="#999" />
     </button>
   </div>
@@ -398,11 +359,15 @@ const QuickAction = React.memo(({ emoji, label, onClick }) => (
 function WeightUpdateModal({ isOpen, onClose, currentWeight, onSave, accent }) {
   const [weightInput, setWeightInput] = useState(currentWeight || '');
 
+  useEffect(() => {
+    if (isOpen) setWeightInput(currentWeight || '');
+  }, [isOpen, currentWeight]);
+
   if (!isOpen) return null;
 
   const handleSave = () => {
     const weightNum = parseFloat(weightInput);
-    if (!isNaN(weightNum) && weightNum > 0) {
+    if (!isNaN(weightNum) && weightNum > 20 && weightNum < 300) {
       onSave(weightNum);
       onClose();
     }
@@ -413,13 +378,16 @@ function WeightUpdateModal({ isOpen, onClose, currentWeight, onSave, accent }) {
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>Update Weight</h3>
-          <button className="modal-close-btn" onClick={onClose}><X size={20} /></button>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Close"><X size={20} /></button>
         </div>
         <div className="modal-body">
-          <label>Current weight (kg)</label>
+          <label htmlFor="weight-input">Current weight (kg)</label>
           <input
+            id="weight-input"
             type="number"
             step="0.1"
+            min="20"
+            max="300"
             placeholder="Enter your weight"
             value={weightInput}
             onChange={e => setWeightInput(e.target.value)}
@@ -438,15 +406,12 @@ function WeightUpdateModal({ isOpen, onClose, currentWeight, onSave, accent }) {
   );
 }
 
-/* ─────────────────────────────────────────────────────────────────
-   TARGETS SETTINGS MODAL
-───────────────────────────────────────────────────────────────── */
 function TargetsSettingsModal({ isOpen, onClose, targets, onSave, accent }) {
   const [localTargets, setLocalTargets] = useState(targets);
 
   useEffect(() => {
-    setLocalTargets(targets);
-  }, [targets]);
+    if (isOpen) setLocalTargets(targets);
+  }, [targets, isOpen]);
 
   if (!isOpen) return null;
 
@@ -460,43 +425,28 @@ function TargetsSettingsModal({ isOpen, onClose, targets, onSave, accent }) {
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>Customise Your Targets</h3>
-          <button className="modal-close-btn" onClick={onClose}><X size={20} /></button>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Close"><X size={20} /></button>
         </div>
         <div className="modal-body">
-          <label>Daily Hydration Goal (cups)</label>
-          <input
-            type="number"
-            value={localTargets.HYDRATION_CUPS}
-            onChange={e => setLocalTargets({...localTargets, HYDRATION_CUPS: parseInt(e.target.value) || 0})}
-            min={0}
-            max={20}
-          />
-          <label>Daily Baby Kicks Goal</label>
-          <input
-            type="number"
-            value={localTargets.KICKS}
-            onChange={e => setLocalTargets({...localTargets, KICKS: parseInt(e.target.value) || 0})}
-            min={0}
-            max={50}
-          />
-          <label>Daily Steps Goal</label>
-          <input
-            type="number"
-            value={localTargets.STEPS}
-            onChange={e => setLocalTargets({...localTargets, STEPS: parseInt(e.target.value) || 0})}
-            min={0}
-            max={50000}
-            step={500}
-          />
-          <label>Daily Sleep Goal (hours)</label>
-          <input
-            type="number"
-            step={0.5}
-            value={localTargets.SLEEP_HOURS}
-            onChange={e => setLocalTargets({...localTargets, SLEEP_HOURS: parseFloat(e.target.value) || 0})}
-            min={0}
-            max={16}
-          />
+          <label htmlFor="target-hydration">Daily Hydration Goal (cups)</label>
+          <input id="target-hydration" type="number" value={localTargets.HYDRATION_CUPS}
+            onChange={e => setLocalTargets({ ...localTargets, HYDRATION_CUPS: parseInt(e.target.value) || 0 })}
+            min={0} max={20} />
+
+          <label htmlFor="target-kicks">Daily Baby Kicks Goal</label>
+          <input id="target-kicks" type="number" value={localTargets.KICKS}
+            onChange={e => setLocalTargets({ ...localTargets, KICKS: parseInt(e.target.value) || 0 })}
+            min={0} max={50} />
+
+          <label htmlFor="target-steps">Daily Steps Goal</label>
+          <input id="target-steps" type="number" value={localTargets.STEPS}
+            onChange={e => setLocalTargets({ ...localTargets, STEPS: parseInt(e.target.value) || 0 })}
+            min={0} max={50000} step={500} />
+
+          <label htmlFor="target-sleep">Daily Sleep Goal (hours)</label>
+          <input id="target-sleep" type="number" step={0.5} value={localTargets.SLEEP_HOURS}
+            onChange={e => setLocalTargets({ ...localTargets, SLEEP_HOURS: parseFloat(e.target.value) || 0 })}
+            min={0} max={16} />
         </div>
         <div className="modal-footer">
           <button className="modal-cancel-btn" onClick={onClose}>Cancel</button>
@@ -524,15 +474,68 @@ export default function Home({ setTab }) {
     cycleLength,
   } = useApp();
 
+  // ── ALL STATE HOOKS (unconditional) ──
+
   const [showWeightModal, setShowWeightModal] = useState(false);
   const [showTargetsModal, setShowTargetsModal] = useState(false);
   const [targets, setTargetsState] = useState(() => getUserTargets());
 
-  const updateTargets = useCallback((newTargets) => {
-    setTargetsState(newTargets);
-    saveUserTargets(newTargets);
-  }, []);
+  const [vitals, setVitals] = useState(() => lsGet('vitalsHistory', [])[0] || {});
+  const [weightGoals, setWeightGoals] = useState(() => {
+    const g = lsGet('weightGoals', {});
+    return {
+      startWeight: g.startWeight || null,
+      targetWeight: g.targetWeight || null,
+      prePregnancyWeight: g.prePregnancyWeight || null,
+    };
+  });
 
+  const [hydration, setHydration] = useState(0);
+  const [kicks, setKicks] = useState(0);
+  const [steps, setSteps] = useState(0);
+  const [sleep, setSleep] = useState(0);
+  const [weight, setWeight] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [newTaskInput, setNewTaskInput] = useState('');
+  const [showAddTask, setShowAddTask] = useState(false);
+  const [showAllApt, setShowAllApt] = useState(false);
+
+  const [tipDismissed, setTipDismissed] = useState(() => {
+    const saved = lsGet('tipDismissedDate', null);
+    return saved === new Date().toDateString();
+  });
+
+  const [activeSymptoms, setActiveSymptoms] = useState(() => {
+    const today = new Date().toDateString();
+    const saved = lsGet('symptomLog', {});
+    return saved.date === today ? (saved.symptoms || []) : [];
+  });
+
+  const [mood, setMood] = useState(() => lsGet('lastMood', null));
+  const [checklist, setChecklist] = useState(() => {
+    const today = new Date().toDateString();
+    const savedDate = lsGet('checklistDate', '');
+    const saved = lsGet(`dailyTasks_${journeyType}`, null);
+    
+    if (!saved) {
+      lsSet('checklistDate', today);
+      return [];
+    }
+    
+    if (savedDate !== today) {
+      // New day: reset done state, update date
+      lsSet('checklistDate', today);
+      return saved.map(t => ({ ...t, done: false }));
+    }
+    return saved;
+  });
+
+  const [moodStreak, setMoodStreak] = useState(() => {
+    const s = lsGet('moodStreak', 0);
+    return typeof s === 'number' ? s : 0;
+  });
+
+  // Early return after hooks
   if (!journeyType) {
     return (
       <div className="hm-root">
@@ -551,99 +554,39 @@ export default function Home({ setTab }) {
   const trimester = journeyType === 'pregnant' ? getTrimester() : null;
   const babyAgeWeeks = journeyType === 'mom' && babyAgeDays ? Math.floor(babyAgeDays / 7) : null;
 
-  // Load user data from localStorage
-  const [vitals, setVitals] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('vitalsHistory') || '[]')[0] || {}; }
-    catch { return {}; }
-  });
+  // Memoized derived values
+  const journeySymptoms = useMemo(() => getUserSymptoms(journeyType), [journeyType]);
+  const moods = useMemo(() => getUserMoods(), []);
 
-  const [weightGoals, setWeightGoals] = useState(() => {
-    try {
-      const g = JSON.parse(localStorage.getItem('weightGoals') || '{}');
-      return { startWeight: g.startWeight || null, targetWeight: g.targetWeight || null, prePregnancyWeight: g.prePregnancyWeight || null };
-    } catch { return { startWeight: null, targetWeight: null, prePregnancyWeight: null }; }
-  });
-
-  // Daily tracker state (all start at 0 - user must add data)
-  const [hydration, setHydration] = useState(0);
-  const [kicks, setKicks] = useState(0);
-  const [steps, setSteps] = useState(0);
-  const [sleep, setSleep] = useState(0);
-  const [weight, setWeight] = useState(null);
-
-  const [appointments, setAppointments] = useState([]);
-  const [newTaskInput, setNewTaskInput] = useState('');
-  const [showAddTask, setShowAddTask] = useState(false);
-  const [showAllApt, setShowAllApt] = useState(false);
-
-  const [tipDismissed, setTipDismissed] = useState(() => {
-    try { return localStorage.getItem('tipDismissedDate') === new Date().toDateString(); }
-    catch { return false; }
-  });
-
-  const [activeSymptoms, setActiveSymptoms] = useState(() => {
-    try {
-      const today = new Date().toDateString();
-      const saved = JSON.parse(localStorage.getItem('symptomLog') || '{}');
-      return saved.date === today ? (saved.symptoms || []) : [];
-    } catch { return []; }
-  });
-
-  const [mood, setMood] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('lastMood')); }
-    catch { return null; }
-  });
-
-  const [checklist, setChecklist] = useState(() => {
-    try {
-      const savedDate = localStorage.getItem('checklistDate');
-      const today = new Date().toDateString();
-      const saved = localStorage.getItem(`dailyTasks_${journeyType}`);
-      if (savedDate === today && saved) return JSON.parse(saved);
-      if (savedDate !== today && saved) return JSON.parse(saved).map(t => ({ ...t, done: false }));
-      localStorage.setItem('checklistDate', today);
-    } catch {}
-    return [];
-  });
-
-  const [moodStreak, setMoodStreak] = useState(() => {
-    try { const s = parseInt(localStorage.getItem('moodStreak') || '0'); return isNaN(s) ? 0 : s; }
-    catch { return 0; }
-  });
-
-  // Get user-customizable data
-  const journeySymptoms = getUserSymptoms(journeyType);
-  const moods = getUserMoods();
-
-  // Load data from localStorage
+  // Load data from localStorage using safe storage
   useEffect(() => {
     const loadData = () => {
-      try {
-        const today = new Date().toDateString();
+      const today = new Date().toDateString();
 
-        const hydrationLogs = JSON.parse(localStorage.getItem('hydrationLogs') || '[]');
-        const todayHydration = hydrationLogs.find(l => l.date === today);
-        setHydration(todayHydration ? todayHydration.cups : 0);
+      const hydrationLogs = lsGet('hydrationLogs', []);
+      setHydration(hydrationLogs.find(l => l.date === today)?.cups ?? 0);
 
-        const kickHistory = JSON.parse(localStorage.getItem('kickHistory') || '[]');
-        const todayKicks = kickHistory.filter(k => k.date === today);
-        setKicks(todayKicks.reduce((sum, k) => sum + (k.count || 0), 0));
+      const kickHistory = lsGet('kickHistory', []);
+      setKicks(kickHistory.filter(k => k.date === today).reduce((sum, k) => sum + (k.count || 0), 0));
 
-        const stepLogs = JSON.parse(localStorage.getItem('stepLogs') || '[]');
-        setSteps(stepLogs.find(l => l.date === today)?.steps || 0);
+      const stepLogs = lsGet('stepLogs', []);
+      setSteps(stepLogs.find(l => l.date === today)?.steps ?? 0);
 
-        const sleepLogs = JSON.parse(localStorage.getItem('sleepLogs') || '[]');
-        setSleep(sleepLogs.find(l => l.date === today)?.hours || 0);
+      const sleepLogs = lsGet('sleepLogs', []);
+      setSleep(sleepLogs.find(l => l.date === today)?.hours ?? 0);
 
-        const vitalsHistory = JSON.parse(localStorage.getItem('vitalsHistory') || '[]');
-        setWeight(vitalsHistory[0]?.weight || null);
-        setVitals(vitalsHistory[0] || {});
+      const vitalsHistory = lsGet('vitalsHistory', []);
+      setWeight(vitalsHistory[0]?.weight ?? null);
+      setVitals(vitalsHistory[0] || {});
 
-        setAppointments(JSON.parse(localStorage.getItem('appointments') || '[]'));
-        setWeightGoals(JSON.parse(localStorage.getItem('weightGoals') || '{}'));
-      } catch (error) {
-        console.error('Failed to load data:', error);
-      }
+      setAppointments(lsGet('appointments', []));
+      
+      const goals = lsGet('weightGoals', {});
+      setWeightGoals({
+        startWeight: goals.startWeight || null,
+        targetWeight: goals.targetWeight || null,
+        prePregnancyWeight: goals.prePregnancyWeight || null,
+      });
     };
 
     loadData();
@@ -653,8 +596,7 @@ export default function Home({ setTab }) {
   }, []);
 
   useEffect(() => {
-    try { localStorage.setItem(`dailyTasks_${journeyType}`, JSON.stringify(checklist)); }
-    catch {}
+    lsSet(`dailyTasks_${journeyType}`, checklist);
   }, [checklist, journeyType]);
 
   // Vitals extraction
@@ -674,16 +616,29 @@ export default function Home({ setTab }) {
     if (!appointments.length) return null;
     const now = new Date();
     const upcoming = appointments
-      .map(a => ({ ...a, _date: new Date(a.date || a.datetime || a.appointmentDate) }))
-      .filter(a => !isNaN(a._date) && a._date >= now)
-      .sort((a, b) => a._date - b._date);
+      .filter(a => {
+        const raw = a.date || a.datetime || a.appointmentDate;
+        const d = new Date(raw);
+        return !isNaN(d) && d >= now;
+      })
+      .sort((a, b) => {
+        const da = new Date(a.date || a.datetime || a.appointmentDate);
+        const db = new Date(b.date || b.datetime || b.appointmentDate);
+        return da - db;
+      });
     if (!upcoming.length) return null;
     const next = upcoming[0];
-    const diffDays = Math.ceil((next._date - now) / (1000 * 60 * 60 * 24));
+    const d = new Date(next.date || next.datetime || next.appointmentDate);
+    const diffDays = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
     return { ...next, diffDays };
   }, [appointments]);
 
-  // Checklist helpers
+  // Callbacks
+  const updateTargets = useCallback((newTargets) => {
+    setTargetsState(newTargets);
+    saveUserTargets(newTargets);
+  }, []);
+
   const addTask = useCallback(() => {
     if (!newTaskInput.trim()) return;
     setChecklist(prev => [...prev, {
@@ -704,98 +659,109 @@ export default function Home({ setTab }) {
     setChecklist(prev => prev.filter(t => t.id !== id));
   }, []);
 
-  const done = checklist.filter(c => c.done).length;
-  const pct = checklist.length > 0 ? Math.round((done / checklist.length) * 100) : 0;
-  const aptList = showAllApt ? appointments : appointments.slice(0, 2);
-
-  // Mood handler
   const handleMood = useCallback((selectedMood) => {
     setMood(selectedMood);
-    localStorage.setItem('lastMood', JSON.stringify(selectedMood));
-    const lastMoodDate = localStorage.getItem('lastMoodDate');
+    lsSet('lastMood', selectedMood);
+    
+    const lastMoodDate = lsGet('lastMoodDate', '');
     const today = new Date().toDateString();
+    
     if (lastMoodDate === today) return;
+    
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const newStreak = lastMoodDate === yesterday.toDateString() ? moodStreak + 1 : 1;
+    
     setMoodStreak(newStreak);
-    localStorage.setItem('moodStreak', newStreak.toString());
-    localStorage.setItem('lastMoodDate', today);
+    lsSet('moodStreak', newStreak);
+    lsSet('lastMoodDate', today);
   }, [moodStreak]);
 
-  // Tracker updaters
   const updateHydration = useCallback((delta) => {
-    const today = new Date().toDateString();
-    const newValue = Math.max(0, hydration + delta);
-    setHydration(newValue);
-    const logs = JSON.parse(localStorage.getItem('hydrationLogs') || '[]');
-    const idx = logs.findIndex(l => l.date === today);
-    if (idx >= 0) logs[idx].cups = newValue; else logs.push({ date: today, cups: newValue });
-    localStorage.setItem('hydrationLogs', JSON.stringify(logs));
-    window.dispatchEvent(new Event('hydrationUpdated'));
-  }, [hydration]);
+    setHydration(prev => {
+      const next = Math.max(0, prev + delta);
+      const today = new Date().toDateString();
+      const logs = lsGet('hydrationLogs', []);
+      const idx = logs.findIndex(l => l.date === today);
+      if (idx >= 0) logs[idx].cups = next; else logs.push({ date: today, cups: next });
+      lsSet('hydrationLogs', logs);
+      window.dispatchEvent(new Event('hydrationUpdated'));
+      return next;
+    });
+  }, []);
 
   const updateSteps = useCallback((delta) => {
-    const today = new Date().toDateString();
-    const newValue = Math.max(0, steps + delta);
-    setSteps(newValue);
-    const logs = JSON.parse(localStorage.getItem('stepLogs') || '[]');
-    const idx = logs.findIndex(l => l.date === today);
-    if (idx >= 0) logs[idx].steps = newValue; else logs.push({ date: today, steps: newValue });
-    localStorage.setItem('stepLogs', JSON.stringify(logs));
-    window.dispatchEvent(new Event('stepsUpdated'));
-  }, [steps]);
+    setSteps(prev => {
+      const next = Math.max(0, prev + delta);
+      const today = new Date().toDateString();
+      const logs = lsGet('stepLogs', []);
+      const idx = logs.findIndex(l => l.date === today);
+      if (idx >= 0) logs[idx].steps = next; else logs.push({ date: today, steps: next });
+      lsSet('stepLogs', logs);
+      window.dispatchEvent(new Event('stepsUpdated'));
+      return next;
+    });
+  }, []);
 
   const updateKicks = useCallback((delta) => {
-    const today = new Date().toDateString();
-    const newValue = Math.max(0, kicks + delta);
-    setKicks(newValue);
-    const history = JSON.parse(localStorage.getItem('kickHistory') || '[]');
-    const idx = history.findIndex(k => k.date === today);
-    if (idx >= 0) history[idx].count = newValue;
-    else history.push({ date: today, count: newValue, timestamp: new Date().toISOString() });
-    localStorage.setItem('kickHistory', JSON.stringify(history));
-    window.dispatchEvent(new Event('kicksUpdated'));
-  }, [kicks]);
+    setKicks(prev => {
+      const next = Math.max(0, prev + delta);
+      const today = new Date().toDateString();
+      const history = lsGet('kickHistory', []);
+      const idx = history.findIndex(k => k.date === today);
+      if (idx >= 0) history[idx].count = next;
+      else history.push({ date: today, count: next, timestamp: new Date().toISOString() });
+      lsSet('kickHistory', history);
+      window.dispatchEvent(new Event('kicksUpdated'));
+      return next;
+    });
+  }, []);
 
   const updateSleep = useCallback((delta) => {
-    const today = new Date().toDateString();
-    const newValue = Math.max(0, Math.min(24, sleep + delta));
-    setSleep(newValue);
-    const logs = JSON.parse(localStorage.getItem('sleepLogs') || '[]');
-    const idx = logs.findIndex(l => l.date === today);
-    if (idx >= 0) logs[idx].hours = newValue; else logs.push({ date: today, hours: newValue });
-    localStorage.setItem('sleepLogs', JSON.stringify(logs));
-    window.dispatchEvent(new Event('sleepUpdated'));
-  }, [sleep]);
+    setSleep(prev => {
+      const next = Math.max(0, Math.min(24, prev + delta));
+      const today = new Date().toDateString();
+      const logs = lsGet('sleepLogs', []);
+      const idx = logs.findIndex(l => l.date === today);
+      if (idx >= 0) logs[idx].hours = next; else logs.push({ date: today, hours: next });
+      lsSet('sleepLogs', logs);
+      window.dispatchEvent(new Event('sleepUpdated'));
+      return next;
+    });
+  }, []);
 
   const updateWeight = useCallback((weightNum) => {
     setWeight(weightNum);
-    const history = JSON.parse(localStorage.getItem('vitalsHistory') || '[]');
-    if (history.length > 0) {
-      history[0].weight = weightNum;
-      history[0].recordedAt = new Date().toISOString();
-    } else {
-      history.push({ weight: weightNum, recordedAt: new Date().toISOString() });
-    }
-    localStorage.setItem('vitalsHistory', JSON.stringify(history));
+    const today = new Date().toDateString();
+    const history = lsGet('vitalsHistory', []);
+    const todayIdx = history.findIndex(h => {
+      const d = h.recordedAt ? new Date(h.recordedAt).toDateString() : null;
+      return d === today;
+    });
+    const entry = { ...(history[todayIdx] || {}), weight: weightNum, recordedAt: new Date().toISOString() };
+    if (todayIdx >= 0) history[todayIdx] = entry; else history.unshift(entry);
+    lsSet('vitalsHistory', history);
     window.dispatchEvent(new Event('vitalsUpdated'));
   }, []);
 
   const toggleSymptom = useCallback((symptom) => {
     setActiveSymptoms(prev => {
       const next = prev.includes(symptom) ? prev.filter(s => s !== symptom) : [...prev, symptom];
-      localStorage.setItem('symptomLog', JSON.stringify({ date: new Date().toDateString(), symptoms: next }));
+      lsSet('symptomLog', { date: new Date().toDateString(), symptoms: next });
       return next;
     });
   }, []);
 
   const dismissTip = useCallback(() => {
     setTipDismissed(true);
-    localStorage.setItem('tipDismissedDate', new Date().toDateString());
+    lsSet('tipDismissedDate', new Date().toDateString());
   }, []);
 
-  // Progress calculations using user targets
+  // Derived values
+  const done = checklist.filter(c => c.done).length;
+  const pct = checklist.length > 0 ? Math.round((done / checklist.length) * 100) : 0;
+  const aptList = showAllApt ? appointments : appointments.slice(0, 2);
+
   const waterProgress = Math.min(100, Math.round((hydration / targets.HYDRATION_CUPS) * 100));
   const kicksProgress = Math.min(100, Math.round((kicks / targets.KICKS) * 100));
   const stepsProgress = Math.min(100, Math.round((steps / targets.STEPS) * 100));
@@ -820,7 +786,6 @@ export default function Home({ setTab }) {
     return 0;
   }, [weight, weightGoals, journeyType, currentWeek]);
 
-  // AI Insight (dynamic based on actual user data)
   const aiInsight = useMemo(() => {
     const completedTasks = checklist.filter(c => c.done).length;
     const totalTasks = checklist.length;
@@ -848,11 +813,20 @@ export default function Home({ setTab }) {
   }, [journeyType, currentWeek, trimester, babyAgeWeeks, checklist, userName]);
 
   const dailyTip = useMemo(() => getDailyTip(journeyType, currentWeek), [journeyType, currentWeek]);
+
+  // BBT read once
+  const bbtEntry = useMemo(() => {
+    return lsGet('vitalsHistory', [])[0]?.bbt ?? null;
+  }, [vitals]);
+
   const cycleStats = useMemo(() => {
     if (journeyType !== 'conceive') return null;
-    return buildCycleStats(lastPeriodStart, cycleLength);
-  }, [journeyType, lastPeriodStart, cycleLength]);
+    return buildCycleStats(lastPeriodStart, cycleLength, bbtEntry);
+  }, [journeyType, lastPeriodStart, cycleLength, bbtEntry]);
 
+  /* ─────────────────────────────────────────────────────────────────
+     RENDER
+  ───────────────────────────────────────────────────────────────── */
   return (
     <div className="hm-root">
       <EmergencyRedFlags
@@ -923,9 +897,9 @@ export default function Home({ setTab }) {
               {journeyType === 'conceive' && cycleStats?.tip
                 ? cycleStats.tip
                 : journeyType === 'pregnant' && trimester
-                ? `Week ${currentWeek}: ${getPregnantHeroBody(trimester, {})}`
+                ? `Week ${currentWeek}: ${getPregnantHeroBody(trimester)}`
                 : journeyType === 'mom' && babyAgeWeeks
-                ? `Week ${babyAgeWeeks} postpartum: ${getMomHeroBody(babyAgeWeeks, {})}`
+                ? `Week ${babyAgeWeeks} postpartum: ${getMomHeroBody(babyAgeWeeks)}`
                 : cfg.heroBody
               }
             </p>
@@ -1021,7 +995,7 @@ export default function Home({ setTab }) {
       )}
 
       {/* DAILY TIP */}
-      {dailyTip && !tipDismissed && (
+      {dailyTip && typeof dailyTip === 'string' && !tipDismissed && (
         <div className="hm-card" style={{ background: meta.accentSoft, border: `1px solid ${meta.accent}22`, position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-md)' }}>
             <span style={{ fontSize: 24, flexShrink: 0 }}>💡</span>
@@ -1112,20 +1086,21 @@ export default function Home({ setTab }) {
       <div className="hm-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <p className="hm-card-label">HOW ARE YOU FEELING?</p>
-          <button 
-            onClick={() => setTab('customize')} 
+          <button
+            onClick={() => setTab('menu')}
             style={{ background: 'none', border: 'none', color: meta.accent, fontSize: 'var(--fs-xs)', cursor: 'pointer' }}
           >
-            Customize moods
+            Customise moods
           </button>
         </div>
-        <div className="hm-mood-row">
+        <div className="hm-mood-row" role="group" aria-label="Mood selection">
           {moods.map(m => (
             <button
               key={m.label}
               className={`hm-mood-btn ${mood?.label === m.label ? 'hm-mood-btn--on' : ''}`}
               style={mood?.label === m.label ? { borderColor: meta.accent, background: meta.accentSoft } : {}}
               onClick={() => handleMood(m)}
+              aria-pressed={mood?.label === m.label}
             >
               <span className="hm-mood-em">{m.emoji}</span>
               <span className="hm-mood-lbl">{m.label}</span>
@@ -1143,25 +1118,31 @@ export default function Home({ setTab }) {
       <div className="hm-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <p className="hm-card-label">TODAY'S SYMPTOMS</p>
-          <button 
-            onClick={() => setTab('customize')} 
+          <button
+            onClick={() => setTab('menu')}
             style={{ background: 'none', border: 'none', color: meta.accent, fontSize: 'var(--fs-xs)', cursor: 'pointer' }}
           >
-            Customize
+            Customise
           </button>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--gap-sm)', marginTop: 4 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--gap-sm)', marginTop: 4 }} role="group" aria-label="Symptom toggles">
           {journeySymptoms.map(symptom => {
             const active = activeSymptoms.includes(symptom);
             return (
-              <button key={symptom} onClick={() => toggleSymptom(symptom)} style={{
-                padding: '6px 14px', borderRadius: 20,
-                border: `1.5px solid ${active ? meta.accent : 'var(--border)'}`,
-                background: active ? meta.accentSoft : 'transparent',
-                color: active ? meta.accent : 'var(--mt)',
-                fontSize: 'var(--fs-xs)', fontWeight: active ? 600 : 400,
-                cursor: 'pointer', transition: 'all 0.15s ease',
-              }}>
+              <button
+                key={symptom}
+                onClick={() => toggleSymptom(symptom)}
+                role="checkbox"
+                aria-checked={active}
+                style={{
+                  padding: '6px 14px', borderRadius: 20,
+                  border: `1.5px solid ${active ? meta.accent : 'var(--border)'}`,
+                  background: active ? meta.accentSoft : 'transparent',
+                  color: active ? meta.accent : 'var(--mt)',
+                  fontSize: 'var(--fs-xs)', fontWeight: active ? 600 : 400,
+                  cursor: 'pointer', transition: 'all 0.15s ease',
+                }}
+              >
                 {symptom}
               </button>
             );
@@ -1191,8 +1172,8 @@ export default function Home({ setTab }) {
         <div className="hm-card hm-trackers-card">
           <div className="hm-checklist-header">
             <p className="hm-card-label" style={{ margin: 0 }}>TODAY'S TRACKERS</p>
-            <button 
-              onClick={() => setShowTargetsModal(true)} 
+            <button
+              onClick={() => setShowTargetsModal(true)}
               style={{ background: 'none', border: 'none', color: meta.accent, fontSize: 'var(--fs-xs)', cursor: 'pointer' }}
             >
               Set goals
@@ -1210,11 +1191,11 @@ export default function Home({ setTab }) {
                 </div>
               </div>
               <div className="hm-tracker-actions" style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)' }}>
-                <button onClick={() => updateHydration(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <button onClick={() => updateHydration(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }} aria-label="Remove one cup">
                   <MinusCircle size={20} color={meta.accent} />
                 </button>
                 <span style={{ fontWeight: 700, minWidth: 40, textAlign: 'center' }}>{hydration}</span>
-                <button onClick={() => updateHydration(1)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <button onClick={() => updateHydration(1)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }} aria-label="Add one cup">
                   <PlusCircle size={20} color={meta.accent} />
                 </button>
                 <div className="hm-tracker-right">
@@ -1236,11 +1217,11 @@ export default function Home({ setTab }) {
                 </div>
               </div>
               <div className="hm-tracker-actions" style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)' }}>
-                <button onClick={() => updateSleep(-0.5)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <button onClick={() => updateSleep(-0.5)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }} aria-label="Subtract 30 minutes">
                   <MinusCircle size={20} color={meta.accent} />
                 </button>
                 <span style={{ fontWeight: 700, minWidth: 40, textAlign: 'center' }}>{sleep}h</span>
-                <button onClick={() => updateSleep(0.5)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <button onClick={() => updateSleep(0.5)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }} aria-label="Add 30 minutes">
                   <PlusCircle size={20} color={meta.accent} />
                 </button>
                 <div className="hm-tracker-right">
@@ -1263,11 +1244,11 @@ export default function Home({ setTab }) {
                   </div>
                 </div>
                 <div className="hm-tracker-actions" style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)' }}>
-                  <button onClick={() => updateKicks(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                  <button onClick={() => updateKicks(-1)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }} aria-label="Remove one kick">
                     <MinusCircle size={20} color={meta.accent} />
                   </button>
                   <span style={{ fontWeight: 700, minWidth: 40, textAlign: 'center' }}>{kicks}</span>
-                  <button onClick={() => updateKicks(1)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                  <button onClick={() => updateKicks(1)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }} aria-label="Add one kick">
                     <PlusCircle size={20} color={meta.accent} />
                   </button>
                   <div className="hm-tracker-right">
@@ -1290,11 +1271,11 @@ export default function Home({ setTab }) {
                 </div>
               </div>
               <div className="hm-tracker-actions" style={{ display: 'flex', alignItems: 'center', gap: 'var(--gap-sm)' }}>
-                <button onClick={() => updateSteps(-500)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <button onClick={() => updateSteps(-500)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }} aria-label="Subtract 500 steps">
                   <MinusCircle size={20} color={meta.accent} />
                 </button>
                 <span style={{ fontWeight: 700, minWidth: 40, textAlign: 'center' }}>{steps.toLocaleString()}</span>
-                <button onClick={() => updateSteps(500)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+                <button onClick={() => updateSteps(500)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }} aria-label="Add 500 steps">
                   <PlusCircle size={20} color={meta.accent} />
                 </button>
                 <div className="hm-tracker-right">
@@ -1342,7 +1323,12 @@ export default function Home({ setTab }) {
             <p className="hm-card-label" style={{ margin: 0 }}>MY DAILY TASKS</p>
             <div style={{ display: 'flex', gap: 'var(--gap-sm)', alignItems: 'center', justifyContent: 'space-between' }}>
               <span className="hm-checklist-pct" style={{ color: meta.accent }}>{pct}%</span>
-              <button onClick={() => setShowAddTask(!showAddTask)} className="hm-add-task-btn" style={{ color: meta.accent }}>
+              <button
+                onClick={() => setShowAddTask(!showAddTask)}
+                className="hm-add-task-btn"
+                style={{ color: meta.accent }}
+                aria-label={showAddTask ? 'Hide add task form' : 'Add task'}
+              >
                 <Plus size={20} />
               </button>
             </div>
@@ -1354,12 +1340,16 @@ export default function Home({ setTab }) {
                 type="text"
                 value={newTaskInput}
                 onChange={e => setNewTaskInput(e.target.value)}
-                placeholder="e.g., Take prenatal vitamin, Walk 30 min, Log symptoms..."
+                placeholder="e.g., Take prenatal vitamin, Walk 30 min…"
                 onKeyPress={e => e.key === 'Enter' && addTask()}
                 className="hm-task-input"
                 style={{ width: '100%', padding: 'var(--sp-2)', marginBottom: 'var(--sp-2)', borderRadius: 'var(--r)', border: '1px solid var(--border)' }}
+                aria-label="New task"
               />
-              <button onClick={addTask} style={{ padding: 'var(--sp-1) var(--sp-3)', background: meta.accent, color: '#fff', border: 'none', borderRadius: 'var(--r)', cursor: 'pointer' }}>
+              <button
+                onClick={addTask}
+                style={{ padding: 'var(--sp-1) var(--sp-3)', background: meta.accent, color: '#fff', border: 'none', borderRadius: 'var(--r)', cursor: 'pointer' }}
+              >
                 Add Task
               </button>
             </div>
@@ -1433,7 +1423,10 @@ export default function Home({ setTab }) {
               </div>
               <div className="hm-apt-info">
                 <p className="hm-apt-title">{a.title || a.type || 'Appointment'}</p>
-                <p className="hm-apt-meta">{a.date || a.datetime || a.appointmentDate}{a.location ? ` · ${a.location}` : ''}</p>
+                <p className="hm-apt-meta">
+                  {formatAppointmentDate(a.date || a.datetime || a.appointmentDate)}
+                  {a.location ? ` · ${a.location}` : ''}
+                </p>
               </div>
             </div>
           ))

@@ -1,225 +1,171 @@
-import {
-  Activity, Salad, Heart, Stethoscope, Baby,
-  Brain, Bot, ShieldCheck, Moon, HandHeart,
-  Calendar, Flower2, Droplets, BarChart3,
-  Syringe, Pill, Scan, BabyIcon, Sparkles,
-  Users, Phone, HeartPulse,
-} from 'lucide-react';
 import { useApp } from '../context/useApp';
+import { auth } from '../context/firebase';
+import { JOURNEY_CONFIG } from '../data/journey';
 import './MenuScreen.css';
 
-/* ─── Feature registry ─────────────────────────────────────────────────────── */
-const FEATURES = {
-  // Original features
-  kicks:     { Icon: Activity,    label: 'Baby Kicks',    desc: 'Track movements',            iconBg: '#fde8f0', iconColor: '#d63a6e' },
-  vitals:    { Icon: Heart,       label: 'Vitals',        desc: 'BP, weight & temperature',   iconBg: '#fde4f0', iconColor: '#e91e8c' },
-  nutrition: { Icon: Salad,       label: 'Nutrition',     desc: 'Meals & food safety',        iconBg: '#fff3e0', iconColor: '#e57c1a' },
-  health:    { Icon: Stethoscope, label: 'Health',        desc: 'Symptoms & meds',            iconBg: '#e3f2fd', iconColor: '#1976d2' },
-  baby:      { Icon: Baby,        label: 'Baby Care',     desc: 'Guides & milestones',        iconBg: '#ede7f6', iconColor: '#8a2be2' },
-  mental:    { Icon: Brain,       label: 'Mental Health', desc: 'Mood & wellbeing',           iconBg: '#e8f5e9', iconColor: '#2e9e67' },
-  chat:      { Icon: Bot,         label: 'AI Chat',       desc: 'Ask anything',               iconBg: '#e0f7fa', iconColor: '#0097a7' },
-  safety:    { Icon: ShieldCheck, label: 'Safety',        desc: 'Emergency alerts',           iconBg: '#fce8e8', iconColor: '#c62828' },
-  ttc:       { Icon: Moon,        label: 'Cycle',         desc: 'Ovulation & fertile window', iconBg: '#ede7f6', iconColor: '#7b1fa2' },
-  nursing:   { Icon: HandHeart,   label: 'Nursing',       desc: 'Breastfeeding & pumping',    iconBg: '#fde8f0', iconColor: '#d63a6e' },
-  calendar:  { Icon: Calendar,    label: 'Calendar',      desc: 'Appointments & reminders',   iconBg: '#fff3e0', iconColor: '#e57c1a' },
-  ivf:       { Icon: Flower2,     label: 'IVF Journey',   desc: 'Cycle & medication log',     iconBg: '#f3e5f5', iconColor: '#9c27b0' },
-  menstrual: { Icon: Droplets,    label: 'Period',        desc: 'Cycle tracking',             iconBg: '#fce4ec', iconColor: '#e91e63' },
-  menopause: { Icon: Moon,        label: 'Menopause',     desc: 'Symptoms & hormone log',     iconBg: '#ede7f6', iconColor: '#5e35b1' },
-  insights:  { Icon: BarChart3,   label: 'Insights',      desc: 'Trends & reports',           iconBg: '#e8f5e9', iconColor: '#388e3c' },
-  
-  // IVF-specific features
-  medications: { Icon: Pill,           label: 'Medications',     desc: 'IVF meds & injections',      iconBg: '#f3e5f5', iconColor: '#9c27b0' },
-  scans:       { Icon: Scan,           label: 'Fertility Scans',  desc: 'Follicle & lining results',  iconBg: '#e8eaf6', iconColor: '#5c6bc0' },
-  embryos:     { Icon: BabyIcon,       label: 'Embryo Tracker',   desc: 'Embryo grades & status',     iconBg: '#fce4ec', iconColor: '#e91e63' },
-  tww:         { Icon: Sparkles,       label: '2-Week Wait',      desc: 'Wellbeing & symptom log',    iconBg: '#ede7f6', iconColor: '#8a2be2' },
-  partner:     { Icon: Users,          label: 'Partner Support',  desc: 'Tips & shared journey',      iconBg: '#e8f5e9', iconColor: '#2e9e67' },
-  careteam:    { Icon: Phone,          label: 'Care Team',        desc: 'Clinic & doctor contacts',   iconBg: '#fff3e0', iconColor: '#e57c1a' },
-  timeline:    { Icon: HeartPulse,     label: 'IVF Timeline',     desc: 'Your treatment progress',    iconBg: '#fde8f0', iconColor: '#d63a6e' },
+// ── Tab metadata: icon, label, desc, colours, category ──────────────────────
+const TAB_META = {
+  home:       { label: 'Home',            desc: 'Your daily overview',       emoji: '🏠', bg: '#EDE9FE', color: '#7C3AED', category: 'core'       },
+  chat:       { label: 'AI Chat',         desc: 'Ask anything',              emoji: '💬', bg: '#DBEAFE', color: '#2563EB', category: 'support'    },
+  insights:   { label: 'Insights',        desc: 'Trends & patterns',         emoji: '📈', bg: '#D1FAE5', color: '#059669', category: 'wellness'   },
+  profile:    { label: 'Profile',         desc: 'Your account',              emoji: '👤', bg: '#F3F4F6', color: '#6B7280', category: 'core'       },
+  calendar:   { label: 'Calendar',        desc: 'Appointments & dates',      emoji: '📅', bg: '#DBEAFE', color: '#2563EB', category: 'wellness'   },
+  vitals:     { label: 'Vitals',          desc: 'BP, weight & more',         emoji: '💗', bg: '#FCE7F3', color: '#DB2777', category: 'wellness'   },
+  nutrition:  { label: 'Nutrition',       desc: 'Meals & food safety',       emoji: '🥗', bg: '#FEF3C7', color: '#D97706', category: 'wellness'   },
+  health:     { label: 'Health',          desc: 'Symptoms & meds',           emoji: '🫀', bg: '#D1FAE5', color: '#059669', category: 'wellness'   },
+  mental:     { label: 'Mental Health',   desc: 'Mood & wellbeing',          emoji: '🧠', bg: '#EDE9FE', color: '#7C3AED', category: 'support'    },
+  safety:     { label: 'Safety',          desc: 'Emergency guidance',        emoji: '🛡', bg: '#FEF3C7', color: '#D97706', category: 'support'    },
+  // Pregnancy
+  kicks:      { label: 'Kick Counter',    desc: 'Track baby movements',      emoji: '🦶', bg: '#FCE7F3', color: '#DB2777', category: 'pregnancy'  },
+  baby:       { label: 'Baby',            desc: 'Growth & milestones',       emoji: '👶', bg: '#EDE9FE', color: '#7C3AED', category: 'pregnancy'  },
+  partner:    { label: 'Partner',         desc: 'Tips & shared journey',     emoji: '👫', bg: '#DBEAFE', color: '#2563EB', category: 'support'    },
+  // IVF
+  treatment:  { label: 'IVF Journey',     desc: 'Cycle & treatment log',     emoji: '🧬', bg: '#EDE9FE', color: '#7C3AED', category: 'treatment'  },
+  medications:{ label: 'Medications',     desc: 'IVF meds & injections',     emoji: '💉', bg: '#FEF3C7', color: '#D97706', category: 'treatment'  },
+  scans:      { label: 'Fertility Scans', desc: 'Follicle & lining results', emoji: '🖥', bg: '#DBEAFE', color: '#2563EB', category: 'treatment'  },
+  embryos:    { label: 'Embryo Tracker',  desc: 'Embryo grades & status',    emoji: '🔬', bg: '#D1FAE5', color: '#059669', category: 'treatment'  },
+  // TTC
+  ttc:        { label: 'TTC Tracker',     desc: 'Cycle & ovulation',         emoji: '📊', bg: '#D1FAE5', color: '#059669', category: 'fertility'  },
+  // Mom
+  nursing:    { label: 'Nursing',         desc: 'Feeding & pumping log',     emoji: '🤱', bg: '#FCE7F3', color: '#DB2777', category: 'postpartum' },
+  // Menopause / Menstrual
+  menopause:  { label: 'Menopause',       desc: 'Symptoms & tracking',       emoji: '🌡', bg: '#DBEAFE', color: '#2563EB', category: 'health'     },
+  menstrual:  { label: 'Cycle Tracker',   desc: 'Period & symptom log',      emoji: '🌸', bg: '#FCE7F3', color: '#DB2777', category: 'health'     },
+  body:       { label: 'Weight Log',      desc: 'Track your weight',         emoji: '⚖️', bg: '#D1FAE5', color: '#059669', category: 'wellness'   },
+  assistant:  { label: 'AI Assistant',    desc: 'Your health assistant',     emoji: '🤖', bg: '#DBEAFE', color: '#2563EB', category: 'support'    },
 };
 
-/* ─── Journey-specific category layout ─────────────────────────────────────── */
-const JOURNEY_MENU = {
-  pregnant: [
-    { category: '🤰 Baby Monitoring',   ids: ['kicks', 'vitals', 'baby']        },
-    { category: '🥗 Wellness',          ids: ['nutrition', 'mental']             },
-    { category: '🩺 Health & Safety',   ids: ['health', 'safety']               },
-    { category: '🤖 Support & Tracking',ids: ['chat', 'calendar', 'insights']   },
-  ],
-  nursing: [
-    { category: '👶 Baby & Feeding',    ids: ['baby', 'nursing']                 },
-    { category: '💪 Your Recovery',     ids: ['vitals', 'mental', 'nutrition']   },
-    { category: '🩺 Health & Safety',   ids: ['health', 'safety']               },
-    { category: '🤖 Support & Tracking',ids: ['chat', 'calendar', 'insights']   },
-  ],
-  ttc: [
-    { category: '🌙 Cycle Tracking',     ids: ['ttc', 'calendar', 'vitals']      },
-    { category: '📊 Cycle Insights',     ids: ['insights', 'mental']             },
-    { category: '🥗 Wellness',           ids: ['nutrition', 'health']            },
-    { category: '🩺 Health & Safety',    ids: ['safety']                         },
-    { category: '🤖 Support & Tracking', ids: ['chat', 'assistant']              },
-  ],
-  conceive: [
-    { category: '🌙 Cycle Tracking',     ids: ['ttc', 'calendar', 'vitals']      },
-    { category: '📊 Cycle Insights',     ids: ['insights', 'mental']             },
-    { category: '🥗 Wellness',           ids: ['nutrition', 'health']            },
-    { category: '🩺 Health & Safety',    ids: ['safety']                         },
-    { category: '🤖 Support & Tracking', ids: ['chat', 'assistant']              },
-  ],
-  ivf: [
-    { category: '🌸 IVF Treatment',     ids: ['ivf', 'timeline', 'medications']  },
-    { category: '🔬 Lab & Monitoring',  ids: ['scans', 'embryos', 'vitals']      },
-    { category: '💗 Emotional Support', ids: ['mental', 'tww', 'partner']        },
-    { category: '🥗 Wellness',          ids: ['nutrition', 'health']             },
-    { category: '📞 Support Network',   ids: ['careteam', 'safety']              },
-    { category: '🤖 Tools & Tracking',  ids: ['chat', 'calendar', 'insights']    },
-  ],
-  menstrual: [
-    { category: '💧 Cycle',             ids: ['menstrual', 'vitals']             },
-    { category: '🥗 Wellness',          ids: ['nutrition', 'mental']             },
-    { category: '🩺 Health',            ids: ['health', 'safety']               },
-    { category: '🤖 Support & Tracking',ids: ['chat', 'calendar', 'insights']   },
-  ],
-  menopause: [
-    { category: '🌙 Menopause',         ids: ['menopause', 'vitals']             },
-    { category: '🥗 Wellness',          ids: ['nutrition', 'mental']             },
-    { category: '🩺 Health & Safety',   ids: ['health', 'safety']               },
-    { category: '🤖 Support & Tracking',ids: ['chat', 'calendar', 'insights']   },
-  ],
+// ── Category display config ──────────────────────────────────────────────────
+const CATEGORY_META = {
+  treatment:  { title: 'IVF Treatment',     icon: '⚙',  iconColor: '#7C3AED' },
+  fertility:  { title: 'Fertility',         icon: '🌸', iconColor: '#059669' },
+  pregnancy:  { title: 'Pregnancy',         icon: '🤰', iconColor: '#DB2777' },
+  postpartum: { title: 'Postpartum',        icon: '🤱', iconColor: '#DB2777' },
+  health:     { title: 'Health',            icon: '🌿', iconColor: '#2563EB' },
+  wellness:   { title: 'Wellness',          icon: '🌿', iconColor: '#059669' },
+  support:    { title: 'Support',           icon: '♥',  iconColor: '#DB2777' },
+  core:       { title: 'Quick Access',      icon: '⚡', iconColor: '#D97706' },
 };
 
-/* ─── Greeting helper ───────────────────────────────────────────────────────── */
-const greeting = () => {
+// Tabs to exclude from the menu grid (handled by bottom nav or header)
+const EXCLUDED_TABS = new Set(['home', 'menu', 'profile', 'settings']);
+
+function getGreeting() {
   const h = new Date().getHours();
   if (h < 12) return 'Good morning';
   if (h < 17) return 'Good afternoon';
   return 'Good evening';
-};
-
-/* ─── Sub-components ────────────────────────────────────────────────────────── */
-function FeatureBtn({ id, onPress }) {
-  const f = FEATURES[id];
-  if (!f) return null;
-  const { Icon, label, desc, iconBg, iconColor } = f;
-
-  if (!Icon) {
-    console.warn(`Icon for feature "${id}" is undefined`);
-    return null;
-  }
-
-  return (
-    <button className="ms-feature-btn" onClick={() => onPress(id)}>
-      <div className="ms-icon-box" style={{ background: iconBg }}>
-        <Icon size={20} color={iconColor} strokeWidth={1.8} />
-      </div>
-      <span className="ms-feat-label">{label}</span>
-      <span className="ms-feat-desc">{desc}</span>
-    </button>
-  );
 }
 
-function CategorySection({ category, ids, onPress }) {
-  return (
-    <div className="ms-category">
-      <p className="ms-category-title">{category}</p>
-      <div className="ms-category-grid">
-        {ids.map(id => (
-          <FeatureBtn key={id} id={id} onPress={onPress} />
-        ))}
-      </div>
-    </div>
-  );
+function buildSections(tabs) {
+  const categoryOrder = [
+    'treatment', 'fertility', 'pregnancy', 'postpartum',
+    'health', 'wellness', 'support', 'core',
+  ];
+
+  const grouped = {};
+
+  tabs
+    .filter((t) => !EXCLUDED_TABS.has(t))
+    .forEach((tabId) => {
+      const meta = TAB_META[tabId];
+      if (!meta) return;
+      const cat = meta.category;
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(tabId);
+    });
+
+  return categoryOrder
+    .filter((cat) => grouped[cat]?.length)
+    .map((cat) => ({
+      id:    cat,
+      ...CATEGORY_META[cat],
+      tiles: grouped[cat].map((tabId) => ({ route: tabId, ...TAB_META[tabId] })),
+    }));
 }
 
-/* ─── Main component ────────────────────────────────────────────────────────── */
-export default function MenuScreen({ setActive }) {
-  const { journeyType, userName } = useApp();
-  const name = userName || 'Mama';
-  
-  const menuKey = journeyType === 'conceive' ? 'ttc' : (journeyType === 'mom' ? 'nursing' : journeyType);
-  const sections = JOURNEY_MENU[menuKey] ?? JOURNEY_MENU.pregnant;
+export default function Menu({ setActive, onSOS }) {
+  const { journeyType, setShowSOS } = useApp();
+  const user = auth.currentUser;
 
-  const handleFeaturePress = (featureId) => {
-    const featureRoutes = {
-      // IVF features
-      'ivf':         'treatment',
-      'timeline':    'treatment',
-      'medications': 'medications',
-      'scans':       'scans',
-      'embryos':     'embryos',
-      'tww':         'insights',
-      'partner':     'profile',
-      'careteam':    'profile',
-      
-      // TTC/Fertility features
-      'ttc':         'ttc',
-      'vitals':      'vitals',
-      'calendar':    'calendar',
-      'insights':    'insights',
-      
-      // Wellness features
-      'mental':      'mental',
-      'nutrition':   'nutrition',
-      'health':      'health',
-      
-      // Pregnancy features
-      'kicks':       'kicks',
-      'baby':        'baby',
-      'nursing':     'nursing',
-      
-      // Support features
-      'safety':      'safety',
-      'chat':        'chat',
-      'assistant':   'assistant',
-      
-      // Default
-      'body':        'body',
-      'settings':    'settings',
-      'profile':     'profile',
-    };
-    
-    const route = featureRoutes[featureId] || featureId;
-    setActive(route);
+  const type   = journeyType || 'pregnant';
+  const config = JOURNEY_CONFIG[type] ?? JOURNEY_CONFIG.pregnant;
+  const tabs   = config.tabs ?? [];
+
+  const displayName = user?.displayName?.split(' ')[0] || config.greeting || 'Mama';
+  const sections    = buildSections(tabs);
+
+  const handleTile = (route) => {
+    if (setActive) setActive(route);
+  };
+
+  const handleSOS = () => {
+    if (setShowSOS) setShowSOS(true);
+    else if (onSOS) onSOS();
   };
 
   return (
     <div className="ms-root">
+      {/* Header */}
       <div className="ms-header">
         <div>
-          <p className="ms-greeting-sub">{greeting()}</p>
-          <h2 className="ms-greeting">{name} 👋</h2>
+          <p className="ms-greeting-sub">{getGreeting()}</p>
+          <p className="ms-greeting">
+            {displayName} <span style={{ fontSize: 18 }}>👋</span>
+          </p>
         </div>
-        <button className="ms-sos" onClick={() => setActive('safety')}>
-          🚨 SOS
+        <button className="ms-sos" onClick={handleSOS}>
+          <span style={{ fontSize: 13 }}>▲</span> SOS
         </button>
       </div>
 
+      {/* Journey tag */}
       <div className="ms-journey-tag">
-        <span className="ms-journey-dot" />
-        <span className="ms-journey-label">
-          {{
-            pregnant:  '🤰 Pregnancy Journey',
-            mom:       '👶 Postpartum & Nursing',
-            conceive:  '🌙 Trying to Conceive',
-            ttc:       '🌙 Trying to Conceive',
-            ivf:       '🌸 IVF & Fertility',
-            menstrual: '💧 Menstrual Health',
-            menopause: '🌙 Menopause Journey',
-          }[journeyType] ?? 'Your Journey'}
-        </span>
+        <div className="ms-journey-dot" />
+        <span className="ms-journey-label">{config.name}</span>
       </div>
 
+      {/* Sections */}
       <div className="ms-sections">
-        {sections.map(s => (
-          <CategorySection
-            key={s.category}
-            category={s.category}
-            ids={s.ids}
-            onPress={handleFeaturePress}
-          />
+        {sections.map((section) => (
+          <div key={section.id} className="ms-category">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 2 }}>
+              <span style={{ fontSize: 13, color: section.iconColor }}>
+                {section.icon}
+              </span>
+              <span className="ms-category-title">{section.title}</span>
+            </div>
+
+            <div className="ms-category-grid">
+              {section.tiles.map((tile) => (
+                <button
+                  key={tile.route}
+                  className="ms-feature-btn"
+                  onClick={() => handleTile(tile.route)}
+                >
+                  <div className="ms-icon-box" style={{ background: tile.bg }}>
+                    <span style={{ fontSize: 22, color: tile.color }}>
+                      {tile.emoji}
+                    </span>
+                  </div>
+                  <span className="ms-feat-label">{tile.label}</span>
+                  <span className="ms-feat-desc">{tile.desc}</span>
+                </button>
+              ))}
+
+              {/* Pad incomplete rows */}
+              {section.tiles.length % 3 !== 0 &&
+                Array.from({ length: 3 - (section.tiles.length % 3) }).map((_, i) => (
+                  <div
+                    key={`pad-${i}`}
+                    className="ms-feature-btn"
+                    style={{ visibility: 'hidden', pointerEvents: 'none' }}
+                  />
+                ))}
+            </div>
+          </div>
         ))}
       </div>
-
-      <div style={{ height: 24 }} />
     </div>
   );
 }
