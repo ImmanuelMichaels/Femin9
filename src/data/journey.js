@@ -5,7 +5,7 @@ export const JOURNEY_CONFIG = {
     id: 'pregnant',
     name: 'Pregnancy',
     description: 'Track your pregnancy journey week by week',
-    tabs: ["home", "kicks", "vitals", "nutrition", "health", "baby", "mental", "chat", "insights", "profile"],
+    tabs: ["home", "kicks", "vitals", "nutrition", "health", "baby", "mental", "partner", "chat", "insights", "profile"],
     pills: [
       { dot: "var(--t)", label: "Week 24 · 2nd Trimester", bg: "var(--gdl)" },
       { dot: "var(--sg)", label: "3/6 supplements ✓", bg: "var(--sgl)" },
@@ -21,7 +21,8 @@ export const JOURNEY_CONFIG = {
     id: 'conceive',
     name: 'Trying to Conceive',
     description: 'Track your fertility journey',
-    tabs: ["home", "ttc", "nutrition", "vitals", "health", "mental", "chat", "insights", "profile"],
+    // partner tab added — covers male fertility, SA decoder, lifestyle factors
+    tabs: ["home", "ttc", "nutrition", "vitals", "health", "mental", "partner", "chat", "insights", "profile"],
     pills: [
       { dot: "var(--lv)", label: "Cycle Day 14 · Ovulation", bg: "var(--lvl)" },
       { dot: "var(--sg)", label: "Folic acid ✓", bg: "var(--sgl)" },
@@ -37,7 +38,8 @@ export const JOURNEY_CONFIG = {
     id: 'ivf',
     name: 'IVF & Fertility',
     description: 'IVF treatment support',
-    tabs: ["home", "treatment", "medications", "embryos", "scans", "nutrition", "vitals", "health", "mental", "insights", "profile", "chat"],
+    // partner tab added — covers sperm health, ICSI, SA decoder, pre-retrieval optimisation
+    tabs: ["home", "treatment", "medications", "embryos", "scans", "nutrition", "vitals", "health", "mental", "partner", "insights", "profile", "chat"],
     pills: [
       { dot: "var(--lv)", label: "Cycle Day 14 · Stimulation", bg: "var(--lvl)" },
       { dot: "var(--sg)", label: "4/5 meds taken ✓", bg: "var(--sgl)" },
@@ -54,7 +56,6 @@ export const JOURNEY_CONFIG = {
     name: 'Postpartum & Nursing',
     description: 'Postpartum recovery and baby care',
     tabs: ["home", "nursing", "baby", "nutrition", "vitals", "health", "mental", "chat", "insights", "profile"],
-    //      ^^^^^^^^^^ Add 'nursing' here
     pills: [
       { dot: "var(--t)", label: "Week 6 Postpartum", bg: "var(--gdl)" },
       { dot: "var(--sg)", label: "Breastfeeding · Day 42", bg: "var(--sgl)" },
@@ -88,24 +89,20 @@ export const JOURNEY_CONFIG = {
     taskIds: ["log_symptoms", "hydration", "sleep_track", "mood_log", "exercise", "hrt_medication"],
     quickActions: [],
     showAlert: true,
-  }
+  },
 };
 
 // Backward compatibility
 export const BLOOM_KB = JOURNEY_CONFIG;
 
-// Keep your existing ALL_TASKS (paste your full ALL_TASKS array here)
 export const ALL_TASKS = [
-  // ... paste all your tasks from the previous message here ...
-  // Make sure this array is complete
+  // ... your existing tasks unchanged ...
 ];
 
-// Other exports you already had
-export const TTC_TIPS = []; // add your content if needed
+export const TTC_TIPS = [];
 export const FERTILITY_MYTHS = [];
 export const JOURNEY_META = {};
 
-// Helper
 export function getConfigKey(key) {
   const map = { ttc: 'conceive', nursing: 'mom' };
   return map[key] || key;

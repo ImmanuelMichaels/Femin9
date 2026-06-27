@@ -3,46 +3,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ─── Helper functions ──────────────────────────────────────────────────────
-
-    // User can only access their own documents
-    function isOwner(userId) {
-      return request.auth != null && request.auth.uid == userId;
-    }
-
-    // Email must be verified before accessing health data
-    function isVerified() {
-      return request.auth != null && request.auth.token.email_verified == true;
-    }
-
-    // ─── User profile & health data ───────────────────────────────────────────
-    // Path: /users/{userId}/**
-    // Only the authenticated, email-verified owner can read or write their data.
-
-    match /users/{userId} {
-      allow read, write: if isOwner(userId) && isVerified();
-
-      // Health journey data (pregnancy, IVF, menopause, etc.)
-      match /health/{document=**} {
-        allow read, write: if isOwner(userId) && isVerified();
-      }
-
-      // GDPR consent audit trail — append-only, owner read
-      match /consents/{consentId} {
-        allow read:   if isOwner(userId) && isVerified();
-        allow create: if isOwner(userId) && isVerified();
-        allow update, delete: if false; // Consent records are immutable
-      }
-
-      // Notifications
-      match /notifications/{notificationId} {
-        allow read, write: if isOwner(userId) && isVerified();
-      }
-    }
-
-    // ─── Deny everything else ─────────────────────────────────────────────────
+    // This rule allows anyone with your Firestore database reference to view, edit,
+    // and delete all data in your Firestore database. It is useful for getting
+    // started, but it is configured to expire after 30 days because it
+    // leaves your app open to attackers. At that time, all client
+    // requests to your Firestore database will be denied.
+    //
+    // Make sure to write security rules for your app before that time, or else
+    // all client requests to your Firestore database will be denied until you Update
+    // your rules
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if request.time < timestamp.date(2026, 7, 5);
     }
   }
 }

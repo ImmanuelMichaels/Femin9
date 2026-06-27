@@ -1,19 +1,31 @@
-import { useState, useCallback, useEffect} from 'react';
+// src/pages/Signup.jsx
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/useApp';
 import { auth, db } from '../context/firebase';
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signInWithPopup,
+  GoogleAuthProvider,
+} from 'firebase/auth';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import PrivacyPolicy from './PrivacyPolicy';
 import './Signup.css';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
-
 const GoogleG = () => (
   <svg width="20" height="20" viewBox="0 0 24 24">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
     <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
     <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
     <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+  </svg>
+);
+
+const AppleIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
   </svg>
 );
 
@@ -61,34 +73,70 @@ const CheckIcon = () => (
   </svg>
 );
 
-const AppleIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-  </svg>
-);
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
 function getPasswordStrength(pw) {
   if (!pw) return { score: 0, label: '', color: '' };
   let score = 0;
-  if (pw.length >= 8)              score++;
-  if (/[A-Z]/.test(pw))           score++;
-  if (/[0-9]/.test(pw))           score++;
-  if (/[^A-Za-z0-9]/.test(pw))    score++;
+  if (pw.length >= 8)           score++;
+  if (/[A-Z]/.test(pw))        score++;
+  if (/[0-9]/.test(pw))        score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
 
-  if (score <= 1) return { score, label: 'Too weak',  color: '#f43f5e' };
-  if (score === 2) return { score, label: 'Fair',       color: '#f59e0b' };
-  if (score === 3) return { score, label: 'Good',       color: '#10b981' };
-  return               { score, label: 'Strong 🔒',  color: '#059669' };
+  if (score <= 1) return { score, label: 'Too weak',    color: '#f43f5e' };
+  if (score === 2) return { score, label: 'Fair',        color: '#f59e0b' };
+  if (score === 3) return { score, label: 'Good',        color: '#10b981' };
+  return               { score, label: 'Strong 🔒',   color: '#059669' };
 }
 
-function validateEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+function validateEmail(e) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 }
 
-// ─── Success splash shown right before navigation ────────────────────────────
+function resolveSignupError(code) {
+  switch (code) {
+    case 'auth/email-already-in-use':
+      return 'An account already exists with this email address. Try signing in instead, or use "Forgot password" if you\'ve lost access.';
+    case 'auth/weak-password':
+      return 'Password is too weak. Use at least 8 characters including a number and uppercase letter.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/network-request-failed':
+      return 'No internet connection. Please check your network and try again.';
+    case 'auth/popup-closed-by-user':
+      return 'Sign-up window was closed. Please try again.';
+    case 'auth/popup-blocked':
+      return 'Pop-up was blocked by your browser. Please allow pop-ups for this site.';
+    case 'auth/account-exists-with-different-credential':
+      return 'An account already exists with this email using a different sign-in method. Try signing in with email and password instead.';
+    default:
+      return 'Account creation failed. Please try again or contact support at privacy@femin9.com.';
+  }
+}
 
+// ─── Write consent record to Firestore ───────────────────────────────────────
+async function writeConsentToFirestore(uid) {
+  try {
+    const raw = localStorage.getItem('userConsents');
+    if (!raw) return;
+
+    const parsed = JSON.parse(raw);
+    await setDoc(
+      doc(db, 'users', uid, 'consent', 'record'),
+      {
+        ...parsed,
+        uid,
+        migratedFromLocalStorage: false,
+        serverTimestamp: serverTimestamp(),
+      },
+      { merge: false }
+    );
+  } catch (err) {
+    // Non-fatal — consent still in localStorage
+    console.error('[Femin9] Consent Firestore write failed on signup:', err);
+  }
+}
+
+// ─── Success splash ───────────────────────────────────────────────────────────
 function SuccessSplash({ name }) {
   return (
     <div className="su-splash">
@@ -100,7 +148,6 @@ function SuccessSplash({ name }) {
   );
 }
 
-// ─── Password rule row ────────────────────────────────────────────────────────
 function PasswordRule({ met, text }) {
   return (
     <div className={`su-rule ${met ? 'su-rule--met' : ''}`}>
@@ -110,13 +157,39 @@ function PasswordRule({ met, text }) {
   );
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+function ErrorBanner({ message, onDismiss }) {
+  if (!message) return null;
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 10,
+      padding: '12px 14px',
+      background: '#FEE2E2',
+      border: '1px solid #FECACA',
+      borderRadius: 10,
+      marginBottom: 16,
+      fontSize: 13,
+      color: '#B91C1C',
+      lineHeight: 1.5,
+    }}>
+      <span>{message}</span>
+      <button
+        onClick={onDismiss}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#B91C1C', fontSize: 16, lineHeight: 1, flexShrink: 0 }}
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
 
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function Signup() {
-  const navigate    = useNavigate();
+  const navigate        = useNavigate();
   const { setUserName } = useApp();
 
-  // Form state
   const [name,        setName]        = useState('');
   const [email,       setEmail]       = useState('');
   const [password,    setPassword]    = useState('');
@@ -125,37 +198,38 @@ export default function Signup() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [agreed,      setAgreed]      = useState(false);
   const [focused,     setFocused]     = useState(null);
+  const [touched,     setTouch]       = useState({});
+  const [loading,     setLoading]     = useState(false);
+  const [animOut,     setAnimOut]     = useState(false);
+  const [success,     setSuccess]     = useState(false);
+  const [error,       setError]       = useState('');
 
-  // UX state
-  const [touched,   setTouch]   = useState({});
-  const [loading,   setLoading] = useState(false);
-  const [animOut,   setAnimOut] = useState(false);
-  const [success,   setSuccess] = useState(false);
+  // Privacy policy overlay
+  const [showPolicy, setShowPolicy] = useState(false);
 
   useEffect(() => {
+    // Only clear auth-related items, never consent
     localStorage.removeItem('userAuth');
     localStorage.removeItem('userName');
     localStorage.removeItem('userEmail');
   }, []);
 
-  // ── Derived validation ──────────────────────────────────────────────────────
   const strength    = getPasswordStrength(password);
   const emailOk     = validateEmail(email);
   const passwordsOk = password && confirm && password === confirm;
   const nameOk      = name.trim().length >= 2;
 
   const errors = {
-    name:    touched.name    && !nameOk         ? 'Please enter your full name'             : '',
-    email:   touched.email   && !emailOk        ? 'Enter a valid email address'             : '',
-    password: touched.password && password.length < 8 ? 'Password must be at least 8 characters' : '',
-    confirm: touched.confirm && !passwordsOk    ? "Passwords don't match"                  : '',
+    name:     touched.name     && !nameOk            ? 'Please enter your full name'               : '',
+    email:    touched.email    && !emailOk            ? 'Enter a valid email address'               : '',
+    password: touched.password && password.length < 8 ? 'Password must be at least 8 characters'   : '',
+    confirm:  touched.confirm  && !passwordsOk        ? "Passwords don't match"                     : '',
   };
 
   const formReady = nameOk && emailOk && strength.score >= 2 && passwordsOk && agreed;
+  const touch     = (field) => setTouch(p => ({ ...p, [field]: true }));
 
-  const touch = (field) => setTouch((p) => ({ ...p, [field]: true }));
-
-  // ── Email Sign Up ──────────────────────────────────────────────────────────────────
+  // ── Email sign up ─────────────────────────────────────────────────────────
   const handleSubmit = useCallback(async () => {
     if (!formReady) {
       setTouch({ name: true, email: true, password: true, confirm: true });
@@ -163,108 +237,99 @@ export default function Signup() {
     }
 
     setLoading(true);
+    setError('');
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      
+      const { user } = await createUserWithEmailAndPassword(auth, email, password);
+
       await updateProfile(user, { displayName: name.trim().split(' ')[0] });
-      
-      // FIX: Create minimal user doc with NO journey data - just onboarding flag
+
+      // Create user doc — no journey data, onboarding will set it
       await setDoc(doc(db, 'users', user.uid), {
-        name: name.trim(),
-        email: email,
-        createdAt: new Date(),
-        messageCount: 0,
-        plan: 'free',
-        onboardingComplete: false  // Explicit flag - onboarding will set to true
-        // REMOVED: journeyType: 'pregnant'
-        // REMOVED: culture: null
+        name:               name.trim(),
+        email,
+        createdAt:          new Date(),
+        messageCount:       0,
+        plan:               'free',
+        onboardingComplete: false,
       });
-      
+
+      // Write consent to Firestore immediately — user is authenticated
+      await writeConsentToFirestore(user.uid);
+
       const firstName = name.trim().split(' ')[0];
       localStorage.setItem('userEmail', email);
       localStorage.setItem('userName', firstName);
       if (setUserName) setUserName(firstName);
-      
+
       setLoading(false);
       setSuccess(true);
-      
-      // FIX: Navigate to onboarding, NOT verify-email
+
       setTimeout(() => {
         setAnimOut(true);
         setTimeout(() => navigate('/onboarding'), 380);
       }, 1400);
-      
-    } catch (error) {
-      console.error('Signup error:', error);
-      let errorMessage = 'Account creation failed. ';
-      
-      switch (error.code) {
-        case 'auth/email-already-in-use':
-          errorMessage += 'An account already exists with this email.';
-          break;
-        case 'auth/weak-password':
-          errorMessage += 'Password is too weak.';
-          break;
-        case 'auth/invalid-email':
-          errorMessage += 'Invalid email format.';
-          break;
-        default:
-          errorMessage += error.message;
-      }
-      
-      alert(errorMessage);
+
+    } catch (err) {
+      setError(resolveSignupError(err.code));
       setLoading(false);
     }
   }, [formReady, name, email, password, navigate, setUserName]);
 
-  // ── Social Sign Up ────────────────────────────────────────────────────────────────────
-  const handleSocial = async () => {
+  // ── Google sign up ────────────────────────────────────────────────────────
+  const handleGoogleSignup = async () => {
     setLoading(true);
-    const provider = new GoogleAuthProvider();
-    
+    setError('');
+
     try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      const userDoc = await getDoc(doc(db, 'users', user.uid));
-      
-      // FIX: Only create user doc if it doesn't exist, with NO journey data
-      if (!userDoc.exists()) {
+      const provider = new GoogleAuthProvider();
+      const { user } = await signInWithPopup(auth, provider);
+
+      const userDocSnap = await getDoc(doc(db, 'users', user.uid));
+
+      if (!userDocSnap.exists()) {
         await setDoc(doc(db, 'users', user.uid), {
-          name: user.displayName || user.email.split('@')[0],
-          email: user.email,
-          createdAt: new Date(),
-          messageCount: 0,
-          plan: 'free',
-          onboardingComplete: false  // Explicit flag
-          // REMOVED: journeyType: 'pregnant'
+          name:               user.displayName || user.email.split('@')[0],
+          email:              user.email,
+          createdAt:          new Date(),
+          messageCount:       0,
+          plan:               'free',
+          onboardingComplete: false,
         });
+
+        // Write consent to Firestore — user now authenticated
+        await writeConsentToFirestore(user.uid);
       }
-      
+
       localStorage.setItem('userEmail', user.email);
       localStorage.setItem('userName', user.displayName || user.email.split('@')[0]);
-      
+
       setLoading(false);
       setSuccess(true);
-      
-      // FIX: Navigate to onboarding (already does - keep as is)
+
       setTimeout(() => {
         setAnimOut(true);
         setTimeout(() => navigate('/onboarding'), 380);
       }, 1400);
-      
-    } catch (error) {
-      console.error('Social signup error:', error);
-      alert('Sign up failed. Please try again.');
+
+    } catch (err) {
+      setError(resolveSignupError(err.code));
       setLoading(false);
     }
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────────
+  // ── Privacy policy overlay ────────────────────────────────────────────────
+  if (showPolicy) {
+    return (
+      <div className="su-root" style={{ padding: 0, overflowY: 'auto' }}>
+        <PrivacyPolicy onBack={() => setShowPolicy(false)} />
+      </div>
+    );
+  }
+
   if (success) return <SuccessSplash name={name.trim().split(' ')[0]} />;
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
       className="su-root"
@@ -276,32 +341,32 @@ export default function Signup() {
     >
       <div className="su-card">
 
-        {/* ── Brand header ─────────────────────────────────────────────────── */}
         <div className="su-header">
           <h1 className="su-title">Create your account</h1>
           <p className="su-sub">Your journey to better health starts here.</p>
         </div>
 
-        {/* ── Social sign-up ────────────────────────────────────────────────── */}
+        <ErrorBanner message={error} onDismiss={() => setError('')} />
+
+        {/* Social sign-up */}
         <div className="su-socials">
-          <button className="su-social-btn" onClick={handleSocial} disabled={loading}>
+          <button className="su-social-btn" onClick={handleGoogleSignup} disabled={loading}>
             <GoogleG />
             <span>Continue with Google</span>
           </button>
-          <button className="su-social-btn su-social-apple" onClick={handleSocial} disabled={loading}>
+          <button className="su-social-btn su-social-apple" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
             <AppleIcon />
             <span>Continue with Apple</span>
+            <span style={{ fontSize: 11, marginLeft: 'auto', color: 'var(--mt)' }}>Coming soon</span>
           </button>
         </div>
 
-        {/* ── Divider ──────────────────────────────────────────────────────── */}
         <div className="su-divider">
           <div className="su-divider-line" />
           <span className="su-divider-text">or sign up with email</span>
           <div className="su-divider-line" />
         </div>
 
-        {/* ── Form ─────────────────────────────────────────────────────────── */}
         <div className="su-form">
 
           {/* Full name */}
@@ -309,24 +374,22 @@ export default function Signup() {
             <label className="su-label">Full Name</label>
             <div className={[
               'su-input-wrap',
-              focused === 'name'  ? 'su-input-wrap--focus' : '',
-              errors.name         ? 'su-input-wrap--error' : '',
-              touched.name && nameOk ? 'su-input-wrap--valid' : '',
+              focused === 'name'         ? 'su-input-wrap--focus' : '',
+              errors.name                ? 'su-input-wrap--error' : '',
+              touched.name && nameOk     ? 'su-input-wrap--valid' : '',
             ].join(' ')}>
               <div className="su-icon"><UserIcon /></div>
               <input
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={e => { setName(e.target.value); setError(''); }}
                 onFocus={() => setFocused('name')}
                 onBlur={() => { setFocused(null); touch('name'); }}
                 placeholder="Full Name"
                 className="su-input"
                 autoComplete="name"
               />
-              {touched.name && nameOk && (
-                <div className="su-valid-tick"><CheckIcon /></div>
-              )}
+              {touched.name && nameOk && <div className="su-valid-tick"><CheckIcon /></div>}
             </div>
             {errors.name && <p className="su-error">{errors.name}</p>}
           </div>
@@ -336,24 +399,22 @@ export default function Signup() {
             <label className="su-label">Email Address</label>
             <div className={[
               'su-input-wrap',
-              focused === 'email'       ? 'su-input-wrap--focus' : '',
-              errors.email              ? 'su-input-wrap--error' : '',
-              touched.email && emailOk  ? 'su-input-wrap--valid' : '',
+              focused === 'email'        ? 'su-input-wrap--focus' : '',
+              errors.email               ? 'su-input-wrap--error' : '',
+              touched.email && emailOk   ? 'su-input-wrap--valid' : '',
             ].join(' ')}>
               <div className="su-icon"><MailIcon /></div>
               <input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => { setEmail(e.target.value); setError(''); }}
                 onFocus={() => setFocused('email')}
                 onBlur={() => { setFocused(null); touch('email'); }}
                 placeholder="email@example.com"
                 className="su-input"
                 autoComplete="email"
               />
-              {touched.email && emailOk && (
-                <div className="su-valid-tick"><CheckIcon /></div>
-              )}
+              {touched.email && emailOk && <div className="su-valid-tick"><CheckIcon /></div>}
             </div>
             {errors.email && <p className="su-error">{errors.email}</p>}
           </div>
@@ -363,36 +424,34 @@ export default function Signup() {
             <label className="su-label">Password</label>
             <div className={[
               'su-input-wrap',
-              focused === 'pass'  ? 'su-input-wrap--focus' : '',
-              errors.password     ? 'su-input-wrap--error' : '',
+              focused === 'pass' ? 'su-input-wrap--focus' : '',
+              errors.password    ? 'su-input-wrap--error' : '',
             ].join(' ')}>
               <div className="su-icon"><LockIcon /></div>
               <input
                 type={showPass ? 'text' : 'password'}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => { setPassword(e.target.value); setError(''); }}
                 onFocus={() => setFocused('pass')}
                 onBlur={() => { setFocused(null); touch('password'); }}
                 placeholder="At least 8 characters"
                 className="su-input"
                 autoComplete="new-password"
               />
-              <button className="su-eye" onClick={() => setShowPass((v) => !v)} tabIndex={-1}>
+              <button className="su-eye" onClick={() => setShowPass(v => !v)} tabIndex={-1}>
                 <EyeIcon open={showPass} />
               </button>
             </div>
             {errors.password && <p className="su-error">{errors.password}</p>}
-
-            {/* Password strength meter */}
             {password && (
               <div className="su-strength">
                 <div className="su-strength-bars">
-                  {[1, 2, 3, 4].map((n) => (
+                  {[1, 2, 3, 4].map(n => (
                     <div
                       key={n}
                       className="su-strength-bar"
                       style={{
-                        background: n <= strength.score ? strength.color : '#f0e0ea',
+                        background:  n <= strength.score ? strength.color : '#f0e0ea',
                         transition: 'background 0.3s',
                       }}
                     />
@@ -403,8 +462,6 @@ export default function Signup() {
                 </span>
               </div>
             )}
-
-            {/* Password rules */}
             {(focused === 'pass' || touched.password) && password && (
               <div className="su-rules">
                 <PasswordRule met={password.length >= 8}   text="At least 8 characters" />
@@ -419,23 +476,23 @@ export default function Signup() {
             <label className="su-label">Confirm Password</label>
             <div className={[
               'su-input-wrap',
-              focused === 'confirm'       ? 'su-input-wrap--focus' : '',
-              errors.confirm              ? 'su-input-wrap--error' : '',
-              touched.confirm && passwordsOk ? 'su-input-wrap--valid' : '',
+              focused === 'confirm'            ? 'su-input-wrap--focus' : '',
+              errors.confirm                   ? 'su-input-wrap--error' : '',
+              touched.confirm && passwordsOk   ? 'su-input-wrap--valid' : '',
             ].join(' ')}>
               <div className="su-icon"><LockIcon /></div>
               <input
                 type={showConfirm ? 'text' : 'password'}
                 value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
+                onChange={e => { setConfirm(e.target.value); setError(''); }}
                 onFocus={() => setFocused('confirm')}
                 onBlur={() => { setFocused(null); touch('confirm'); }}
                 placeholder="Re-enter password"
                 className="su-input"
                 autoComplete="new-password"
-                onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
               />
-              <button className="su-eye" onClick={() => setShowConfirm((v) => !v)} tabIndex={-1}>
+              <button className="su-eye" onClick={() => setShowConfirm(v => !v)} tabIndex={-1}>
                 <EyeIcon open={showConfirm} />
               </button>
               {touched.confirm && passwordsOk && (
@@ -445,23 +502,33 @@ export default function Signup() {
             {errors.confirm && <p className="su-error">{errors.confirm}</p>}
           </div>
 
-          {/* Terms */}
+          {/* Terms + Privacy Policy */}
           <label className="su-terms">
             <div
               className={`su-checkbox ${agreed ? 'su-checkbox--checked' : ''}`}
-              onClick={() => setAgreed((v) => !v)}
+              onClick={() => setAgreed(v => !v)}
               role="checkbox"
               aria-checked={agreed}
               tabIndex={0}
-              onKeyDown={(e) => e.key === ' ' && setAgreed((v) => !v)}
+              onKeyDown={e => e.key === ' ' && setAgreed(v => !v)}
             >
               {agreed && <CheckIcon />}
             </div>
             <span className="su-terms-text">
               I agree to the{' '}
-              <button className="su-link" onClick={(e) => e.preventDefault()}>Terms of Service</button>
+              <button
+                className="su-link"
+                onClick={e => { e.preventDefault(); e.stopPropagation(); navigate('/consent'); }}
+              >
+                Terms of Service
+              </button>
               {' '}and{' '}
-              <button className="su-link" onClick={(e) => e.preventDefault()}>Privacy Policy</button>
+              <button
+                className="su-link"
+                onClick={e => { e.preventDefault(); e.stopPropagation(); setShowPolicy(true); }}
+              >
+                Privacy Policy
+              </button>
             </span>
           </label>
 
@@ -476,10 +543,9 @@ export default function Signup() {
               : <><span>Create Account</span><span className="su-submit-arrow">→</span></>
             }
           </button>
-          
+
         </div>
 
-        {/* ── Footer ────────────────────────────────────────────────────────── */}
         <p className="su-footer">
           Already have an account?{' '}
           <button className="su-login-link" onClick={() => navigate('/login')}>

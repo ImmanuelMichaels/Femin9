@@ -1,6 +1,6 @@
-// AppContext.jsx
+// src/context/AppContext.jsx
 import { createContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../context/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../context/firebase';
@@ -10,7 +10,6 @@ const AppContext = createContext(null);
 // ──────────────────────────────────────────────────────────────
 // INITIAL STATE
 // ──────────────────────────────────────────────────────────────
-
 const INITIAL_USER_DATA = {
   journeyType: null,
   userName: '',
@@ -61,7 +60,37 @@ export function AppProvider({ children }) {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [userId, setUserId] = useState(null);
 
-  // ── Load profile on auth change ──
+  // ── Migrate localStorage consent → Firestore ──────────────────────────────
+  // Runs once after login. If Firestore already has a consent record, does
+  // nothing. If not, promotes whatever is in localStorage to Firestore.
+  // Non-fatal — localStorage remains the fallback if this fails.
+  const migrateConsentToFirestore = useCallback(async (uid) => {
+    try {
+      const consentRef  = doc(db, 'users', uid, 'consent', 'record');
+      const consentSnap = await getDoc(consentRef);
+
+      if (consentSnap.exists()) return; // already in Firestore, nothing to do
+
+      const raw = localStorage.getItem('userConsents');
+      if (!raw) return; // no localStorage record either — consent not yet given
+
+      const parsed = JSON.parse(raw);
+
+      await setDoc(consentRef, {
+        ...parsed,
+        uid,
+        migratedFromLocalStorage: true,
+        serverTimestamp: serverTimestamp(),
+      });
+
+      console.log('[Femin9] Consent record migrated to Firestore for', uid);
+    } catch (err) {
+      // Non-fatal — the app continues, localStorage is still the fallback
+      console.error('[Femin9] Consent migration failed:', err);
+    }
+  }, []);
+
+  // ── Load profile on auth change ───────────────────────────────────────────
   useEffect(() => {
     let unsubscribe;
 
@@ -79,13 +108,12 @@ export function AppProvider({ children }) {
         setIsLoading(true);
 
         try {
-          const userRef = doc(db, 'users', user.uid);
+          const userRef  = doc(db, 'users', user.uid);
           const userSnap = await getDoc(userRef);
 
           if (userSnap.exists()) {
             const data = userSnap.data();
-            
-            // Load all user data from Firestore
+
             setJourneyType(data.journeyType || null);
             setUserName(data.userName || data.displayName || '');
             setCulture(data.culture || 'en-GB');
@@ -105,9 +133,14 @@ export function AppProvider({ children }) {
             setFeedingMethod(data.feedingMethod || '');
             setSubscriptionPlan(data.subscriptionPlan || null);
             setNotificationsEnabled(data.notificationsEnabled ?? true);
+
+            // Migrate any pre-login localStorage consent to Firestore
+            await migrateConsentToFirestore(user.uid);
+
           } else {
-            // New user - create default profile
+            // New user — create default profile then migrate consent
             await createDefaultProfile(user.uid);
+            await migrateConsentToFirestore(user.uid);
           }
         } catch (error) {
           console.error('Error loading user profile:', error);
@@ -122,9 +155,9 @@ export function AppProvider({ children }) {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, []);
+  }, [migrateConsentToFirestore]);
 
-  // ── Create default profile ──
+  // ── Create default profile ────────────────────────────────────────────────
   const createDefaultProfile = useCallback(async (uid) => {
     try {
       const userRef = doc(db, 'users', uid);
@@ -138,7 +171,7 @@ export function AppProvider({ children }) {
     }
   }, []);
 
-  // ── Firestore write helper ──
+  // ── Firestore write helper ────────────────────────────────────────────────
   const updateFirestore = useCallback(async (updates) => {
     if (!userId) return;
     try {
@@ -152,7 +185,7 @@ export function AppProvider({ children }) {
     }
   }, [userId]);
 
-  // ── Update functions (optimistic + Firestore) ──
+  // ── Update functions (optimistic + Firestore) ─────────────────────────────
   const updateJourneyType = useCallback(async (type) => {
     setJourneyType(type);
     await updateFirestore({ journeyType: type });
@@ -168,7 +201,7 @@ export function AppProvider({ children }) {
     await updateFirestore({ subscriptionPlan: plan });
   }, [updateFirestore]);
 
-  // ── RESET ALL STATE (for logout) ──
+  // ── Reset all state (logout) ──────────────────────────────────────────────
   const resetAllState = useCallback(() => {
     setJourneyType(null);
     setUserName('');
@@ -192,33 +225,32 @@ export function AppProvider({ children }) {
     setShowSOS(false);
   }, []);
 
-  // ── CLEAR USER DATA (for logout) ──
+  // ── Clear user data (logout) ──────────────────────────────────────────────
   const clearUserData = useCallback(() => {
     resetAllState();
-    // Also clear any localStorage used for UI state
     try {
       localStorage.removeItem('profileImage');
       localStorage.removeItem('notificationPrefs');
-      // Don't clear EPDS data - it's UI state that should persist
+      // userConsents is intentionally NOT removed — consent record must persist
     } catch {
       // silent
     }
   }, [resetAllState]);
 
-  // ── LOGOUT ──
+  // ── Logout ────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
     clearUserData();
     setProfileLoaded(false);
   }, [clearUserData]);
 
-  // ── PREGNANCY HELPERS ──
+  // ── Pregnancy helpers ─────────────────────────────────────────────────────
   const getCurrentWeek = useCallback(() => {
     if (!edd) return null;
     try {
-      const dueDate = new Date(edd);
-      const now = new Date();
+      const dueDate  = new Date(edd);
+      const now      = new Date();
       const diffDays = Math.floor((dueDate - now) / (1000 * 60 * 60 * 24));
-      const weeks = 40 - Math.floor(diffDays / 7);
+      const weeks    = 40 - Math.floor(diffDays / 7);
       return Math.max(1, Math.min(42, weeks));
     } catch {
       return null;
@@ -233,7 +265,7 @@ export function AppProvider({ children }) {
     return 3;
   }, [getCurrentWeek]);
 
-  // ── CONTEXT VALUE ──
+  // ── Context value ─────────────────────────────────────────────────────────
   const value = useMemo(
     () => ({
       // Read-only state
@@ -256,8 +288,8 @@ export function AppProvider({ children }) {
       feedingMethod,
       subscriptionPlan,
       notificationsEnabled,
-      
-      // UI State
+
+      // UI state
       showSOS,
       setShowSOS,
       isLoading,
@@ -269,8 +301,8 @@ export function AppProvider({ children }) {
       updateUserName,
       updateSubscriptionPlan,
       setNotificationsEnabled,
-      
-      // Direct setters (for components that need them)
+
+      // Direct setters
       setJourneyType,
       setUserName,
       setCulture,
@@ -289,12 +321,12 @@ export function AppProvider({ children }) {
       setMenopauseSymptoms,
       setFeedingMethod,
       setSubscriptionPlan,
-      
+
       // Auth methods
       clearUserData,
       logout,
       resetAllState,
-      
+
       // Helpers
       getCurrentWeek,
       getTrimester,

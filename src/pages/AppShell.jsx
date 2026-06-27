@@ -81,31 +81,34 @@ const getBlockedTabsForJourney = (journeyType) => {
     case 'ivf':
       return new Set([
         'baby', 'nursing', 'kicks', 'ttc', 'pregnancy', 
-        'menstrual', 'partner'
+        'menstrual',
+        // 'partner' removed — IVF now has Partner tab (sperm health, SA decoder, ICSI)
       ]);
     
     case 'mom':
       return new Set([
         'kicks', 'ttc', 'ivf', 'treatment', 'medications', 
-        'scans', 'embryos', 'pregnancy', 'menstrual', 'partner'
+        'scans', 'embryos', 'pregnancy', 'menstrual', 'partner',
       ]);
     
     case 'pregnant':
       return new Set([
         'nursing', 'ttc', 'ivf', 'treatment', 'medications', 
-        'scans', 'embryos', 'menstrual', 'menopause'
+        'scans', 'embryos', 'menstrual', 'menopause',
+        // partner is allowed for pregnant — shows partner support content
       ]);
     
     case 'conceive':
       return new Set([
         'baby', 'nursing', 'kicks', 'ivf', 'treatment', 
-        'medications', 'scans', 'embryos', 'menopause', 'pregnancy'
+        'medications', 'scans', 'embryos', 'menopause', 'pregnancy',
+        // partner is allowed for conceive — shows male fertility content
       ]);
     
     case 'menopause':
       return new Set([
         'baby', 'nursing', 'kicks', 'ttc', 'ivf', 'treatment', 
-        'medications', 'scans', 'embryos', 'pregnancy'
+        'medications', 'scans', 'embryos', 'pregnancy', 'partner',
       ]);
     
     default:
@@ -164,7 +167,6 @@ export default function AppShell() {
   useEffect(() => {
     if (journey) {
       const validJourneys = ['pregnant', 'ivf', 'conceive', 'mom', 'menopause'];
-      
       if (validJourneys.includes(journey) && journey !== journeyType) {
         updateJourneyType(journey);
       }
@@ -180,16 +182,14 @@ export default function AppShell() {
         const userRef = doc(db, 'users', userId);
         const userSnap = await getDoc(userRef);
         const data = userSnap.data();
-        
         if (!data) return;
-        
+
         const postnatalDay = data.postnatalDay || 0;
         const epdsScreened = data.epdsScreened || {};
 
-        // Checkpoint windows
         const checkpoints = [
-          { key: 'week2', from: 14, to: 20 },
-          { key: 'week6', from: 40, to: 50 },
+          { key: 'week2',  from: 14, to: 20  },
+          { key: 'week6',  from: 40, to: 50  },
           { key: 'week12', from: 84, to: 100 },
         ];
 
@@ -198,7 +198,6 @@ export default function AppShell() {
         );
 
         if (checkpoint) {
-          // Small delay before showing EPDS
           const timer = setTimeout(() => setShowEPDS(true), 1500);
           return () => clearTimeout(timer);
         }
@@ -222,22 +221,16 @@ export default function AppShell() {
       const userSnap = await getDoc(userRef);
       const data = userSnap.data() || {};
       const postnatalDay = data.postnatalDay || 0;
-
       const epdsScreened = data.epdsScreened || {};
-      
-      // Mark the appropriate checkpoint as screened
-      if (postnatalDay >= 14 && postnatalDay <= 20) {
-        epdsScreened.week2 = true;
-      } else if (postnatalDay >= 40 && postnatalDay <= 50) {
-        epdsScreened.week6 = true;
-      } else if (postnatalDay >= 84 && postnatalDay <= 100) {
-        epdsScreened.week12 = true;
-      }
 
-      await setDoc(userRef, { 
+      if (postnatalDay >= 14 && postnatalDay <= 20)   epdsScreened.week2  = true;
+      else if (postnatalDay >= 40 && postnatalDay <= 50)  epdsScreened.week6  = true;
+      else if (postnatalDay >= 84 && postnatalDay <= 100) epdsScreened.week12 = true;
+
+      await setDoc(userRef, {
         epdsScreened,
         epdsScore: score,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       }, { merge: true });
     } catch (error) {
       console.error('Error saving EPDS result:', error);
@@ -245,44 +238,34 @@ export default function AppShell() {
   };
 
   // ── Get allowed tabs ──
-  const journeyKey = JOURNEY_KEY_MAP[journeyType] ?? journeyType;
-  const allowed = BLOOM_KB[journeyKey]?.tabs ?? [];
+  const journeyKey  = JOURNEY_KEY_MAP[journeyType] ?? journeyType;
+  const allowed     = BLOOM_KB[journeyKey]?.tabs ?? [];
   const blockedTabs = getBlockedTabsForJourney(journeyType);
 
-  // ── Check if tab is allowed ──
   const isTabAllowed = (tabId) => {
-    if (BASE_TABS.has(tabId)) return true;
-    if (blockedTabs.has(tabId)) return false;
+    if (BASE_TABS.has(tabId))    return true;
+    if (blockedTabs.has(tabId))  return false;
     return allowed.includes(tabId);
   };
 
-  // ── Get initial tab ──
   const getInitialTab = () => {
     const mappedTab = JOURNEY_TAB_MAP[journeyType] || 'home';
-    
     if (blockedTabs.has(mappedTab)) return 'home';
     if (BASE_TABS.has(mappedTab) || allowed.includes(mappedTab)) return mappedTab;
-    
     return 'home';
   };
 
-  // ── Set initial tab when journey changes ──
   useEffect(() => {
-    const initialTab = getInitialTab();
-    setTabState(initialTab);
+    setTabState(getInitialTab());
   }, [journeyType]);
 
-  // ── Tab handlers ──
   const handleSetTab = (id) => {
-    if (isTabAllowed(id)) {
-      setTabState(id);
-    }
+    if (isTabAllowed(id)) setTabState(id);
   };
 
   // ── Subscription handlers ──
-  const handleUpgrade = () => setShowSubscription(true);
+  const handleUpgrade        = () => setShowSubscription(true);
   const handleSubscriptionClose = () => setShowSubscription(false);
-  
   const handleUpgradeSuccess = () => {
     handleSubscriptionClose();
     navigate('/app/' + journeyType + '?upgraded=1');
@@ -303,8 +286,8 @@ export default function AppShell() {
       case 'profile':   return <Profile onUpgrade={handleUpgrade} />;
       case 'body':      return <WeightLogging setTab={handleSetTab} onUpgrade={handleUpgrade} />;
       case 'safety':    return <Safety />;
-      
-      // TTC & Fertility tabs
+
+      // TTC & Fertility
       case 'ttc':       return journeyType === 'conceive' ? <TTC /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
       case 'calendar':  return <Calendar />;
       case 'vitals':    return <Vitals />;
@@ -317,18 +300,23 @@ export default function AppShell() {
       case 'assistant': return <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}><AIAssistant onUpgrade={handleUpgrade} /></div>;
 
       // Pregnancy tabs
-      case 'kicks':     return journeyType === 'pregnant' ? <Kicks /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
-      case 'baby':      return (journeyType === 'pregnant' || journeyType === 'mom') ? <Baby /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
-      case 'partner':   return (journeyType === 'pregnant' || journeyType === 'conceive') ? <Partner /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
-      case 'nursing':   return journeyType === 'mom' ? <Nursing /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
-      
+      case 'kicks':   return journeyType === 'pregnant' ? <Kicks /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'baby':    return (journeyType === 'pregnant' || journeyType === 'mom') ? <Baby /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'nursing': return journeyType === 'mom' ? <Nursing /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+
+      // Partner — available to pregnant, conceive, and ivf
+      case 'partner':
+        return (journeyType === 'pregnant' || journeyType === 'conceive' || journeyType === 'ivf')
+          ? <Partner />
+          : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+
       // IVF Journey tabs
-      case 'ivf':       
-      case 'treatment': return journeyType === 'ivf' ? <Ivfjourney activeTab="treatment" /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'ivf':
+      case 'treatment':   return journeyType === 'ivf' ? <Ivfjourney activeTab="treatment" />   : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
       case 'medications': return journeyType === 'ivf' ? <Ivfjourney activeTab="medications" /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
-      case 'scans':     return journeyType === 'ivf' ? <Ivfjourney activeTab="scans" /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
-      case 'embryos':   return journeyType === 'ivf' ? <Ivfjourney activeTab="embryos" /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
-      
+      case 'scans':       return journeyType === 'ivf' ? <Ivfjourney activeTab="scans" />       : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+      case 'embryos':     return journeyType === 'ivf' ? <Ivfjourney activeTab="embryos" />     : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
+
       case 'menopause': return journeyType === 'menopause' ? <Menopause /> : <Home setTab={handleSetTab} onUpgrade={handleUpgrade} />;
 
       // Coming soon
@@ -373,33 +361,18 @@ export default function AppShell() {
         {/* Subscription Modal */}
         {showSubscription && (
           <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 2001,
-            overflow: 'auto',
-            background: 'linear-gradient(135deg, #FCE8EF 0%, #FFF0F5 100%)'
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 2001, overflow: 'auto',
+            background: 'linear-gradient(135deg, #FCE8EF 0%, #FFF0F5 100%)',
           }}>
             <button
               onClick={handleSubscriptionClose}
               style={{
-                position: 'fixed',
-                top: 20,
-                right: 20,
-                background: 'white',
-                border: 'none',
-                fontSize: 24,
-                cursor: 'pointer',
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                zIndex: 2002,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
+                position: 'fixed', top: 20, right: 20,
+                background: 'white', border: 'none', fontSize: 24,
+                cursor: 'pointer', width: 40, height: 40, borderRadius: 20,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.1)', zIndex: 2002,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}
             >
               ✕
@@ -418,7 +391,9 @@ export default function AppShell() {
         <div
           className="scroll-area fu"
           key={tab}
-          style={tab === 'chat' || tab === 'assistant' ? { display: 'flex', flexDirection: 'column', overflow: 'hidden' } : {}}
+          style={tab === 'chat' || tab === 'assistant'
+            ? { display: 'flex', flexDirection: 'column', overflow: 'hidden' }
+            : {}}
         >
           <Suspense fallback={<Spinner />}>
             {renderPage()}

@@ -1,6 +1,11 @@
 // src/pages/Consent.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth, db } from '../context/firebase';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import PrivacyPolicy from './PrivacyPolicy';
+
+const CONSENT_VERSION = '1.0.0';
 
 const ShieldIcon = () => (
   <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#c46db0" strokeWidth="1.5">
@@ -9,22 +14,21 @@ const ShieldIcon = () => (
 );
 
 const CONSENT_DETAILS = {
-  healthData: 'Your health data includes symptoms, vitals, and tracking information. This is stored encrypted and only used to provide you with personalised insights. You can delete all your data at any time from Settings.',
-  aiProcessing: 'Bloom AI analyses your data to provide personalised responses and insights. Your conversations are encrypted. You can delete chat history at any time.',
-  analytics: 'Anonymous usage data helps us improve the app. This never includes your health data or personal information.',
-  marketing: 'Occasional emails with tips and offers. You can unsubscribe at any time.',
+  healthData: 'Your health data includes symptoms, vitals, and tracking information. This is stored encrypted in the UK (Google Cloud, London region) and only used to provide you with personalised insights. You can delete all your data at any time from Settings.',
+  aiProcessing: 'Bloom AI analyses your data to provide personalised responses and insights. Your conversations are encrypted and stored in the UK. Anthropic (the AI provider) does not retain your data beyond the request. You can delete chat history at any time.',
+  analytics: 'Anonymous usage data helps us improve the app. This is fully anonymised before collection and never includes your health data or personal information.',
+  marketing: 'Occasional emails with tips, updates, and offers relevant to your health journey. You can unsubscribe at any time from the email or from Settings.',
 };
 
-// ConsentToggle component moved outside
-const ConsentToggle = ({ 
-  id, 
-  title, 
-  description, 
-  required = false, 
-  isChecked, 
-  onToggle, 
-  expandedItem, 
-  onExpand 
+const ConsentToggle = ({
+  id,
+  title,
+  description,
+  required = false,
+  isChecked,
+  onToggle,
+  expandedItem,
+  onExpand,
 }) => (
   <div style={{ marginBottom: 20, paddingBottom: 20, borderBottom: '1px solid var(--border)' }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -35,16 +39,19 @@ const ConsentToggle = ({
         )}
       </div>
       <button
-        onClick={onToggle}
+        onClick={required ? undefined : onToggle}
+        aria-pressed={isChecked}
+        aria-label={`${title} consent toggle`}
         style={{
           width: 50,
           height: 28,
           borderRadius: 30,
           background: isChecked ? 'var(--sg)' : 'var(--border)',
           border: 'none',
-          cursor: 'pointer',
+          cursor: required ? 'not-allowed' : 'pointer',
           position: 'relative',
-          transition: 'background 0.2s'
+          transition: 'background 0.2s',
+          opacity: required ? 0.75 : 1,
         }}
       >
         <div style={{
@@ -55,7 +62,7 @@ const ConsentToggle = ({
           height: 22,
           borderRadius: '50%',
           background: '#fff',
-          transition: 'left 0.2s'
+          transition: 'left 0.2s',
         }} />
       </button>
     </div>
@@ -71,7 +78,8 @@ const ConsentToggle = ({
         fontSize: 'var(--fs-xs)',
         marginTop: 8,
         cursor: 'pointer',
-        textDecoration: 'underline'
+        textDecoration: 'underline',
+        padding: 0,
       }}
     >
       {expandedItem === id ? 'Hide details' : 'Learn more'}
@@ -84,7 +92,7 @@ const ConsentToggle = ({
         borderRadius: 'var(--r)',
         fontSize: 'var(--fs-xs)',
         color: 'var(--md)',
-        lineHeight: 1.5
+        lineHeight: 1.5,
       }}>
         {CONSENT_DETAILS[id]}
       </div>
@@ -92,9 +100,47 @@ const ConsentToggle = ({
   </div>
 );
 
+// ── Persists consent record to both localStorage and Firestore ────────────────
+async function persistConsent(consents, privacyAccepted) {
+  const record = {
+    healthData: consents.healthData,
+    aiProcessing: consents.aiProcessing,
+    analytics: consents.analytics,
+    marketing: consents.marketing,
+    privacyPolicyAccepted: privacyAccepted,
+    consentVersion: CONSENT_VERSION,
+    timestamp: new Date().toISOString(),
+  };
+
+  // Always write to localStorage first — works pre-auth and as a fast cache
+  localStorage.setItem('userConsents', JSON.stringify(record));
+
+  // Write to Firestore if user is already authenticated
+  const user = auth.currentUser;
+  if (user) {
+    try {
+      await setDoc(
+        doc(db, 'users', user.uid, 'consent', 'record'),
+        {
+          ...record,
+          serverTimestamp: serverTimestamp(),
+          uid: user.uid,
+        },
+        { merge: false }
+      );
+    } catch (err) {
+      // Non-blocking — localStorage ensures the user can proceed
+      console.error('Firestore consent write failed:', err);
+    }
+  }
+  // If no auth yet (pre-login flow), AppContext will migrate localStorage → Firestore
+  // after the user signs in. See migrateConsentToFirestore() in AppContext.jsx.
+}
+
 export default function Consent() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showPolicy, setShowPolicy] = useState(false);
 
   const [consents, setConsents] = useState({
     healthData: false,
@@ -105,35 +151,34 @@ export default function Consent() {
 
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [expandedItem, setExpandedItem] = useState(null);
+  const [error, setError] = useState('');
 
   const allRequired = consents.healthData && privacyAccepted;
 
   const handleAcceptAll = () => {
-    setConsents({
-      healthData: true,
-      aiProcessing: true,
-      analytics: true,
-      marketing: true,
-    });
+    setConsents({ healthData: true, aiProcessing: true, analytics: true, marketing: true });
     setPrivacyAccepted(true);
+    setError('');
   };
 
   const handleSave = async () => {
-    if (!allRequired) return;
+    if (!allRequired) {
+      setError('Please enable Health Data Processing and accept the Privacy Policy to continue.');
+      return;
+    }
 
     setLoading(true);
+    setError('');
 
-    localStorage.setItem('userConsents', JSON.stringify({
-      ...consents,
-      privacyAccepted,
-      timestamp: new Date().toISOString(),
-      version: '1.0.0'
-    }));
-
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await persistConsent(consents, privacyAccepted);
       navigate('/login');
-    }, 500);
+    } catch (err) {
+      console.error('Consent save error:', err);
+      setError('Something went wrong saving your preferences. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleToggleConsent = (id) => {
@@ -144,6 +189,16 @@ export default function Consent() {
     setExpandedItem(expandedItem === id ? null : id);
   };
 
+  // ── Privacy Policy overlay ──────────────────────────────────────────────────
+  if (showPolicy) {
+    return (
+      <div className="ob-root" style={{ padding: 0, overflowY: 'auto' }}>
+        <PrivacyPolicy onBack={() => setShowPolicy(false)} />
+      </div>
+    );
+  }
+
+  // ── Main consent screen ─────────────────────────────────────────────────────
   return (
     <div className="ob-root">
       <div className="ob-logo">
@@ -154,14 +209,15 @@ export default function Consent() {
         Your <span className="ob-highlight">privacy</span> matters
       </h1>
       <p className="ob-sub" style={{ marginBottom: 32 }}>
-        Femin9 is GDPR compliant. You're always in control of your data.
+        Femin9 is UK GDPR compliant. Your health data stays in the UK. You are always in control.
       </p>
 
       <div style={{ maxWidth: 500, margin: '0 auto', width: '100%', textAlign: 'left' }}>
+
         <ConsentToggle
           id="healthData"
           title="Health Data Processing"
-          description="Store and process your health logs, symptoms, and tracking data to provide personalised insights and recommendations."
+          description="Store and process your health logs, symptoms, and tracking data to provide personalised insights and recommendations. Required for the app to function."
           required
           isChecked={consents.healthData}
           onToggle={() => handleToggleConsent('healthData')}
@@ -180,7 +236,7 @@ export default function Consent() {
         <ConsentToggle
           id="analytics"
           title="Anonymous Analytics"
-          description="Help us improve Femin9 by sharing anonymous usage data."
+          description="Help us improve Femin9 by sharing fully anonymous usage data. No health data is included."
           isChecked={consents.analytics}
           onToggle={() => handleToggleConsent('analytics')}
           expandedItem={expandedItem}
@@ -189,19 +245,25 @@ export default function Consent() {
         <ConsentToggle
           id="marketing"
           title="Marketing Communications"
-          description="Receive tips, offers, and updates about Femin9."
+          description="Receive tips, offers, and updates about Femin9 by email."
           isChecked={consents.marketing}
           onToggle={() => handleToggleConsent('marketing')}
           expandedItem={expandedItem}
           onExpand={() => handleExpandItem('marketing')}
         />
 
-        {/* Privacy Policy Acceptance */}
+        {/* Privacy Policy checkbox */}
         <div style={{ marginTop: 24, marginBottom: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
             <button
-              onClick={() => setPrivacyAccepted(prev => !prev)}
+              onClick={() => {
+                setPrivacyAccepted(prev => !prev);
+                setError('');
+              }}
+              aria-pressed={privacyAccepted}
+              aria-label="Accept Privacy Policy"
               style={{
+                flexShrink: 0,
                 width: 24,
                 height: 24,
                 borderRadius: 6,
@@ -211,26 +273,53 @@ export default function Consent() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#fff'
+                color: '#fff',
+                fontSize: 14,
+                marginTop: 2,
               }}
             >
               {privacyAccepted && '✓'}
             </button>
-            <span style={{ fontSize: 'var(--fs-sm)' }}>
+            <span style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.5 }}>
               I have read and agree to the{' '}
               <button
-                onClick={() => window.open('/privacy-policy.pdf', '_blank')}
-                style={{ background: 'none', border: 'none', color: 'var(--t)', cursor: 'pointer', textDecoration: 'underline' }}
+                onClick={() => setShowPolicy(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--dp)',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  padding: 0,
+                  fontSize: 'inherit',
+                  fontWeight: 600,
+                }}
               >
                 Privacy Policy
               </button>
+              . I understand Femin9 will process my health data to provide personalised support.
             </span>
           </div>
           <p style={{ fontSize: 'var(--fs-xs)', color: 'var(--mt)', marginTop: 8, marginLeft: 36 }}>
-            We never sell your data. You can withdraw consent at any time in Settings.
+            We never sell your data. Your data stays in the UK. You can withdraw consent at any time in Settings.
           </p>
         </div>
 
+        {/* Error message */}
+        {error && (
+          <div style={{
+            padding: 12,
+            background: '#FEE2E2',
+            borderRadius: 'var(--r)',
+            fontSize: 'var(--fs-xs)',
+            color: '#B91C1C',
+            marginBottom: 16,
+          }}>
+            {error}
+          </div>
+        )}
+
+        {/* Accept All */}
         <button
           onClick={handleAcceptAll}
           style={{
@@ -242,12 +331,13 @@ export default function Consent() {
             fontSize: 'var(--fs-sm)',
             fontWeight: 600,
             cursor: 'pointer',
-            marginBottom: 12
+            marginBottom: 12,
           }}
         >
-          Accept All
+          Accept All &amp; Continue
         </button>
 
+        {/* Continue button */}
         <button
           onClick={handleSave}
           disabled={!allRequired || loading}
@@ -265,14 +355,16 @@ export default function Consent() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 12
+            gap: 12,
+            transition: 'background 0.2s, opacity 0.2s',
           }}
         >
-          {loading ? 'Saving...' : 'Continue to Login >'}
+          {loading ? 'Saving your preferences…' : 'Continue to Login →'}
         </button>
 
         <p style={{ fontSize: 'var(--fs-2xs)', color: 'var(--mt)', textAlign: 'center', marginTop: 24 }}>
           Femin9 is not a medical device. Always consult your GP or midwife for medical advice.
+          Operated by Arvenue UK Ltd · Data stored in UK (europe-west2)
         </p>
       </div>
     </div>
