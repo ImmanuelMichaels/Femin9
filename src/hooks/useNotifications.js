@@ -1,12 +1,12 @@
 // src/hooks/useNotifications.js
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   collection, query, where, orderBy, onSnapshot,
   addDoc, updateDoc, doc, serverTimestamp, writeBatch, getDocs,
 } from 'firebase/firestore';
 import { db, auth } from '../context/firebase';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Notification types ───────────────────────────────────────────────────────
 
 export const NOTIF_TYPES = {
   MISSED_TASK:   'missed_task',
@@ -19,21 +19,31 @@ export const NOTIF_TYPES = {
   KICK_COUNT:    'kick_count',
   SLEEP:         'sleep',
   SYSTEM:        'system',
+  FEEDING:       'feeding',       // NEW — postpartum breastfeeding
+  FERTILE:       'fertile',       // NEW — TTC fertile window / ovulation
+  INJECTION:     'injection',     // NEW — IVF injection reminders
+  INTIMACY:      'intimacy',      // NEW — TTC intercourse timing
 };
 
-// ─── Journey types ────────────────────────────────────────────────────────────
-// Used to gate reminders that are only relevant to certain journeys.
-// Omitting `journeys` means the reminder fires for ALL journeys.
+// ─── Journey key constants ────────────────────────────────────────────────────
+// App uses 'conceive' (not 'ttc') and 'mom' (not 'postpartum').
+// All journey gates must use these canonical keys.
 
-const ALL_JOURNEYS     = null; // fires for every journey
-const PREGNANT_ONLY    = ['pregnant'];
-const PRENATAL_JOURNEYS = ['pregnant', 'ivf', 'ttc']; // actively trying / expecting
+const PREGNANT_ONLY   = ['pregnant'];
+const CONCEIVE_ONLY   = ['conceive'];
+const IVF_ONLY        = ['ivf'];
+const MOM_ONLY        = ['mom'];
+const MENOPAUSE_ONLY  = ['menopause'];
+const PRENATAL        = ['pregnant', 'conceive', 'ivf']; // actively trying or expecting
+const ALL_JOURNEYS    = null; // fires for every journey
 
-// ─── Reminder schedules ───────────────────────────────────────────────────────
+// ─── Timed reminder schedule ──────────────────────────────────────────────────
+// Each entry fires once per day at the given hour (checked on the minute).
+// journeys: null = all, otherwise array of canonical journey keys.
 
 const TIMED_REMINDERS = [
-  // Hydration — every 2 hours 8 AM–8 PM
-  // Relevant to all journeys (menopause, menstrual, postpartum all benefit from hydration)
+
+  // ── Hydration (all journeys, every 2 hours 8–20) ──────────────────────────
   ...[8, 10, 12, 14, 16, 18, 20].map((h) => ({
     id:      `hydration-${h}`,
     type:    NOTIF_TYPES.HYDRATION,
@@ -43,58 +53,213 @@ const TIMED_REMINDERS = [
       : h < 17
         ? 'Afternoon check-in: have you had enough water today?'
         : 'Evening hydration reminder — keep sipping!',
-    hour: h,
+    hour:     h,
     journeys: ALL_JOURNEYS,
+    action:   null,
   })),
 
-  // Medication / vitamins — 8 AM and 8 PM
-  // Prenatal vitamins only make sense for pregnancy-adjacent journeys.
-  // For menopause/menstrual, this is handled via pushNotification from the app
-  // when the user actually sets up medications.
-  { id: 'medication-8',  type: NOTIF_TYPES.MEDICATION,
+  // ── Prenatal vitamins / supplements (pregnant + conceive + ivf, 8 AM) ─────
+  {
+    id: 'medication-morning',
+    type: NOTIF_TYPES.MEDICATION,
     title: 'Morning Vitamins 💊',
-    message: 'Time to take your prenatal vitamins and any prescribed medication.',
+    message: 'Time to take your prenatal vitamins and any prescribed supplements.',
     hour: 8,
-    journeys: PRENATAL_JOURNEYS,
+    journeys: PRENATAL,
+    action: { label: 'Mark as Taken', route: '/nutrition' },
   },
-  { id: 'medication-20', type: NOTIF_TYPES.MEDICATION,
-    title: 'Evening Medication 💊',
-    message: "Don't forget your evening medication or supplements!",
+
+  // ── HRT medication (menopause, 8 AM) ──────────────────────────────────────
+  {
+    id: 'hrt-morning',
+    type: NOTIF_TYPES.MEDICATION,
+    title: 'HRT Medication Reminder 💜',
+    message: "Don't forget your morning HRT medication. Consistency is key for effectiveness.",
+    hour: 8,
+    journeys: MENOPAUSE_ONLY,
+    action: { label: 'Log Medication', route: '/menopause' },
+  },
+  {
+    id: 'hrt-evening',
+    type: NOTIF_TYPES.MEDICATION,
+    title: 'Evening HRT Check 💜',
+    message: 'Have you taken your HRT medication today? Consistent timing improves outcomes.',
     hour: 20,
-    journeys: PRENATAL_JOURNEYS,
+    journeys: MENOPAUSE_ONLY,
+    action: { label: 'Log Medication', route: '/menopause' },
   },
 
-  // Kick count — pregnant only
-  { id: 'kicks-9',  type: NOTIF_TYPES.KICK_COUNT,
-    title: 'Kick Count Time 👶',
-    message: "Log your baby's morning movements — 10 kicks in 2 hours is a good sign.",
-    hour: 9, journeys: PREGNANT_ONLY,
+  // ── IVF injections (IVF only — 3 windows: 8 AM, 6 PM, 9 PM) ─────────────
+  // IVF stimulation injections are typically timed within a 1–2 hour window.
+  // These reminders cover the most common clinic-prescribed windows.
+  {
+    id: 'ivf-injection-morning',
+    type: NOTIF_TYPES.INJECTION,
+    title: 'IVF Injection Reminder 💉',
+    message: 'Morning injection window — check your protocol and administer on schedule. Ice the area for 10 mins first.',
+    hour: 8,
+    journeys: IVF_ONLY,
+    action: { label: 'Log Injection', route: '/treatment' },
   },
-  { id: 'kicks-13', type: NOTIF_TYPES.KICK_COUNT,
-    title: 'Kick Count Check 👶',
-    message: "Afternoon kick count — find a quiet moment and feel for baby's movements.",
-    hour: 13, journeys: PREGNANT_ONLY,
+  {
+    id: 'ivf-injection-evening',
+    type: NOTIF_TYPES.INJECTION,
+    title: 'Evening IVF Injection 💉',
+    message: 'Evening injection time. You are so strong — every shot is an act of love for your future family. 🌸',
+    hour: 18,
+    journeys: IVF_ONLY,
+    action: { label: 'Log Injection', route: '/treatment' },
   },
-  { id: 'kicks-18', type: NOTIF_TYPES.KICK_COUNT,
+  {
+    id: 'ivf-injection-night',
+    type: NOTIF_TYPES.INJECTION,
+    title: 'IVF Night Medication 💉',
+    message: 'Night medication check — some protocols include a late-evening trigger shot. Check your clinic schedule.',
+    hour: 21,
+    journeys: IVF_ONLY,
+    action: { label: 'View Medications', route: '/medications' },
+  },
+
+  // ── IVF general medication (in addition to injections) ───────────────────
+  {
+    id: 'ivf-medication-evening',
+    type: NOTIF_TYPES.MEDICATION,
+    title: 'IVF Oral Medications 💊',
+    message: "Evening medications — progesterone pessaries, aspirin, or any oral supplements your clinic prescribed.",
+    hour: 20,
+    journeys: IVF_ONLY,
+    action: { label: 'Mark as Taken', route: '/medications' },
+  },
+
+  // ── Kick count (pregnant only — 9 AM, 1 PM, 6 PM) ────────────────────────
+  {
+    id: 'kicks-morning',
+    type: NOTIF_TYPES.KICK_COUNT,
+    title: 'Morning Kick Count 👶',
+    message: "Log your baby's morning movements. 10 kicks in 2 hours is a reassuring sign.",
+    hour: 9,
+    journeys: PREGNANT_ONLY,
+    action: { label: 'Log Kicks', route: '/kicks' },
+  },
+  {
+    id: 'kicks-afternoon',
+    type: NOTIF_TYPES.KICK_COUNT,
+    title: 'Afternoon Kick Count 👶',
+    message: "Afternoon movement check — find a quiet moment and feel for your baby's kicks.",
+    hour: 13,
+    journeys: PREGNANT_ONLY,
+    action: { label: 'Log Kicks', route: '/kicks' },
+  },
+  {
+    id: 'kicks-evening',
+    type: NOTIF_TYPES.KICK_COUNT,
     title: 'Evening Kick Count 👶',
-    message: "Evening movement check — log your baby's kicks before dinner.",
-    hour: 18, journeys: PREGNANT_ONLY,
+    message: "Evening movement check before dinner — log your baby's kicks now.",
+    hour: 18,
+    journeys: PREGNANT_ONLY,
+    action: { label: 'Log Kicks', route: '/kicks' },
   },
 
-  // Sleep wind-down — all journeys (good sleep hygiene applies universally)
-  { id: 'sleep-21', type: NOTIF_TYPES.SLEEP,
+  // ── Breastfeeding reminders (mom only — every 3 hours, 6 AM–9 PM) ────────
+  // NHS guidance: newborns feed 8–12 times per day (every 2–3 hours).
+  ...[6, 9, 12, 15, 18, 21].map((h) => ({
+    id:      `feeding-${h}`,
+    type:    NOTIF_TYPES.FEEDING,
+    title:   h < 12 ? 'Feeding Time 🍼' : h < 18 ? 'Midday Feed 🤱' : 'Evening Feed 🌙',
+    message: h === 6
+      ? 'Morning feeding time — newborns need 8–12 feeds per day. Log this feed in the Baby tab.'
+      : h === 21
+        ? 'Evening feed — after this one, try a longer sleep stretch if baby allows.'
+        : "Time for a feed check. If baby is showing hunger cues (rooting, sucking hands), offer the breast or bottle now.",
+    hour:     h,
+    journeys: MOM_ONLY,
+    action:   { label: 'Log Feed', route: '/nursing' },
+  })),
+
+  // ── TTC — BBT temperature (conceive only, 7 AM — must be before getting up) ──
+  {
+    id: 'bbt-morning',
+    type: NOTIF_TYPES.TIP,
+    title: 'BBT Temperature Time 🌡️',
+    message: 'Log your basal body temperature now — before getting out of bed. Consistency in timing is essential for accurate charting.',
+    hour: 7,
+    journeys: CONCEIVE_ONLY,
+    action: { label: 'Log BBT', route: '/vitals' },
+  },
+
+  // ── TTC — ovulation test (conceive only, 10 AM and 6 PM) ─────────────────
+  // LH surge is best detected mid-morning or late afternoon; testing twice improves accuracy.
+  {
+    id: 'ovulation-test-morning',
+    type: NOTIF_TYPES.FERTILE,
+    title: 'Ovulation Test Reminder 🌸',
+    message: 'Take your LH ovulation test now — mid-morning is optimal for detecting the LH surge. Use second morning urine (not first).',
+    hour: 10,
+    journeys: CONCEIVE_ONLY,
+    action: { label: 'Log Result', route: '/ttc' },
+  },
+  {
+    id: 'ovulation-test-evening',
+    type: NOTIF_TYPES.FERTILE,
+    title: 'Second Ovulation Test 🌸',
+    message: 'Second OPK of the day — if your morning test was close to positive, this one could confirm your surge.',
+    hour: 18,
+    journeys: CONCEIVE_ONLY,
+    action: { label: 'Log Result', route: '/ttc' },
+  },
+
+  // ── TTC — folic acid (conceive only, 8 AM) ───────────────────────────────
+  {
+    id: 'folic-acid',
+    type: NOTIF_TYPES.MEDICATION,
+    title: 'Folic Acid Reminder 💊',
+    message: 'Take your folic acid (400mcg) — daily from now until 12 weeks pregnant to protect against neural tube defects.',
+    hour: 8,
+    journeys: CONCEIVE_ONLY,
+    action: { label: 'Mark as Taken', route: '/nutrition' },
+  },
+
+  // ── Sleep wind-down (all journeys, 9 PM) ─────────────────────────────────
+  {
+    id: 'sleep-wind-down',
+    type: NOTIF_TYPES.SLEEP,
     title: 'Wind Down Time 🌙',
-    message: "It's 9 PM — start winding down for a good night's rest. You deserve it!",
+    message: "It's 9 PM — start winding down. Quality sleep is one of the most powerful things you can do for your health right now.",
     hour: 21,
     journeys: ALL_JOURNEYS,
+    action: null,
   },
 ];
 
-// ─── Appointment reminder windows (hours before) ──────────────────────────────
-const APPOINTMENT_REMINDER_HOURS = [48, 24, 2];
+// ─── Fertile window notifications ─────────────────────────────────────────────
+// These are seeded based on cycle data, not fixed hours.
+// They are called from the seedFertileWindowNotifications() function below
+// when cycle day data is available from Firestore.
+
+export const FERTILE_WINDOW_MESSAGES = {
+  approaching: {
+    title: 'Fertile Window Approaching 🌸',
+    message: 'Your fertile window opens in 2 days (around cycle day 12). This is the best time to increase intimacy frequency.',
+  },
+  open: {
+    title: "You're in Your Fertile Window 💕",
+    message: 'Your fertile window is open! For best results, have sex today and every other day through ovulation. Sperm survive 3–5 days.',
+  },
+  ovulation: {
+    title: "Ovulation Day 🥚",
+    message: "Today is your estimated ovulation day — your most fertile day. Having sex today gives the highest chance of conception. 💕",
+  },
+  positions: {
+    title: 'Conception Tips for Today 💕',
+    message: 'Missionary or hips-elevated positions may help sperm reach the cervix. Rest for 15–20 minutes after sex. No need to elevate legs dramatically.',
+  },
+  luteal: {
+    title: 'Luteal Phase Begins 🌱',
+    message: "Ovulation window has passed. The two-week wait begins now — be kind to yourself. Avoid NSAIDs (ibuprofen) which can interfere with implantation.",
+  },
+};
 
 // ─── Journey-aware motivational quotes ───────────────────────────────────────
-// Seeded once per day to Firestore so they're real notifications, not mock data.
 
 const MOTIVATIONAL_BY_JOURNEY = {
   pregnant: [
@@ -105,7 +270,7 @@ const MOTIVATIONAL_BY_JOURNEY = {
     "The love you already have for your baby is your superpower. 🌟",
     "Nourish your body, trust your instincts, and breathe. You've got this, Mama! 🍃",
   ],
-  ttc: [
+  conceive: [
     "Every cycle is a new beginning. Keep going — your time is coming. 🌱",
     "The strength it takes to keep hoping is extraordinary. We see you. 💕",
     "Small steps every day. Tracking, resting, hoping — it all counts. 🌟",
@@ -147,7 +312,6 @@ const MOTIVATIONAL_BY_JOURNEY = {
   ],
 };
 
-// Fallback for any journey type not explicitly mapped
 const MOTIVATIONAL_FALLBACK = [
   "Every step forward matters, no matter how small. You're doing great. 🌸",
   "Be kind to yourself today — you deserve it. 💕",
@@ -204,30 +368,35 @@ function sendBrowserNotification(title, body, icon = '/icon-192.png') {
   catch { /* Firefox private mode may throw */ }
 }
 
+// ─── Appointment reminder windows (hours before) ──────────────────────────────
+const APPOINTMENT_REMINDER_HOURS = [48, 24, 2];
+
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
 /**
  * useNotifications
  *
- * All notifications originate from Firestore — no hardcoded mock data is merged
- * client-side. Motivational quotes are seeded to Firestore once per day, scoped
- * to the user's current journeyType, so they appear, persist, and dismiss like
- * any other notification.
+ * All notifications originate from Firestore.
+ * Journey keys must be canonical: 'conceive' (not 'ttc'), 'mom' (not 'postpartum').
  *
- * Firestore path:   notifications/{userId}/items/{notifId}
- * Appointments:     appointments/{userId}/items/{apptId}
- *   Expected appt fields: { type, title, dateTime (Timestamp), location? }
+ * Firestore paths:
+ *   notifications/{userId}/items/{notifId}
+ *   appointments/{userId}/items/{apptId}
  *
  * @param {object}      opts
  * @param {number|null} opts.daysUntilRenewal
- * @param {array}       opts.tasks        [{ id, label, completed, dueToday, route? }]
- * @param {string}      opts.journeyType  pregnant | mom | ttc | ivf | menstrual | menopause
- * @param {function}    opts.onNavigate   (route) => void
+ * @param {array}       opts.tasks         [{ id, label, completed, dueToday, route? }]
+ * @param {string}      opts.journeyType   canonical journey key
+ * @param {number|null} opts.cycleDay      current cycle day (for TTC fertile window)
+ * @param {number|null} opts.cycleLength   average cycle length (default 28)
+ * @param {function}    opts.onNavigate    (route) => void
  */
 export function useNotifications({
   daysUntilRenewal = null,
   tasks            = [],
   journeyType      = '',
+  cycleDay         = null,
+  cycleLength      = 28,
   onNavigate,
 } = {}) {
 
@@ -238,10 +407,9 @@ export function useNotifications({
     typeof Notification !== 'undefined' && Notification.permission === 'granted'
   );
 
-  const seededRef  = useRef(new Set());
-  const timerRefs  = useRef([]);
-
-  const userId = auth.currentUser?.uid;
+  const seededRef = useRef(new Set());
+  const timerRefs = useRef([]);
+  const userId    = auth.currentUser?.uid;
 
   // ── Request push permission once ─────────────────────────────────────────
   useEffect(() => {
@@ -335,7 +503,7 @@ export function useNotifications({
     return () => unsubscribe();
   }, [userId]);
 
-  // ── 3. Timed in-app reminders (hydration, medication, kicks, sleep) ───────
+  // ── 3. Timed reminders (hydration, medication, kicks, feeds, injections) ──
   useEffect(() => {
     if (!userId) return;
 
@@ -349,13 +517,13 @@ export function useNotifications({
       const today  = now.toDateString();
       const colRef = collection(db, 'notifications', userId, 'items');
 
-      // Fire at the top of the hour (minute 0–5 to catch app open at that time)
+      // Only fire at the top of each hour (minute 0–5)
       if (minute > 5) return;
 
       for (const reminder of TIMED_REMINDERS) {
         if (reminder.hour !== hour) continue;
 
-        // Journey gate: null = all journeys, otherwise must match
+        // Journey gate — null fires for all, otherwise must match canonical key
         if (reminder.journeys !== null && !reminder.journeys.includes(journeyType)) continue;
 
         const seedKey = `${reminder.id}-${today}`;
@@ -375,11 +543,7 @@ export function useNotifications({
             reminderId: reminder.id,
             dateKey:    today,
             createdAt:  serverTimestamp(),
-            action: reminder.type === NOTIF_TYPES.KICK_COUNT
-              ? { label: 'Log Kicks',      route: '/kicks'     }
-              : reminder.type === NOTIF_TYPES.MEDICATION
-                ? { label: 'Mark as Taken', route: '/nutrition' }
-                : null,
+            action:     reminder.action ?? null,
           }).catch(console.error);
 
           sendBrowserNotification(reminder.title, reminder.message);
@@ -389,7 +553,6 @@ export function useNotifications({
     }
 
     checkTimedReminders().catch(console.error);
-
     const interval = setInterval(() => checkTimedReminders().catch(console.error), 60_000);
     timerRefs.current.push(interval);
 
@@ -399,7 +562,79 @@ export function useNotifications({
     };
   }, [userId, journeyType]);
 
-  // ── 4. Renewal + missed task + daily motivational seeds ───────────────────
+  // ── 4. TTC fertile window notifications ───────────────────────────────────
+  // Seeded when cycleDay is known. Covers: approaching fertile window,
+  // fertile window open, ovulation day, intercourse timing tips, luteal phase.
+  useEffect(() => {
+    if (!userId || journeyType !== 'conceive' || !cycleDay) return;
+
+    async function seedFertileWindowNotifications() {
+      const today  = new Date().toDateString();
+      const colRef = collection(db, 'notifications', userId, 'items');
+
+      // Estimated ovulation day (cycle length - 14)
+      const ovDay    = cycleLength - 14;
+      const fwStart  = ovDay - 5; // fertile window opens 5 days before ovulation
+      const fwEnd    = ovDay + 1; // closes day after ovulation
+
+      const seeds = [];
+
+      // 2 days before fertile window
+      if (cycleDay === fwStart - 2) {
+        seeds.push({ key: `fertile-approaching-${today}`, ...FERTILE_WINDOW_MESSAGES.approaching });
+      }
+
+      // Fertile window open
+      if (cycleDay >= fwStart && cycleDay < ovDay) {
+        seeds.push({ key: `fertile-open-${today}`, ...FERTILE_WINDOW_MESSAGES.open });
+        // Intercourse timing tip on every other day of fertile window
+        if ((cycleDay - fwStart) % 2 === 0) {
+          seeds.push({ key: `fertile-intimacy-${today}`, ...FERTILE_WINDOW_MESSAGES.positions });
+        }
+      }
+
+      // Ovulation day
+      if (cycleDay === ovDay) {
+        seeds.push({ key: `fertile-ovulation-${today}`, ...FERTILE_WINDOW_MESSAGES.ovulation });
+        seeds.push({ key: `fertile-positions-${today}`, ...FERTILE_WINDOW_MESSAGES.positions });
+      }
+
+      // Day after ovulation — luteal phase begins
+      if (cycleDay === fwEnd) {
+        seeds.push({ key: `fertile-luteal-${today}`, ...FERTILE_WINDOW_MESSAGES.luteal });
+      }
+
+      for (const seed of seeds) {
+        const { key, title, message } = seed;
+        if (seededRef.current.has(key)) continue;
+
+        const existing = await getDocs(query(colRef,
+          where('type',    '==', NOTIF_TYPES.FERTILE),
+          where('dateKey', '==', today),
+          where('title',   '==', title),
+        ));
+
+        if (existing.empty) {
+          await addDoc(colRef, {
+            type:      NOTIF_TYPES.FERTILE,
+            title,
+            message,
+            read:      false,
+            dateKey:   today,
+            createdAt: serverTimestamp(),
+            action:    { label: 'View Cycle', route: '/ttc' },
+          }).catch(console.error);
+
+          sendBrowserNotification(title, message);
+        }
+        seededRef.current.add(key);
+      }
+    }
+
+    seedFertileWindowNotifications().catch(console.error);
+  }, [userId, journeyType, cycleDay, cycleLength]);
+
+  // ── 5. System seeds: renewal, missed tasks, daily motivational ────────────
   useEffect(() => {
     if (!userId || loading) return;
 
@@ -431,7 +666,7 @@ export function useNotifications({
         }
       }
 
-      // ── Missed tasks ─────────────────────────────────────────────────────
+      // ── Missed tasks ──────────────────────────────────────────────────────
       for (const task of tasks.filter((t) => t.dueToday && !t.completed)) {
         const seedKey = `missed-${task.id}-${today}`;
         if (seededRef.current.has(seedKey)) continue;
@@ -452,35 +687,27 @@ export function useNotifications({
         seededRef.current.add(seedKey);
       }
 
-      // ── Daily motivational (seeded to Firestore, journey-scoped) ─────────
-      // Seeded once at 8 AM or on first app open of the day.
-      // Uses journeyType so menopause users get menopause-relevant encouragement,
-      // not pregnancy quotes. No client-side merge — this is a real notification.
+      // ── Daily motivational (journey-scoped, seeded once per day) ─────────
       if (journeyType) {
-        const motivationalSeedKey = `motivational-${journeyType}-${today}`;
-        if (!seededRef.current.has(motivationalSeedKey)) {
+        const seedKey = `motivational-${journeyType}-${today}`;
+        if (!seededRef.current.has(seedKey)) {
           const existing = await getDocs(query(colRef,
             where('type',    '==', NOTIF_TYPES.MOTIVATIONAL),
             where('dateKey', '==', today),
           ));
           if (existing.empty) {
-            const quotes  = getJourneyMotivational(journeyType);
+            const quotes    = getJourneyMotivational(journeyType);
             const dayOfYear = Math.floor(
               (new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86_400_000
             );
-            const quote = quotes[dayOfYear % quotes.length];
-
             await addDoc(colRef, {
               type:      NOTIF_TYPES.MOTIVATIONAL,
               title:     'Daily Boost 🌸',
-              message:   quote,
-              read:      false,
-              dateKey:   today,
-              createdAt: serverTimestamp(),
-              // No action — motivational quotes are informational only
+              message:   quotes[dayOfYear % quotes.length],
+              read:      false, dateKey: today, createdAt: serverTimestamp(),
             }).catch(console.error);
           }
-          seededRef.current.add(motivationalSeedKey);
+          seededRef.current.add(seedKey);
         }
       }
     }
@@ -488,15 +715,14 @@ export function useNotifications({
     seedSystemNotifications().catch(console.error);
   }, [userId, loading, daysUntilRenewal, tasks, journeyType]);
 
-  // ── 5. Notifications list — Firestore only, no client-side mock merging ───
-  // Sort: unread first, then by recency (handled by Firestore orderBy createdAt desc)
+  // ── 6. Sorted notification list ───────────────────────────────────────────
   const notifications = firestoreNotifs.sort(
     (a, b) => (a.read === b.read ? 0 : a.read ? 1 : -1)
   );
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // ── 6. Actions ────────────────────────────────────────────────────────────
+  // ── 7. Actions ────────────────────────────────────────────────────────────
 
   const markRead = useCallback(async (id) => {
     if (!userId) return;
@@ -529,8 +755,8 @@ export function useNotifications({
   }, [markRead, onNavigate]);
 
   /**
-   * Push a notification from anywhere in the app — e.g. after saving an IVF log,
-   * completing a scan, or receiving a backend Cloud Function result.
+   * pushNotification — call from anywhere in the app to create a notification.
+   * e.g. after saving an IVF log, completing a scan, or a backend event.
    */
   const pushNotification = useCallback(async (notif) => {
     if (!userId) return;
