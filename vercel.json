@@ -8,7 +8,7 @@
       "headers": [
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://*.firebasestorage.app wss://*.firebaseio.com https://api.anthropic.com; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.firebasestorage.app https://lh3.googleusercontent.com; font-src 'self'; worker-src 'self'; manifest-src 'self'; frame-ancestors 'none'"
+          "value": "default-src 'self'; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://*.firebasestorage.app wss://*.firebaseio.com https://api.anthropic.com; script-src 'self' 'unsafe-inline' https://apis.google.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.firebasestorage.app https://lh3.googleusercontent.com; worker-src 'self'; manifest-src 'self' https://vercel.com; frame-ancestors 'none'; frame-src https://*.firebaseapp.com"
         },
         {
           "key": "Strict-Transport-Security",
